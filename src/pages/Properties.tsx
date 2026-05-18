@@ -29,7 +29,7 @@ import { Property, PropertyType, PropertyStatus, PropertyOperation, EntityNote, 
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency } from '../lib/utils';
 import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
@@ -907,3 +907,4 @@ export default function Properties() {
     </div>
   );
 }
+
