@@ -66,10 +66,6 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="md">Descargar Reporte</Button>
-          <Button variant="primary" size="md" onClick={() => navigate('/clientes')}>
-            <PlusCircle size={18} className="mr-2" />
-            Nuevo Cliente
-          </Button>
         </div>
       </div>
 

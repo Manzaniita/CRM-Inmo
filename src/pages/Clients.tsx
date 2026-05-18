@@ -23,7 +23,7 @@ import { Client, ClientType, ClientStatus, ClientOrigin, EntityNote, Document, S
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
-import { cn, formatCurrency, formatDate } from '../lib/utils';
+import { cn, formatCurrency, formatDate, normalizeSearchText } from '../lib/utils';
 import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
@@ -67,10 +67,12 @@ export default function Clients() {
 
   const selectedClient = clients.find(c => c.id === id);
 
+  const lowerSearch = normalizeSearchText(searchTerm);
+
   const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    normalizeSearchText(c.name).includes(lowerSearch) || 
     c.phone.includes(searchTerm) || 
-    c.email.toLowerCase().includes(searchTerm.toLowerCase())
+    normalizeSearchText(c.email).includes(lowerSearch)
   );
 
   const handleOpenForm = (client?: Client) => {

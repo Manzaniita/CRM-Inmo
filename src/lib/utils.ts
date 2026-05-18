@@ -22,3 +22,11 @@ export function formatDate(dateString: string) {
     year: 'numeric',
   }).format(date);
 }
+
+export function normalizeSearchText(text: string | null | undefined): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}

@@ -14,7 +14,9 @@ import {
   RotateCcw,
   Trash2,
   Search,
-  Filter
+  Filter,
+  ArrowUpDown,
+  AlertTriangle
 } from 'lucide-react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -22,7 +24,8 @@ import { CalendarEvent, EventType, EventStatus } from '../types';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
-import { cn, formatDate } from '../lib/utils';
+import SearchableSelect from '../components/SearchableSelect';
+import { cn, formatDate, normalizeSearchText } from '../lib/utils';
 
 export default function Agenda() {
   const { events, clients, properties, addEvent, updateEvent, completeEvent, cancelEvent, deleteEvent } = useAppContext();
@@ -32,6 +35,7 @@ export default function Agenda() {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'date-asc' | 'date-desc' | 'status' | 'type'>('date-asc');
 
   // Today dynamic
   const today = new Date().toISOString().split('T')[0];
@@ -61,11 +65,32 @@ export default function Agenda() {
     }
   }, [location.state]);
 
+  const now = new Date();
+  const todayStr = today;
+
+  const isEventOverdue = (event: CalendarEvent): boolean => {
+    if (event.status !== 'pendiente') return false;
+    const eventDateTime = new Date(`${event.date}T${event.time}`);
+    return eventDateTime < now;
+  };
+
   const filteredEvents = events.filter(e => {
-    const matchesSearch = e.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = normalizeSearchText(e.title).includes(normalizeSearchText(searchTerm));
     const matchesType = filterType === 'all' || e.type === filterType;
     return matchesSearch && matchesType;
-  }).sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'date-desc':
+        return `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`);
+      case 'status':
+        return a.status.localeCompare(b.status) || `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
+      case 'type':
+        return a.type.localeCompare(b.type) || `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
+      case 'date-asc':
+      default:
+        return `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
+    }
+  });
 
   const handleOpenForm = (event?: CalendarEvent) => {
     if (event) {
@@ -114,6 +139,18 @@ export default function Agenda() {
       default: return 'gray';
     }
   };
+
+  const clientOptions = clients.map(c => ({
+    value: c.id,
+    label: c.name,
+    subtitle: c.type || c.phone || undefined
+  }));
+
+  const propertyOptions = properties.map(p => ({
+    value: p.id,
+    label: p.title,
+    subtitle: [p.address, p.zone].filter(Boolean).join(', ') || `Código: ${p.code}`
+  }));
 
   const getEventTypeVariant = (type: string): any => {
     switch (type) {
@@ -203,25 +240,23 @@ export default function Agenda() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Cliente (Opcional)</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                value={formData.clientId}
-                onChange={e => setFormData({ ...formData, clientId: e.target.value })}
-              >
-                <option value="">Ninguno</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <SearchableSelect
+                placeholder="Seleccionar cliente..."
+                value={formData.clientId || ''}
+                onChange={value => setFormData({ ...formData, clientId: value })}
+                options={clientOptions}
+                emptyLabel="Ninguno"
+              />
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Propiedad (Opcional)</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                value={formData.propertyId}
-                onChange={e => setFormData({ ...formData, propertyId: e.target.value })}
-              >
-                <option value="">Ninguna</option>
-                {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-              </select>
+              <SearchableSelect
+                placeholder="Seleccionar propiedad..."
+                value={formData.propertyId || ''}
+                onChange={value => setFormData({ ...formData, propertyId: value })}
+                options={propertyOptions}
+                emptyLabel="Ninguna"
+              />
             </div>
           </div>
           <div>
@@ -318,7 +353,7 @@ export default function Agenda() {
         <div className="lg:col-span-3 space-y-6">
           {view === 'list' ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex-wrap gap-3">
                 <div className="relative flex-1 max-w-md">
                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
@@ -329,22 +364,38 @@ export default function Agenda() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Badge variant="blue" size="sm">Hoy: {filteredEvents.filter(e => e.date === today).length}</Badge>
+                <div className="flex gap-2 items-center flex-wrap">
+                  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-100">
+                    <ArrowUpDown size={14} className="text-gray-400" />
+                    <select
+                      className="text-xs font-bold bg-transparent outline-none text-gray-700"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                    >
+                      <option value="date-asc">Fecha (próxima primero)</option>
+                      <option value="date-desc">Fecha (lejana primero)</option>
+                      <option value="status">Por estado</option>
+                      <option value="type">Por tipo</option>
+                    </select>
+                  </div>
+                  <Badge variant="blue" size="sm">Hoy: {filteredEvents.filter(e => e.date === todayStr).length}</Badge>
                 </div>
               </div>
 
               <div className="space-y-3">
                 {filteredEvents.map(event => (
-                  <div key={event.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-start gap-4 hover:border-blue-200 transition-colors group relative">
-                    <div className="flex flex-col items-center justify-center w-14 h-14 bg-gray-50 text-gray-500 rounded-xl border border-gray-100 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors shrink-0">
+                  <div key={event.id} className={cn("bg-white p-4 rounded-xl border shadow-sm flex items-start gap-4 hover:border-blue-200 transition-colors group relative", isEventOverdue(event) ? "border-red-300 bg-red-50/40" : "border-gray-200")}>
+                    <div className={cn("flex flex-col items-center justify-center w-14 h-14 text-gray-500 rounded-xl border shrink-0", isEventOverdue(event) ? "bg-red-100 text-red-600 border-red-200" : "bg-gray-50 border-gray-100 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100")}>
                       <span className="text-[10px] font-black uppercase">{event.time}</span>
-                      <span className="text-xs font-bold leading-none mt-1">{event.date === today ? 'HOY' : event.date.split('-').slice(1).reverse().join('/')}</span>
+                      <span className="text-xs font-bold leading-none mt-1">{event.date === todayStr ? 'HOY' : event.date.split('-').slice(1).reverse().join('/')}</span>
                     </div>
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleOpenForm(event)}>
                       <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-bold text-gray-900 truncate">{event.title}</h4>
-                        <Badge variant={getEventStatusVariant(event.status)}>{event.status}</Badge>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-gray-900 truncate">{event.title}</h4>
+                          {isEventOverdue(event) && <AlertTriangle size={14} className="text-red-500 shrink-0" />}
+                        </div>
+                        <Badge variant={isEventOverdue(event) ? 'red' : getEventStatusVariant(event.status)}>{isEventOverdue(event) ? 'VENCIDO' : event.status}</Badge>
                       </div>
                       <p className="text-sm text-gray-500 mb-3 line-clamp-1">{event.description || event.notes || 'Sin descripción'}</p>
                       <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-400">
@@ -364,11 +415,18 @@ export default function Agenda() {
                     </div>
                     <div className="flex flex-col gap-2 items-end">
                       <Badge variant={getEventTypeVariant(event.type)} size="sm">{event.type}</Badge>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-auto">
-                        <button onClick={(e) => { e.stopPropagation(); completeEvent(event.id); }} title="Realizado" className="p-1.5 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50"><CheckCircle2 size={16} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); cancelEvent(event.id); }} title="Cancelar" className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"><XCircle size={16} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }} title="Eliminar" className="p-1.5 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100"><Trash2 size={16} /></button>
-                      </div>
+                      {isEventOverdue(event) ? (
+                        <div className="flex items-center gap-1 mt-auto">
+                          <button onClick={(e) => { e.stopPropagation(); handleOpenForm(event); }} title="Reprogramar" className="p-1.5 text-red-500 hover:text-red-700 rounded-lg hover:bg-red-100"><RotateCcw size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); cancelEvent(event.id); }} title="Cancelar" className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"><XCircle size={16} /></button>
+                        </div>
+                      ) : (
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-auto">
+                          <button onClick={(e) => { e.stopPropagation(); completeEvent(event.id); }} title="Realizado" className="p-1.5 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50"><CheckCircle2 size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); cancelEvent(event.id); }} title="Cancelar" className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"><XCircle size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }} title="Eliminar" className="p-1.5 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100"><Trash2 size={16} /></button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

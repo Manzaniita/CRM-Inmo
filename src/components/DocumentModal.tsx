@@ -3,6 +3,7 @@ import { X, FileText, Download, Edit3, Trash2, Paperclip, Calendar, User, Home, 
 import { Document, DocumentType, DocumentStatus, Client, Property, Sale, Rental } from '../types';
 import Button from './Button';
 import Badge from './Badge';
+import SearchableSelect from './SearchableSelect';
 import { cn, formatDate } from '../lib/utils';
 
 type ModalMode = 'create' | 'edit' | 'view';
@@ -86,6 +87,18 @@ export default function DocumentModal({
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isEditing, setIsEditing] = useState(mode === 'edit');
+
+  const clientOptions = clients.map(c => ({
+    value: c.id,
+    label: c.name,
+    subtitle: c.type || c.phone || undefined
+  }));
+
+  const propertyOptions = properties.map(p => ({
+    value: p.id,
+    label: p.title,
+    subtitle: [p.address, p.zone].filter(Boolean).join(', ') || undefined
+  }));
 
   React.useEffect(() => {
     if (isOpen) {
@@ -381,29 +394,23 @@ export default function DocumentModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1.5">Cliente relacionado</label>
-                <select
+                <SearchableSelect
+                  placeholder="Seleccionar cliente..."
                   value={formData.clientId}
-                  onChange={e => setFormData({ ...formData, clientId: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Sin cliente</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                  onChange={value => setFormData({ ...formData, clientId: value })}
+                  options={clientOptions}
+                  emptyLabel="Sin cliente"
+                />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1.5">Propiedad relacionada</label>
-                <select
+                <SearchableSelect
+                  placeholder="Seleccionar propiedad..."
                   value={formData.propertyId}
-                  onChange={e => setFormData({ ...formData, propertyId: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Sin propiedad</option>
-                  {properties.map(p => (
-                    <option key={p.id} value={p.id}>{p.title} - {p.address}</option>
-                  ))}
-                </select>
+                  onChange={value => setFormData({ ...formData, propertyId: value })}
+                  options={propertyOptions}
+                  emptyLabel="Sin propiedad"
+                />
               </div>
             </div>
 

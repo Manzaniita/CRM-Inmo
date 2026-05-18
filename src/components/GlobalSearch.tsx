@@ -12,7 +12,7 @@ import {
   X
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { cn } from '../lib/utils';
+import { cn, normalizeSearchText } from '../lib/utils';
 
 interface SearchResult {
   id: string;
@@ -42,12 +42,12 @@ export default function GlobalSearch() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const results: SearchResult[] = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = normalizeSearchText(query.trim());
     if (q.length < 2) return [];
 
     const found: SearchResult[] = [];
 
-    const matches = (text: string) => text.toLowerCase().includes(q);
+    const matches = (text: string) => normalizeSearchText(text).includes(q);
 
     // Clientes
     clients.forEach(c => {

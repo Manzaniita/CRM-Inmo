@@ -5,6 +5,7 @@ import { useAppContext } from '../context/AppContext';
 import Badge from './Badge';
 import Button from './Button';
 import { Card } from './Card';
+import SearchableSelect from './SearchableSelect';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
 
 const SALE_STAGES: SaleStatus[] = [
@@ -52,6 +53,18 @@ export default function SaleModal({
     fechaEscritura: undefined,
     notas: ''
   });
+
+  const clientOptions = clients.map(c => ({
+    value: c.id,
+    label: c.name,
+    subtitle: c.type || c.phone || undefined
+  }));
+
+  const propertyOptions = properties.map(p => ({
+    value: p.id,
+    label: p.title,
+    subtitle: [p.address, p.zone].filter(Boolean).join(', ') || `Código: ${p.code}`
+  }));
 
   const comprador = clients.find(c => c.id === (formData.clientCompradorId || sale?.clientCompradorId));
   const propiedad = properties.find(p => p.id === (formData.propiedadId || sale?.propiedadId));
@@ -171,19 +184,23 @@ export default function SaleModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Comprador *</label>
-                <select className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.clientCompradorId} onChange={e => setFormData({...formData, clientCompradorId: e.target.value})}>
-                  <option value="">Seleccionar Cliente</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <SearchableSelect
+                  placeholder="Seleccionar comprador..."
+                  value={formData.clientCompradorId}
+                  onChange={value => setFormData({...formData, clientCompradorId: value})}
+                  options={clientOptions}
+                  emptyLabel="Seleccionar Cliente"
+                />
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Propiedad *</label>
-                <select className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.propiedadId} onChange={e => setFormData({...formData, propiedadId: e.target.value})}>
-                  <option value="">Seleccionar Propiedad</option>
-                  {properties.map(p => <option key={p.id} value={p.id}>{p.title} ({p.code})</option>)}
-                </select>
+                <SearchableSelect
+                  placeholder="Seleccionar propiedad..."
+                  value={formData.propiedadId}
+                  onChange={value => setFormData({...formData, propiedadId: value})}
+                  options={propertyOptions}
+                  emptyLabel="Seleccionar Propiedad"
+                />
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Moneda</label>

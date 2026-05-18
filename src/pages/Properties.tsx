@@ -19,7 +19,9 @@ import {
   X,
   TrendingUp,
   Key,
-  FileText
+  FileText,
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -27,7 +29,7 @@ import { Property, PropertyType, PropertyStatus, PropertyOperation, EntityNote, 
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
-import { cn, formatCurrency } from '../lib/utils';
+import { cn } from '../lib/utils';
 import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
@@ -51,6 +53,12 @@ export default function Properties() {
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [docModalMode, setDocModalMode] = useState<'create' | 'edit' | 'view'>('view');
   const [selectedDocForModal, setSelectedDocForModal] = useState<Document | undefined>(undefined);
+
+  // Captar desde Link states
+  const [captureUrl, setCaptureUrl] = useState('');
+  const [captureStep, setCaptureStep] = useState<'idle' | 'analyzing' | 'preview'>('idle');
+  const [captureProgressStep, setCaptureProgressStep] = useState(0);
+  const [capturePreview, setCapturePreview] = useState<Partial<Property> | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<Partial<Property>>({
@@ -693,13 +701,16 @@ export default function Properties() {
 
       {isImportModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsImportModalOpen(false)}></div>
-          <div className="bg-white rounded-2xl w-full max-w-md relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }}></div>
+          <div className="bg-white rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
               <h2 className="font-bold text-xl text-gray-900">Captar desde Link</h2>
-              <button onClick={() => setIsImportModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              <button onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-xs text-yellow-700 font-medium">
+                La extracción real desde portales requiere backend/API. Esta versión simula la captación para validar el flujo.
+              </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">URL de la publicación</label>
                 <div className="relative">
@@ -708,20 +719,185 @@ export default function Properties() {
                     type="text" 
                     placeholder="https://www.zonaprop.com.ar/propiedades/..." 
                     className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={captureUrl}
+                    onChange={(e) => setCaptureUrl(e.target.value)}
+                    disabled={captureStep !== 'idle'}
                   />
                 </div>
                 <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider font-bold">Compatible con Zonaprop, Argenprop y Mercado Libre</p>
               </div>
-              <Button variant="primary" className="w-full">Analizar Link</Button>
-
-              <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 flex flex-col items-center justify-center text-center">
-                <Clipboard size={32} className="text-gray-300 mb-2" />
-                <p className="text-sm font-medium text-gray-400">Pega un link para ver la vista previa de los datos detectados automáticamente.</p>
-              </div>
+              {captureStep === 'idle' && (
+                <Button variant="primary" className="w-full" onClick={() => {
+                  if (!captureUrl || !captureUrl.startsWith('http')) {
+                    showToast('Ingresa una URL válida que comience con http', 'error');
+                    return;
+                  }
+                  setCaptureStep('analyzing');
+                  setCaptureProgressStep(0);
+                  const steps = [
+                    'Validando URL',
+                    'Analizando publicación',
+                    'Detectando datos principales',
+                    'Detectando imágenes',
+                    'Generando vista previa'
+                  ];
+                  steps.forEach((_, i) => {
+                    setTimeout(() => setCaptureProgressStep(i + 1), (i + 1) * 600);
+                  });
+                  setTimeout(() => {
+                    setCapturePreview({
+                      title: 'Hermoso Departamento en Palermo',
+                      type: 'departamento',
+                      operation: 'venta',
+                      price: 145000,
+                      currency: 'USD',
+                      address: 'Av. Santa Fe 3200',
+                      zone: 'Palermo',
+                      city: 'CABA',
+                      bedrooms: 2,
+                      bathrooms: 2,
+                      rooms: 4,
+                      surface: 85,
+                      externalLink: captureUrl,
+                      externalSource: 'Zonaprop',
+                      notes: 'Publicación detectada automáticamente. Datos simulados para validación de flujo.',
+                      images: [
+                        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+                        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
+                      ],
+                      code: `P${Math.floor(Math.random() * 1000)}`,
+                      status: 'disponible'
+                    });
+                    setCaptureStep('preview');
+                  }, steps.length * 600 + 300);
+                }}>
+                  Analizar Link
+                </Button>
+              )}
+              {captureStep === 'analyzing' && (
+                <div className="p-6 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+                  <div className="flex items-center gap-3 text-sm font-bold text-blue-700">
+                    <Loader2 size={20} className="animate-spin" /> Analizando publicación...
+                  </div>
+                  <div className="space-y-2">
+                    {['Validando URL', 'Analizando publicación', 'Detectando datos principales', 'Detectando imágenes', 'Generando vista previa'].map((label, i) => (
+                      <div key={label} className="flex items-center gap-3">
+                        {captureProgressStep > i ? (
+                          <CheckCircle2 size={16} className="text-green-500" />
+                        ) : captureProgressStep === i ? (
+                          <Loader2 size={16} className="animate-spin text-blue-500" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border-2 border-gray-200" />
+                        )}
+                        <span className={cn("text-sm", captureProgressStep > i ? "text-green-700 font-medium" : captureProgressStep === i ? "text-blue-700 font-bold" : "text-gray-400")}>
+                          {label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {captureStep === 'preview' && capturePreview && (
+                <div className="space-y-4 border border-gray-200 rounded-xl p-4 bg-gray-50/50">
+                  <h3 className="font-bold text-gray-900">Vista Previa de la Propiedad</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Título</label>
+                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-bold" value={capturePreview.title || ''} onChange={e => setCapturePreview({...capturePreview, title: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Tipo</label>
+                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.type || 'departamento'} onChange={e => setCapturePreview({...capturePreview, type: e.target.value as PropertyType})}>
+                        <option value="departamento">Departamento</option>
+                        <option value="casa">Casa</option>
+                        <option value="lote">Lote</option>
+                        <option value="local">Local</option>
+                        <option value="oficina">Oficina</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Operación</label>
+                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.operation || 'venta'} onChange={e => setCapturePreview({...capturePreview, operation: e.target.value as PropertyOperation})}>
+                        <option value="venta">Venta</option>
+                        <option value="alquiler">Alquiler</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Precio</label>
+                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.price || 0} onChange={e => setCapturePreview({...capturePreview, price: Number(e.target.value)})} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Moneda</label>
+                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.currency || 'USD'} onChange={e => setCapturePreview({...capturePreview, currency: e.target.value as 'USD' | 'ARS'})}>
+                        <option value="USD">USD</option>
+                        <option value="ARS">ARS</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Zona / Dirección</label>
+                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.address || ''} onChange={e => setCapturePreview({...capturePreview, address: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Ciudad</label>
+                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.city || ''} onChange={e => setCapturePreview({...capturePreview, city: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Dormitorios</label>
+                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.bedrooms || 1} onChange={e => setCapturePreview({...capturePreview, bedrooms: Number(e.target.value)})} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Baños</label>
+                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.bathrooms || 1} onChange={e => setCapturePreview({...capturePreview, bathrooms: Number(e.target.value)})} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Ambientes</label>
+                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.rooms || 1} onChange={e => setCapturePreview({...capturePreview, rooms: Number(e.target.value)})} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Superficie (m²)</label>
+                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.surface || 0} onChange={e => setCapturePreview({...capturePreview, surface: Number(e.target.value)})} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Link Externo</label>
+                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.externalLink || ''} onChange={e => setCapturePreview({...capturePreview, externalLink: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Fuente Externa</label>
+                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.externalSource || ''} onChange={e => setCapturePreview({...capturePreview, externalSource: e.target.value})} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Imágenes (placeholders)</label>
+                      <div className="flex gap-2 mt-1">
+                        {(capturePreview.images || []).map((img, i) => (
+                          <img key={i} src={img} alt={`Preview ${i+1}`} className="w-20 h-20 rounded-lg object-cover border border-gray-200" />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setIsImportModalOpen(false)}>Cancelar</Button>
-              <Button variant="primary" disabled>Guardar Propiedad</Button>
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-2 shrink-0">
+              <Button variant="ghost" onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }}>Cancelar</Button>
+              <Button 
+                variant="primary" 
+                disabled={captureStep !== 'preview' || !capturePreview}
+                onClick={() => {
+                  if (!capturePreview) return;
+                  const newProp: Property = {
+                    ...(capturePreview as Property),
+                    id: `p${Date.now()}`
+                  };
+                  addProperty(newProp);
+                  showToast('Propiedad captada correctamente', 'success');
+                  setIsImportModalOpen(false);
+                  setCaptureStep('idle');
+                  setCapturePreview(null);
+                  setCaptureUrl('');
+                }}
+              >
+                Guardar Propiedad
+              </Button>
             </div>
           </div>
         </div>
