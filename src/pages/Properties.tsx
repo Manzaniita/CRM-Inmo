@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import SearchableSelect from '../components/SearchableSelect';
 import { 
   Home, 
   Plus, 
@@ -25,7 +26,6 @@ import {
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Property, PropertyType, PropertyStatus, PropertyOperation, EntityNote, Document, Sale, Rental } from '../types';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
@@ -34,6 +34,7 @@ import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
 import RentalModal from '../components/RentalModal';
+import { Property, PropertyType, PropertyStatus, PropertyOperation, EntityNote, Document, Sale, Rental } from '../types';
 
 export default function Properties() {
   const { id } = useParams();
@@ -78,9 +79,16 @@ export default function Properties() {
     externalLink: '',
     externalSource: '',
     notes: '',
+    ownerId: '',
     images: ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'],
     code: `P${Math.floor(Math.random() * 1000)}`
   });
+
+  const clientOptions = React.useMemo(() => clients.map(c => ({
+    value: c.id,
+    label: c.name,
+    subtitle: c.type
+  })), [clients]);
 
   const selectedProp = properties.find(p => p.id === id);
 
@@ -184,6 +192,11 @@ export default function Properties() {
                     <MapPin size={18} className="mr-1 text-gray-400" />
                     {selectedProp.address}, {selectedProp.zone}, {selectedProp.city}
                   </p>
+                  {selectedProp.ownerId && (
+                    <p className="text-sm text-blue-700 font-medium mt-1">
+                      Dueño: {clients.find(c => c.id === selectedProp.ownerId)?.name || 'ID: ' + selectedProp.ownerId}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-4xl font-black text-blue-600">
