@@ -75,7 +75,7 @@ export interface CalendarEvent {
   createdAt: string;
 }
 
-export type TaskStatus = 'pendiente' | 'en proceso' | 'completada' | 'vencida';
+export type TaskStatus = 'pendiente' | 'en proceso' | 'completada' | 'vencida' | 'reprogramado';
 export type TaskPriority = 'baja' | 'media' | 'alta' | 'urgente';
 
 export interface Task {
@@ -98,6 +98,7 @@ export interface Sale {
   clientCompradorId: string;
   propiedadId: string;
   propietarioId?: string;
+  vendedorId?: string;
   precioPublicado: number;
   precioOfrecido?: number;
   precioAcordado?: number;
@@ -118,6 +119,7 @@ export interface Rental {
   inquilinoId: string;
   propiedadId: string;
   propietarioId?: string;
+  locadorId?: string;
   montoMensual: number;
   deposito: number;
   comision: number;

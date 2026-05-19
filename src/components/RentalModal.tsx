@@ -43,6 +43,7 @@ export default function RentalModal({
     inquilinoId: defaultClientId || '',
     propiedadId: defaultPropertyId || '',
     propietarioId: '',
+    locadorId: '',
     estado: 'consulta',
     montoMensual: 0,
     deposito: 0,
@@ -68,6 +69,7 @@ export default function RentalModal({
 
   const inquilino = clients.find(c => c.id === (formData.inquilinoId || rental?.inquilinoId));
   const propiedad = properties.find(p => p.id === (formData.propiedadId || rental?.propiedadId));
+  const locador = clients.find(c => c.id === (formData.locadorId || rental?.locadorId));
 
   const getStatusVariant = (status: string): any => {
     const map: Record<string, any> = {
@@ -126,10 +128,14 @@ export default function RentalModal({
                   <p className="text-lg font-black text-blue-700">{formatCurrency(rental.deposito, rental.moneda)}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card className="p-4 border-gray-100 bg-gray-50/20">
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Inquilino</p>
                   <p className="text-sm font-bold text-gray-900">{inquilino?.name || 'Sin asignar'}</p>
+                </Card>
+                <Card className="p-4 border-gray-100 bg-gray-50/20">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Locador</p>
+                  <p className="text-sm font-bold text-gray-900">{locador?.name || 'Sin asignar'}</p>
                 </Card>
                 <Card className="p-4 border-purple-100 bg-purple-50/20">
                   <p className="text-[9px] font-black text-purple-600 uppercase tracking-widest mb-1">Comision</p>
@@ -202,6 +208,16 @@ export default function RentalModal({
                   onChange={value => setFormData({...formData, propiedadId: value})}
                   options={propertyOptions}
                   emptyLabel="Seleccionar Propiedad"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Locador (opcional)</label>
+                <SearchableSelect
+                  placeholder="Seleccionar locador..."
+                  value={formData.locadorId}
+                  onChange={value => setFormData({...formData, locadorId: value})}
+                  options={clientOptions}
+                  emptyLabel="Seleccionar Locador"
                 />
               </div>
               <div>

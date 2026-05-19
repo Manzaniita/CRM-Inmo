@@ -118,7 +118,15 @@ export default function Agenda() {
     if (!formData.title || !formData.date || !formData.time) return alert('Campos obligatorios faltantes');
 
     if (editingEvent) {
-      updateEvent({ ...editingEvent, ...formData } as CalendarEvent);
+      const updatedEvent = { ...editingEvent, ...formData } as CalendarEvent;
+      // Reschedule logic: if original was pending and overdue, and new date/time is future -> reprogramado
+      const originalDateTime = new Date(`${editingEvent.date}T${editingEvent.time}`);
+      const newDateTime = new Date(`${updatedEvent.date}T${updatedEvent.time}`);
+      const now = new Date();
+      if (editingEvent.status === 'pendiente' && originalDateTime < now && newDateTime > now) {
+        updatedEvent.status = 'reprogramado';
+      }
+      updateEvent(updatedEvent);
     } else {
       const newEvent: CalendarEvent = {
         ...(formData as CalendarEvent),

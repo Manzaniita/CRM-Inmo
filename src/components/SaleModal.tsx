@@ -43,6 +43,7 @@ export default function SaleModal({
     clientCompradorId: defaultClientId || '',
     propiedadId: defaultPropertyId || '',
     propietarioId: '',
+    vendedorId: '',
     estado: 'consulta',
     precioPublicado: 0,
     precioOfrecido: undefined,
@@ -68,6 +69,7 @@ export default function SaleModal({
 
   const comprador = clients.find(c => c.id === (formData.clientCompradorId || sale?.clientCompradorId));
   const propiedad = properties.find(p => p.id === (formData.propiedadId || sale?.propiedadId));
+  const vendedor = clients.find(c => c.id === (formData.vendedorId || sale?.vendedorId));
 
   const getStatusVariant = (status: string): any => {
     const map: Record<string, any> = {
@@ -130,6 +132,10 @@ export default function SaleModal({
                 <Card className="p-4 border-gray-100 bg-gray-50/20">
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Comprador</p>
                   <p className="text-sm font-bold text-gray-900">{comprador?.name || 'Sin asignar'}</p>
+                </Card>
+                <Card className="p-4 border-gray-100 bg-gray-50/20">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Vendedor</p>
+                  <p className="text-sm font-bold text-gray-900">{vendedor?.name || 'Sin vendedor asignado'}</p>
                 </Card>
                 <Card className="p-4 border-purple-100 bg-purple-50/20">
                   <p className="text-[9px] font-black text-purple-600 uppercase tracking-widest mb-1">Propiedad</p>
@@ -200,6 +206,16 @@ export default function SaleModal({
                   onChange={value => setFormData({...formData, propiedadId: value})}
                   options={propertyOptions}
                   emptyLabel="Seleccionar Propiedad"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Vendedor (opcional)</label>
+                <SearchableSelect
+                  placeholder="Seleccionar vendedor..."
+                  value={formData.vendedorId}
+                  onChange={value => setFormData({...formData, vendedorId: value})}
+                  options={clientOptions}
+                  emptyLabel="Seleccionar Vendedor"
                 />
               </div>
               <div>

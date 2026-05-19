@@ -446,6 +446,7 @@ function RentalFormModal({ rental, onClose }: { rental: Rental | null, onClose: 
     inquilinoId: '',
     propiedadId: '',
     propietarioId: '',
+    locadorId: '',
     fechaInicio: new Date().toISOString().split('T')[0],
     fechaFin: new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0]
   });
@@ -532,6 +533,18 @@ function RentalFormModal({ rental, onClose }: { rental: Rental | null, onClose: 
                  >
                     <option value="">Seleccionar Propiedad</option>
                     {properties.filter(p => p.operation === 'alquiler').map(p => <option key={p.id} value={p.id}>{p.address} ({p.code})</option>)}
+                 </select>
+              </div>
+
+              <div>
+                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Locador (opcional)</label>
+                 <select 
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={formData.locadorId || ''}
+                    onChange={e => setFormData({...formData, locadorId: e.target.value})}
+                 >
+                    <option value="">Seleccionar Locador</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                  </select>
               </div>
 

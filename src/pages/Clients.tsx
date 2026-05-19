@@ -15,11 +15,13 @@ import {
   Globe,
   UserPlus,
   X,
-  FileText
+  FileText,
+  Clock,
+  ListTodo
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Client, ClientType, ClientStatus, ClientOrigin, EntityNote, Document, Sale, Rental } from '../types';
+import { Client, ClientType, ClientStatus, ClientOrigin, EntityNote, Document, Sale, Rental, Task, CalendarEvent, TaskStatus, TaskPriority, EventType, EventStatus, Property } from '../types';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
@@ -28,11 +30,12 @@ import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
 import RentalModal from '../components/RentalModal';
+import SearchableSelect from '../components/SearchableSelect';
 
 export default function Clients() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { clients, properties, sales, rentals, documents, addClient, updateClient, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast } = useAppContext();
+  const { clients, properties, events, tasks, sales, rentals, documents, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast } = useAppContext();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -48,6 +51,40 @@ export default function Clients() {
   const [isRentalModalOpen, setIsRentalModalOpen] = useState(false);
   const [rentalModalMode, setRentalModalMode] = useState<'create' | 'edit' | 'view'>('create');
   const [selectedRentalForModal, setSelectedRentalForModal] = useState<Rental | undefined>(undefined);
+
+  // Task Modal State
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskFormData, setTaskFormData] = useState({
+    title: '',
+    description: '',
+    priority: 'media' as TaskPriority,
+    status: 'pendiente' as TaskStatus,
+    dueDate: new Date().toISOString().split('T')[0],
+    propertyId: '',
+    notes: ''
+  });
+
+  // Event Modal State
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [eventFormData, setEventFormData] = useState({
+    title: '',
+    description: '',
+    type: 'seguimiento' as EventType,
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0, 5),
+    propertyId: '',
+    status: 'pendiente' as EventStatus,
+    notes: ''
+  });
+
+  // Filter State
+  const [filterType, setFilterType] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterOrigin, setFilterOrigin] = useState<string>('');
+  const [filterZone, setFilterZone] = useState<string>('');
+  const [filterHasOperation, setFilterHasOperation] = useState<boolean | null>(null);
+  const [filterHasPendingTasks, setFilterHasPendingTasks] = useState<boolean | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<Partial<Client>>({
@@ -69,11 +106,50 @@ export default function Clients() {
 
   const lowerSearch = normalizeSearchText(searchTerm);
 
-  const filteredClients = clients.filter(c => 
-    normalizeSearchText(c.name).includes(lowerSearch) || 
-    c.phone.includes(searchTerm) || 
-    normalizeSearchText(c.email).includes(lowerSearch)
+  // Compute client IDs with operations (sales or rentals)
+  const clientIdsWithOperations = new Set([
+    ...sales.map(s => s.clientCompradorId),
+    ...rentals.map(r => r.inquilinoId)
+  ]);
+
+  // Compute client IDs with pending tasks
+  const clientIdsWithPendingTasks = new Set(
+    tasks
+      .filter(t => t.clientId && t.status !== 'completada' && t.status !== 'vencida')
+      .map(t => t.clientId)
   );
+
+  const filteredClients = clients.filter(c => {
+    // Text search
+    const matchesSearch = 
+      normalizeSearchText(c.name).includes(lowerSearch) || 
+      c.phone.includes(searchTerm) || 
+      normalizeSearchText(c.email).includes(lowerSearch);
+
+    if (!matchesSearch) return false;
+
+    // Type filter
+    if (filterType && c.type !== filterType) return false;
+
+    // Status filter
+    if (filterStatus && c.status !== filterStatus) return false;
+
+    // Origin filter
+    if (filterOrigin && c.origin !== filterOrigin) return false;
+
+    // Zone filter
+    if (filterZone && !normalizeSearchText(c.interestZone || '').includes(normalizeSearchText(filterZone))) return false;
+
+    // Has operation filter
+    if (filterHasOperation === true && !clientIdsWithOperations.has(c.id)) return false;
+    if (filterHasOperation === false && clientIdsWithOperations.has(c.id)) return false;
+
+    // Has pending tasks filter
+    if (filterHasPendingTasks === true && !clientIdsWithPendingTasks.has(c.id)) return false;
+    if (filterHasPendingTasks === false && clientIdsWithPendingTasks.has(c.id)) return false;
+
+    return true;
+  });
 
   const handleOpenForm = (client?: Client) => {
     if (client) {
@@ -140,6 +216,268 @@ export default function Clients() {
       default: return 'gray';
     }
   };
+
+  function renderTaskModal() {
+    const propertyOptions = properties.map(p => ({
+      value: p.id,
+      label: p.title,
+      subtitle: `${p.address} - ${p.zone}`
+    }));
+
+    const handleSaveTask = () => {
+      if (!taskFormData.title) {
+        showToast('El título es obligatorio', 'error');
+        return;
+      }
+      const newTask: Task = {
+        id: `t${Date.now()}${Math.random().toString(36).slice(2, 9)}`,
+        title: taskFormData.title,
+        description: taskFormData.description,
+        dueDate: taskFormData.dueDate,
+        priority: taskFormData.priority,
+        status: taskFormData.status,
+        clientId: id,
+        propertyId: taskFormData.propertyId || undefined,
+        notes: taskFormData.notes,
+        createdAt: new Date().toISOString()
+      };
+      addTask(newTask);
+      setIsTaskModalOpen(false);
+    };
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsTaskModalOpen(false)}></div>
+        <div className="bg-white rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
+            <h2 className="font-bold text-xl text-gray-900">Nueva Tarea para {selectedClient?.name}</h2>
+            <button onClick={() => setIsTaskModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          </div>
+          <div className="p-6 overflow-y-auto max-h-[70vh]">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Título *</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={taskFormData.title}
+                  onChange={e => setTaskFormData({...taskFormData, title: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Descripción</label>
+                <textarea
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={taskFormData.description}
+                  onChange={e => setTaskFormData({...taskFormData, description: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Prioridad</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={taskFormData.priority}
+                    onChange={e => setTaskFormData({...taskFormData, priority: e.target.value as TaskPriority})}
+                  >
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                    <option value="urgente">Urgente</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Estado</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={taskFormData.status}
+                    onChange={e => setTaskFormData({...taskFormData, status: e.target.value as TaskStatus})}
+                  >
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en proceso">En Proceso</option>
+                    <option value="completada">Completada</option>
+                    <option value="vencida">Vencida</option>
+                    <option value="reprogramado">Reprogramado</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Fecha Límite</label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={taskFormData.dueDate}
+                  onChange={e => setTaskFormData({...taskFormData, dueDate: e.target.value})}
+                />
+              </div>
+              <div>
+                <SearchableSelect
+                  label="Propiedad relacionada"
+                  value={taskFormData.propertyId}
+                  onChange={val => setTaskFormData({...taskFormData, propertyId: val})}
+                  options={propertyOptions}
+                  placeholder="Seleccionar propiedad..."
+                  allowEmpty
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Notas</label>
+                <textarea
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={taskFormData.notes}
+                  onChange={e => setTaskFormData({...taskFormData, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setIsTaskModalOpen(false)}>Cancelar</Button>
+              <Button variant="primary" onClick={handleSaveTask}>Crear Tarea</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderEventModal() {
+    const propertyOptions = properties.map(p => ({
+      value: p.id,
+      label: p.title,
+      subtitle: `${p.address} - ${p.zone}`
+    }));
+
+    const handleSaveEvent = () => {
+      if (!eventFormData.title) {
+        showToast('El título es obligatorio', 'error');
+        return;
+      }
+      const newEvent: CalendarEvent = {
+        id: `e${Date.now()}${Math.random().toString(36).slice(2, 9)}`,
+        title: eventFormData.title,
+        description: eventFormData.description,
+        date: eventFormData.date,
+        time: eventFormData.time,
+        type: eventFormData.type,
+        status: eventFormData.status,
+        clientId: id,
+        propertyId: eventFormData.propertyId || undefined,
+        notes: eventFormData.notes,
+        createdAt: new Date().toISOString()
+      };
+      addEvent(newEvent);
+      setIsEventModalOpen(false);
+    };
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsEventModalOpen(false)}></div>
+        <div className="bg-white rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
+            <h2 className="font-bold text-xl text-gray-900">Nueva Cita con {selectedClient?.name}</h2>
+            <button onClick={() => setIsEventModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          </div>
+          <div className="p-6 overflow-y-auto max-h-[70vh]">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Título *</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={eventFormData.title}
+                  onChange={e => setEventFormData({...eventFormData, title: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Descripción</label>
+                <textarea
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={eventFormData.description}
+                  onChange={e => setEventFormData({...eventFormData, description: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Tipo</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={eventFormData.type}
+                  onChange={e => setEventFormData({...eventFormData, type: e.target.value as EventType})}
+                >
+                  <option value="seguimiento">Seguimiento</option>
+                  <option value="visita">Visita</option>
+                  <option value="llamada">Llamada</option>
+                  <option value="reunión">Reunión</option>
+                  <option value="firma">Firma</option>
+                  <option value="vencimiento">Vencimiento</option>
+                  <option value="tasación">Tasación</option>
+                  <option value="entrega_de_llaves">Entrega de Llaves</option>
+                  <option value="recordatorio">Recordatorio</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Fecha</label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={eventFormData.date}
+                    onChange={e => setEventFormData({...eventFormData, date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Hora</label>
+                  <input
+                    type="time"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={eventFormData.time}
+                    onChange={e => setEventFormData({...eventFormData, time: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Estado</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={eventFormData.status}
+                  onChange={e => setEventFormData({...eventFormData, status: e.target.value as EventStatus})}
+                >
+                  <option value="pendiente">Pendiente</option>
+                  <option value="realizado">Realizado</option>
+                  <option value="cancelado">Cancelado</option>
+                  <option value="reprogramado">Reprogramado</option>
+                </select>
+              </div>
+              <div>
+                <SearchableSelect
+                  label="Propiedad relacionada"
+                  value={eventFormData.propertyId}
+                  onChange={val => setEventFormData({...eventFormData, propertyId: val})}
+                  options={propertyOptions}
+                  placeholder="Seleccionar propiedad..."
+                  allowEmpty
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Notas</label>
+                <textarea
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={eventFormData.notes}
+                  onChange={e => setEventFormData({...eventFormData, notes: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setIsEventModalOpen(false)}>Cancelar</Button>
+              <Button variant="primary" onClick={handleSaveEvent}>Programar Cita</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (selectedClient) {
     const clientSales = sales.filter(s => s.clientCompradorId === id);
@@ -354,16 +692,39 @@ export default function Clients() {
                 <Button 
                   variant="primary" 
                   className="w-full"
-                  onClick={() => navigate('/agenda', { state: { prefillClientId: id } })}
+                  onClick={() => {
+                    setEventFormData({
+                      title: '',
+                      description: '',
+                      type: 'seguimiento',
+                      date: new Date().toISOString().split('T')[0],
+                      time: new Date().toTimeString().slice(0, 5),
+                      propertyId: '',
+                      status: 'pendiente',
+                      notes: ''
+                    });
+                    setIsEventModalOpen(true);
+                  }}
                 >
                   <Calendar size={18} className="mr-2" /> Programar Cita
                 </Button>
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => navigate('/tareas', { state: { prefillClientId: id } })}
+                  onClick={() => {
+                    setTaskFormData({
+                      title: '',
+                      description: '',
+                      priority: 'media',
+                      status: 'pendiente',
+                      dueDate: new Date().toISOString().split('T')[0],
+                      propertyId: '',
+                      notes: ''
+                    });
+                    setIsTaskModalOpen(true);
+                  }}
                 >
-                  <MessageCircle size={18} className="mr-2" /> Crear Tarea
+                  <ListTodo size={18} className="mr-2" /> Crear Tarea
                 </Button>
               </div>
             </Card>
@@ -460,6 +821,12 @@ export default function Clients() {
             deleteRental(rentalId);
           }}
         />
+
+        {/* Task Modal */}
+        {isTaskModalOpen && renderTaskModal()}
+
+        {/* Event Modal */}
+        {isEventModalOpen && renderEventModal()}
       </div>
     );
   }
@@ -643,9 +1010,131 @@ export default function Clients() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-10"><Filter size={16} className="mr-2" /> Filtros</Button>
+            <Button 
+              variant={showFilters ? 'primary' : 'outline'} 
+              size="sm" 
+              className="h-10"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter size={16} className="mr-2" /> Filtros
+              {(filterType || filterStatus || filterOrigin || filterZone || filterHasOperation !== null || filterHasPendingTasks !== null) && (
+                <span className="ml-1 w-2 h-2 rounded-full bg-blue-600" />
+              )}
+            </Button>
           </div>
         </div>
+
+        {showFilters && (
+          <div className="p-4 bg-gray-50 border-b border-gray-100">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  value={filterType}
+                  onChange={e => setFilterType(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  <option value="comprador">Comprador</option>
+                  <option value="vendedor">Vendedor</option>
+                  <option value="inquilino">Inquilino</option>
+                  <option value="propietario">Propietario</option>
+                  <option value="inversor">Inversor</option>
+                  <option value="interesado">Interesado</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Estado</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  value={filterStatus}
+                  onChange={e => setFilterStatus(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  <option value="nuevo">Nuevo</option>
+                  <option value="contactado">Contactado</option>
+                  <option value="interesado">Interesado</option>
+                  <option value="en seguimiento">En Seguimiento</option>
+                  <option value="negociación">Negociación</option>
+                  <option value="cerrado">Cerrado</option>
+                  <option value="perdido">Perdido</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Origen</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  value={filterOrigin}
+                  onChange={e => setFilterOrigin(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="Web">Web</option>
+                  <option value="Referido">Referido</option>
+                  <option value="Llamada">Llamada</option>
+                  <option value="Oficina">Oficina</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Zona de Interés</label>
+                <input
+                  type="text"
+                  placeholder="Filtrar por zona..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  value={filterZone}
+                  onChange={e => setFilterZone(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Operaciones</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  value={filterHasOperation === null ? '' : filterHasOperation ? 'si' : 'no'}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFilterHasOperation(val === '' ? null : val === 'si');
+                  }}
+                >
+                  <option value="">Todas</option>
+                  <option value="si">Con operaciones</option>
+                  <option value="no">Sin operaciones</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Tareas Pendientes</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  value={filterHasPendingTasks === null ? '' : filterHasPendingTasks ? 'si' : 'no'}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFilterHasPendingTasks(val === '' ? null : val === 'si');
+                  }}
+                >
+                  <option value="">Todas</option>
+                  <option value="si">Con tareas pendientes</option>
+                  <option value="no">Sin tareas pendientes</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFilterType('');
+                  setFilterStatus('');
+                  setFilterOrigin('');
+                  setFilterZone('');
+                  setFilterHasOperation(null);
+                  setFilterHasPendingTasks(null);
+                }}
+              >
+                Limpiar filtros
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="divide-y divide-gray-50">
           {filteredClients.map((client) => (

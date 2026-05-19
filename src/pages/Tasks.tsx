@@ -21,6 +21,7 @@ import { useAppContext } from '../context/AppContext';
 import { Task, TaskPriority, TaskStatus } from '../types';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
+import SearchableSelect from '../components/SearchableSelect';
 import { cn, formatDate } from '../lib/utils';
 
 export default function Tasks() {
@@ -89,7 +90,15 @@ export default function Tasks() {
     if (!formData.title) return alert('El título es obligatorio');
 
     if (editingTask) {
-      updateTask({ ...editingTask, ...formData } as Task);
+      const updatedTask = { ...editingTask, ...formData } as Task;
+      // Reschedule logic: if original was vencida and new dueDate is future -> reprogramado
+      const originalDueDate = new Date(editingTask.dueDate);
+      const newDueDate = new Date(updatedTask.dueDate);
+      const now = new Date();
+      if ((editingTask.status === 'vencida' || (editingTask.status === 'pendiente' && originalDueDate < now)) && newDueDate > now) {
+        updatedTask.status = 'reprogramado';
+      }
+      updateTask(updatedTask);
     } else {
       const newTask: Task = {
         ...(formData as Task),
@@ -117,6 +126,7 @@ export default function Tasks() {
       case 'en proceso': return 'blue';
       case 'completada': return 'green';
       case 'vencida': return 'red';
+      case 'reprogramado': return 'purple';
       default: return 'gray';
     }
   };
@@ -174,6 +184,7 @@ export default function Tasks() {
                 <option value="en proceso">En proceso</option>
                 <option value="completada">Completada</option>
                 <option value="vencida">Vencida</option>
+                <option value="reprogramado">Reprogramado</option>
               </select>
             </div>
           </div>
@@ -189,25 +200,31 @@ export default function Tasks() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Cliente (Opcional)</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                value={formData.clientId}
-                onChange={e => setFormData({ ...formData, clientId: e.target.value })}
-              >
-                <option value="">Ninguno</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <SearchableSelect
+                placeholder="Seleccionar cliente..."
+                value={formData.clientId || ''}
+                onChange={value => setFormData({ ...formData, clientId: value })}
+                options={clients.map(c => ({
+                  value: c.id,
+                  label: c.name,
+                  subtitle: c.type || c.phone || undefined
+                }))}
+                emptyLabel="Ninguno"
+              />
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Propiedad (Opcional)</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                value={formData.propertyId}
-                onChange={e => setFormData({ ...formData, propertyId: e.target.value })}
-              >
-                <option value="">Ninguna</option>
-                {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-              </select>
+              <SearchableSelect
+                placeholder="Seleccionar propiedad..."
+                value={formData.propertyId || ''}
+                onChange={value => setFormData({ ...formData, propertyId: value })}
+                options={properties.map(p => ({
+                  value: p.id,
+                  label: p.title,
+                  subtitle: [p.address, p.zone].filter(Boolean).join(', ') || `Código: ${p.code}`
+                }))}
+                emptyLabel="Ninguna"
+              />
             </div>
           </div>
           <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
@@ -220,7 +237,7 @@ export default function Tasks() {
   );
 
   const renderKanban = () => {
-    const statuses: TaskStatus[] = ['pendiente', 'en proceso', 'completada', 'vencida'];
+    const statuses: TaskStatus[] = ['pendiente', 'en proceso', 'completada', 'vencida', 'reprogramado'];
     return (
       <div className="flex gap-4 overflow-x-auto pb-4 min-h-[500px]">
         {statuses.map(status => (
@@ -352,7 +369,7 @@ export default function Tasks() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Pendientes</p>
           <p className="text-2xl font-bold text-gray-900">{tasks.filter(t => t.status === 'pendiente').length}</p>
@@ -368,6 +385,10 @@ export default function Tasks() {
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Vencidas</p>
           <p className="text-2xl font-bold text-orange-600">{tasks.filter(t => t.status === 'vencida').length}</p>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Reprogramadas</p>
+          <p className="text-2xl font-bold text-purple-600">{tasks.filter(t => t.status === 'reprogramado').length}</p>
         </div>
       </div>
 

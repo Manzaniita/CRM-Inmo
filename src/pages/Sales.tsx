@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import {
   TrendingUp,
   Search,
@@ -16,7 +17,9 @@ import {
   CheckCircle2,
   X,
   Calendar,
-  Activity
+
+  Activity,
+  ArrowUpDown
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import Badge from '../components/Badge';
@@ -24,6 +27,12 @@ import Button from '../components/Button';
 import { Card, StatCard } from '../components/Card';
 import { cn, formatCurrency, formatDate, normalizeSearchText } from '../lib/utils';
 import { Sale, SaleStatus } from '../types';
+import SearchableSelect from '../components/SearchableSelect';
+
+// Helper: get best available date for a sale
+function getBestDate(sale: Sale): string {
+  return sale.fechaReserva || sale.fechaEscritura || sale.fechaActualizacion || sale.fechaCreacion || '';
+}
 
 const STAGES: SaleStatus[] = [
   'consulta', 'visita', 'oferta', 'negociación', 'reserva', 'boleto', 'escritura', 'vendida'
@@ -34,6 +43,8 @@ export default function Sales() {
   const [view, setView] = useState<'pipeline' | 'list'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<string>('fecha-desc');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -42,16 +53,58 @@ export default function Sales() {
 
   const lowerSearch = normalizeSearchText(searchTerm);
 
-  const filteredSales = sales.filter(sale => {
-    const property = properties.find(p => p.id === sale.propiedadId);
-    const client = clients.find(c => c.id === sale.clientCompradorId);
-    const matchesSearch = !lowerSearch ||
-      normalizeSearchText(property?.address).includes(lowerSearch) ||
-      normalizeSearchText(client?.name).includes(lowerSearch) ||
-      normalizeSearchText(sale.id).includes(lowerSearch);
-    const matchesStatus = filterStatus === 'all' || sale.estado === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+
+
+
+
+
+
+
+
+
+
+  const filteredSales = useMemo(() => {
+    let result = sales.filter(sale => {
+      const property = properties.find(p => p.id === sale.propiedadId);
+      const client = clients.find(c => c.id === sale.clientCompradorId);
+      const matchesSearch = !lowerSearch ||
+        normalizeSearchText(property?.address).includes(lowerSearch) ||
+        normalizeSearchText(client?.name).includes(lowerSearch) ||
+        normalizeSearchText(sale.id).includes(lowerSearch);
+      const matchesStatus = filterStatus === 'all' || sale.estado === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+
+    // sorting
+    result.sort((a, b) => {
+      let compare = 0;
+      switch (sortKey) {
+        case 'fecha': {
+          const dateA = getBestDate(a);
+          const dateB = getBestDate(b);
+          if (dateA && dateB) compare = dateA.localeCompare(dateB);
+          else if (dateA) compare = -1;
+          else if (dateB) compare = 1;
+          else compare = 0;
+          break;
+        }
+        case 'estado':
+          compare = a.estado.localeCompare(b.estado);
+          break;
+        case 'comision':
+          compare = a.comisionEstimada - b.comisionEstimada;
+          break;
+        case 'precio':
+          compare = (a.precioAcordado || a.precioPublicado) - (b.precioAcordado || b.precioPublicado);
+          break;
+        default:
+          compare = 0;
+      }
+      return sortDirection === 'desc' ? -compare : compare;
+    });
+
+    return result;
+  }, [sales, lowerSearch, filterStatus, sortKey, sortDirection, clients, properties]);
 
   const stats = {
     active: sales.filter(s => !['vendida', 'caída'].includes(s.estado)).length,
@@ -143,6 +196,24 @@ export default function Sales() {
             {STAGES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
             <option value="caída">Caída</option>
           </select>
+          <select
+            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value)}
+          >
+            <option value="fecha">Fecha (más próxima)</option>
+            <option value="fecha-desc">Fecha (más lejana)</option>
+            <option value="estado">Estado</option>
+            <option value="comision">Comisión</option>
+            <option value="precio">Precio</option>
+          </select>
+          <button
+            onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
+            className="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors"
+            title={sortDirection === 'asc' ? 'Ascendente' : 'Descendente'}
+          >
+            <ArrowUpDown size={16} className={cn("transition-transform", sortDirection === 'asc' ? 'rotate-180' : '')} />
+          </button>
           <Button variant="outline" size="sm">
             <Filter size={16} className="mr-2" /> Más filtros
           </Button>
@@ -181,12 +252,16 @@ export default function Sales() {
                               {client?.name || 'Sin comprador'}
                             </p>
                           </div>
-                          <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
+
+                          <div className="mt-2 pt-3 border-t border-gray-50 flex items-center justify-between">
                             <p className="text-sm font-black text-gray-900">{formatCurrency(sale.precioAcordado || sale.precioPublicado, sale.moneda)}</p>
                             <div className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:text-blue-500 group-hover:bg-blue-50 transition-all">
                               <ChevronRight size={14} />
                             </div>
                           </div>
+                          <p className="text-[10px] text-gray-400 mt-1 font-medium">
+                            {formatDate(getBestDate(sale))}
+                          </p>
                         </Card>
                       </div>
                     );
@@ -210,6 +285,7 @@ export default function Sales() {
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Comprador / Propiedad</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Precio</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Comisión</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Acciones</th>
                 </tr>
@@ -244,6 +320,9 @@ export default function Sales() {
                         <span className="text-xs font-bold text-blue-600">
                           {formatCurrency(sale.comisionEstimada, sale.moneda)}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-xs text-gray-500">{formatDate(getBestDate(sale))}</span>
                       </td>
                       <td className="px-6 py-4">
                         <Badge variant={getStatusVariant(sale.estado)}>{sale.estado}</Badge>
@@ -532,29 +611,36 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
             </div>
 
             <div>
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Comprador *</label>
-              <select
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                value={formData.clientCompradorId}
-                onChange={e => setFormData({...formData, clientCompradorId: e.target.value})}
-                required
-              >
-                <option value="">Seleccionar Cliente</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <SearchableSelect
+                label="Comprador *"
+                value={formData.clientCompradorId || ''}
+                onChange={val => setFormData({...formData, clientCompradorId: val})}
+                options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))}
+                placeholder="Seleccionar Cliente"
+                allowEmpty={false}
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Propiedad *</label>
-              <select
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                value={formData.propiedadId}
-                onChange={e => setFormData({...formData, propiedadId: e.target.value})}
-                required
-              >
-                <option value="">Seleccionar Propiedad</option>
-                {properties.filter(p => p.operation === 'venta').map(p => <option key={p.id} value={p.id}>{p.address} ({p.code})</option>)}
-              </select>
+              <SearchableSelect
+                label="Propiedad *"
+                value={formData.propiedadId || ''}
+                onChange={val => setFormData({...formData, propiedadId: val})}
+                options={properties.filter(p => p.operation === 'venta').map(p => ({ value: p.id, label: p.address, subtitle: p.code }))}
+                placeholder="Seleccionar Propiedad"
+                allowEmpty={false}
+              />
+            </div>
+
+            <div>
+              <SearchableSelect
+                label="Vendedor / Agente"
+                value={formData.vendedorId || ''}
+                onChange={val => setFormData({...formData, vendedorId: val || undefined})}
+                options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))}
+                placeholder="Seleccionar agente (opcional)"
+                allowEmpty={true}
+              />
             </div>
 
             <div>
