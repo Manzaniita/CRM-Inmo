@@ -55,6 +55,11 @@ export default function Properties() {
   const [docModalMode, setDocModalMode] = useState<'create' | 'edit' | 'view'>('view');
   const [selectedDocForModal, setSelectedDocForModal] = useState<Document | undefined>(undefined);
 
+  // Quick upload (simple modal)
+  const [isQuickUploadOpen, setIsQuickUploadOpen] = useState(false);
+  const [quickUploadTitle, setQuickUploadTitle] = useState('');
+  const [quickUploadFile, setQuickUploadFile] = useState<File | null>(null);
+
   // Captar desde Link states
   const [captureUrl, setCaptureUrl] = useState('');
   const [captureStep, setCaptureStep] = useState<'idle' | 'analyzing' | 'preview'>('idle');
@@ -389,7 +394,7 @@ export default function Properties() {
                     Ver todos ({documents.filter(d => d.propertyId === id).length})
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="w-full" onClick={() => { setSelectedDocForModal(undefined); setDocModalMode('create'); setIsDocModalOpen(true); }}>
+                <Button variant="outline" size="sm" className="w-full" onClick={() => { setQuickUploadTitle(''); setQuickUploadFile(null); setIsQuickUploadOpen(true); }}>
                   <Plus size={14} className="mr-1" /> Subir Documento
                 </Button>
               </div>
@@ -490,6 +495,77 @@ export default function Properties() {
             deleteRental(rentalId);
           }}
         />
+
+        {/* Quick Upload Modal */}
+        {isQuickUploadOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setIsQuickUploadOpen(false); setQuickUploadTitle(''); setQuickUploadFile(null); }}></div>
+            <div className="bg-white rounded-2xl w-full max-w-md relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="font-bold text-lg text-gray-900">Subir Documento</h2>
+                <button onClick={() => { setIsQuickUploadOpen(false); setQuickUploadTitle(''); setQuickUploadFile(null); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Título del documento *</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={quickUploadTitle}
+                    onChange={e => setQuickUploadTitle(e.target.value)}
+                    placeholder="Ej: Escritura, Contrato..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Archivo *</label>
+                  <input 
+                    type="file" 
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    onChange={e => setQuickUploadFile(e.target.files?.[0] || null)}
+                  />
+                  {quickUploadFile && (
+                    <p className="text-xs text-gray-500 mt-1">{quickUploadFile.name} ({(quickUploadFile.size / 1024).toFixed(1)} KB)</p>
+                  )}
+                </div>
+              </div>
+              <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => { setIsQuickUploadOpen(false); setQuickUploadTitle(''); setQuickUploadFile(null); }}>Cancelar</Button>
+                <Button variant="primary" onClick={() => {
+                  if (!quickUploadTitle.trim()) {
+                    showToast('El título del documento es obligatorio', 'error');
+                    return;
+                  }
+                  if (!quickUploadFile) {
+                    showToast('Debe seleccionar un archivo', 'error');
+                    return;
+                  }
+                  if (!selectedProp) {
+                    showToast('No se encontró la propiedad de referencia', 'error');
+                    return;
+                  }
+                  const ext = quickUploadFile.name.includes('.') ? quickUploadFile.name.split('.').pop()?.toLowerCase() || '' : '';
+                  const newDoc: Document = {
+                    id: `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+                    name: quickUploadTitle.trim(),
+                    type: 'Otro',
+                    status: 'cargado',
+                    propertyId: selectedProp.id,
+                    uploadDate: new Date().toISOString(),
+                    notes: '',
+                    fileName: quickUploadFile.name,
+                    fileSize: quickUploadFile.size,
+                    fileExtension: ext,
+                  };
+                  addDocument(newDoc);
+                  showToast('Documento subido correctamente', 'success');
+                  setQuickUploadTitle('');
+                  setQuickUploadFile(null);
+                  setIsQuickUploadOpen(false);
+                }}>Guardar</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -612,6 +688,15 @@ export default function Properties() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.notes}
                   onChange={e => setFormData({...formData, notes: e.target.value})}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-gray-700 mb-1">Dueño (cliente propietario)</label>
+                <SearchableSelect
+                  placeholder="Seleccionar dueño..."
+                  value={formData.ownerId || ''}
+                  onChange={value => setFormData({...formData, ownerId: value})}
+                  options={clientOptions}
                 />
               </div>
             </div>
