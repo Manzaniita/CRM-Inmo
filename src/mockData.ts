@@ -1,12 +1,13 @@
 import { Client, Property, CalendarEvent, Task, Sale, Rental, Document } from './types';
 
 export const MOCK_CLIENTS: Client[] = [
-  {
+    {
     id: 'c1',
     name: 'Juan Pérez',
     phone: '+5491144556677',
     email: 'juan.perez@email.com',
     type: 'comprador',
+    types: ['comprador'],
     status: 'interesado',
     origin: 'WhatsApp',
     budget: 150000,
@@ -15,7 +16,10 @@ export const MOCK_CLIENTS: Client[] = [
     propertyTypeInterest: 'departamento',
     lastContact: '2024-05-10',
     notes: 'Busca departamento 3 ambientes con balcón.',
-    createdAt: '2024-04-15'
+    createdAt: '2024-04-15',
+    profession: 'Ingeniero',
+    dashboardPinned: true,
+    dashboardArchived: false
   },
   {
     id: 'c2',
@@ -31,12 +35,27 @@ export const MOCK_CLIENTS: Client[] = [
     createdAt: '2024-04-20',
     currency: 'USD'
   },
-  {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    {
     id: 'c3',
     name: 'Carlos Rodríguez',
     phone: '+5491155667788',
     email: 'crodriguez@email.com',
     type: 'inquilino',
+    types: ['inquilino'],
     status: 'contactado',
     origin: 'Instagram',
     budget: 200000,
@@ -44,7 +63,10 @@ export const MOCK_CLIENTS: Client[] = [
     interestZone: 'Caballito',
     lastContact: '2024-05-09',
     notes: 'Busca alquiler zona Parque Centenario.',
-    createdAt: '2024-05-01'
+    createdAt: '2024-05-01',
+    profession: 'Docente',
+    dashboardPinned: false,
+    dashboardArchived: false
   },
   {
     id: 'c4',
@@ -85,23 +107,8 @@ export const MOCK_CLIENTS: Client[] = [
     budget: 120000,
     currency: 'USD',
     interestZone: 'Recoleta',
-    lastContact: '2024-05-11',
-    notes: 'Consulta por depto en Av. Santa Fe.',
-    createdAt: '2024-05-11'
-  },
-  {
-    id: 'c7',
-    name: 'Daniel López',
-    phone: '+541122334455',
-    email: 'dlopez@email.com',
-    type: 'comprador',
-    status: 'perdido',
-    origin: 'Oficina',
-    budget: 80000,
-    currency: 'USD',
-    interestZone: 'Almagro',
-    lastContact: '2024-03-15',
-    notes: 'Compró por otra inmobiliaria.',
+        lastContact: '2024-05-11',
+        notes: 'Compró por otra inmobiliaria.',
     createdAt: '2024-02-10'
   },
   {

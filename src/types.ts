@@ -18,16 +18,21 @@ export interface Client {
   phone: string;
   email: string;
   type: ClientType;
+  types?: ClientType[];
   status: ClientStatus;
   origin: ClientOrigin;
   budget?: number;
-  currency: 'USD' | 'ARS';
+  currency?: 'USD' | 'ARS';
   interestZone?: string;
   propertyTypeInterest?: string;
   lastContact: string;
   notes: string;
   historyNotes?: EntityNote[];
   createdAt: string;
+  profession?: string;
+  referredBy?: string;
+  dashboardPinned?: boolean;
+  dashboardArchived?: boolean;
 }
 
 export type PropertyType = 'casa' | 'departamento' | 'local' | 'terreno' | 'oficina' | 'galpón' | 'cochera';

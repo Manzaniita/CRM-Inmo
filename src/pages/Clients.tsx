@@ -86,20 +86,21 @@ export default function Clients() {
   const [filterHasPendingTasks, setFilterHasPendingTasks] = useState<boolean | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Form State
+    // Form State
   const [formData, setFormData] = useState<Partial<Client>>({
     name: '',
     phone: '',
     email: '',
     type: 'comprador',
+    types: ['comprador'],
     status: 'nuevo',
     origin: 'WhatsApp',
-    budget: 0,
-    currency: 'USD',
-    interestZone: '',
-    propertyTypeInterest: '',
     lastContact: new Date().toISOString().split('T')[0],
     notes: '',
+    profession: '',
+    referredBy: '',
+    dashboardPinned: false,
+    dashboardArchived: false,
   });
 
   const selectedClient = clients.find(c => c.id === id);
@@ -128,8 +129,11 @@ export default function Clients() {
 
     if (!matchesSearch) return false;
 
-    // Type filter
-    if (filterType && c.type !== filterType) return false;
+        // Type filter
+    if (filterType) {
+      const clientTypes = c.types && c.types.length > 0 ? c.types : [c.type];
+      if (!clientTypes.includes(filterType as ClientType)) return false;
+    }
 
     // Status filter
     if (filterStatus && c.status !== filterStatus) return false;
@@ -151,7 +155,7 @@ export default function Clients() {
     return true;
   });
 
-  const handleOpenForm = (client?: Client) => {
+    const handleOpenForm = (client?: Client) => {
     if (client) {
       setEditingClient(client);
       setFormData(client);
@@ -162,14 +166,15 @@ export default function Clients() {
         phone: '',
         email: '',
         type: 'comprador',
+        types: ['comprador'],
         status: 'nuevo',
         origin: 'WhatsApp',
-        budget: 0,
-        currency: 'USD',
-        interestZone: '',
-        propertyTypeInterest: '',
         lastContact: new Date().toISOString().split('T')[0],
         notes: '',
+        profession: '',
+        referredBy: '',
+        dashboardPinned: false,
+        dashboardArchived: false,
       });
     }
     setIsFormModalOpen(true);
@@ -502,8 +507,12 @@ export default function Clients() {
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900">{selectedClient.name}</h1>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={getTypeBadgeVariant(selectedClient.type)}>{selectedClient.type}</Badge>
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type]).map(t => (
+                                              <span key={t}>
+                                                <Badge variant={getTypeBadgeVariant(t)}>{t}</Badge>
+                                              </span>
+                                          ))}
                       <Badge variant={getStatusBadgeVariant(selectedClient.status)}>{selectedClient.status}</Badge>
                     </div>
                   </div>
@@ -729,7 +738,7 @@ export default function Clients() {
               </div>
             </Card>
 
-            <Card title="Información del Cliente">
+                        <Card title="Información del Cliente">
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Creado</span>
@@ -737,12 +746,82 @@ export default function Clients() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Tipo</span>
-                  <Badge variant={getTypeBadgeVariant(selectedClient.type)}>{selectedClient.type}</Badge>
+                  <div className="flex gap-1 flex-wrap">
+                    {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type]).map(t => (
+                                          <span key={t}>
+                                            <Badge variant={getTypeBadgeVariant(t)} size="sm">{t}</Badge>
+                                          </span>
+                                        ))}
+                  </div>
                 </div>
+                {selectedClient.profession && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Profesión</span>
+                    <span className="font-medium">{selectedClient.profession}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-500">Origen</span>
                   <span className="font-medium">{selectedClient.origin}</span>
                 </div>
+                {selectedClient.origin === 'Referido' && selectedClient.referredBy && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Referido por</span>
+                    <span className="font-medium">{selectedClient.referredBy}</span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 space-y-2 pt-4 border-t border-gray-100">
+                {selectedClient.dashboardPinned ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateClient({...selectedClient, dashboardPinned: false});
+                    }}
+                  >
+                    Quitar del panel principal
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateClient({...selectedClient, dashboardPinned: true});
+                    }}
+                  >
+                    Enviar al panel principal
+                  </Button>
+                )}
+                {!selectedClient.dashboardArchived ? (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateClient({...selectedClient, dashboardArchived: true});
+                    }}
+                  >
+                    Archivar del dashboard
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateClient({...selectedClient, dashboardArchived: false});
+                    }}
+                  >
+                    Desarchivar del dashboard
+                  </Button>
+                )}
               </div>
             </Card>
           </div>
@@ -870,20 +949,46 @@ export default function Clients() {
                   onChange={e => setFormData({...formData, email: e.target.value})}
                 />
               </div>
+                            <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2">Tipo * (seleccioná uno o más)</label>
+                <div className="flex flex-wrap gap-2">
+                  {(['comprador','vendedor','inquilino','propietario','inversor','interesado'] as ClientType[]).map(t => {
+                    const selected = (formData.types && formData.types.length > 0) ? formData.types.includes(t) : formData.type === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
+                          selected
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
+                        )}
+                        onClick={() => {
+                          const currentTypes = (formData.types && formData.types.length > 0) ? [...formData.types] : (formData.type ? [formData.type] : []);
+                          if (currentTypes.includes(t)) {
+                            const next = currentTypes.filter(x => x !== t);
+                            setFormData({...formData, types: next.length > 0 ? next : undefined, type: next.length > 0 ? next[0] : 'comprador'});
+                          } else {
+                            const next = [...currentTypes, t];
+                            setFormData({...formData, types: next, type: next[0]});
+                          }
+                        }}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Tipo *</label>
-                <select 
+                <label className="block text-sm font-bold text-gray-700 mb-1">Profesión</label>
+                <input 
+                  type="text" 
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.type}
-                  onChange={e => setFormData({...formData, type: e.target.value as ClientType})}
-                >
-                  <option value="comprador">Comprador</option>
-                  <option value="vendedor">Vendedor</option>
-                  <option value="inquilino">Inquilino</option>
-                  <option value="propietario">Propietario</option>
-                  <option value="inversor">Inversor</option>
-                  <option value="interesado">Interesado</option>
-                </select>
+                  value={formData.profession || ''}
+                  onChange={e => setFormData({...formData, profession: e.target.value})}
+                />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Estado</label>
@@ -916,46 +1021,17 @@ export default function Clients() {
                   <option value="Oficina">Oficina</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Presupuesto</label>
-                <input 
-                  type="number" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.budget || 0}
-                  onChange={e => setFormData({...formData, budget: Number(e.target.value)})}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Moneda</label>
-                <select 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.currency}
-                  onChange={e => setFormData({...formData, currency: e.target.value as 'USD' | 'ARS'})}
-                >
-                  <option value="USD">USD</option>
-                  <option value="ARS">ARS</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Zona de Interés</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej: Palermo, Belgrano..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.interestZone || ''}
-                  onChange={e => setFormData({...formData, interestZone: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Tipo de Propiedad de Interés</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej: departamento, casa..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.propertyTypeInterest || ''}
-                  onChange={e => setFormData({...formData, propertyTypeInterest: e.target.value})}
-                />
-              </div>
+              {(formData.origin === 'Referido') && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Referido por</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={formData.referredBy || ''}
+                    onChange={e => setFormData({...formData, referredBy: e.target.value})}
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Último Contacto</label>
                 <input 
@@ -1153,10 +1229,17 @@ export default function Clients() {
                   <span className="flex items-center"><Mail size={12} className="mr-1" />{client.email}</span>
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={getTypeBadgeVariant(client.type)}>{client.type}</Badge>
-                <Badge variant={getStatusBadgeVariant(client.status)}>{client.status}</Badge>
-                <Badge variant="gray">{client.origin}</Badge>
+                            <div className="flex items-center gap-1">
+                {(client.types && client.types.length > 0 ? client.types : [client.type]).map(t => (
+                                  <span key={t}>
+                                    <Badge variant={getTypeBadgeVariant(t)} size="sm">{t}</Badge>
+                                  </span>
+                                ))}
+                <Badge variant={getStatusBadgeVariant(client.status)} size="sm">{client.status}</Badge>
+                <Badge variant="gray" size="sm">{client.origin}</Badge>
+                {client.profession && (
+                  <Badge variant="gray" size="sm">{client.profession}</Badge>
+                )}
               </div>
               <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
             </div>

@@ -39,7 +39,15 @@ export default function Dashboard() {
   const todayEvents = events.filter(e => e.date === today && e.status !== 'cancelado');
   const urgentTasks = tasks.filter(t => (t.priority === 'urgente' || t.status === 'vencida') && t.status !== 'completada');
 
-  // Combined recent movements
+    const pendingTasksList = tasks
+      .filter(t => t.status === 'pendiente' || t.status === 'en proceso')
+      .sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate.localeCompare(b.dueDate);
+      });
+
+    // Combined recent movements
   const allMovements = [
     ...sales.map(s => ({ 
       id: s.id, 
@@ -124,43 +132,43 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          <Card title="Pendientes importantes" subtitle="Tareas urgentes o vencidas">
-            <div className="space-y-3">
-              {urgentTasks.slice(0, 5).map(task => (
-                <div key={task.id} className="flex items-center gap-4 p-3 rounded-xl border border-gray-100 hover:shadow-sm transition-shadow group">
-                  <div className={cn(
-                    "w-2 h-2 rounded-full shrink-0",
-                    task.status === 'vencida' ? "bg-red-500" : "bg-orange-500"
-                  )} />
-                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate('/tareas')}>
-                    <h4 className={cn("font-bold text-sm truncate", task.status === 'vencida' ? "text-red-700" : "text-gray-900")}>
-                      {task.title}
-                    </h4>
-                    <div className="flex items-center mt-1 gap-2">
-                      <span className="text-xs text-gray-400 flex items-center font-medium">
-                        <Clock size={12} className="mr-1" />
-                        {formatDate(task.dueDate)}
-                      </span>
-                      <Badge size="xs" variant={task.priority === 'urgente' ? 'red' : 'orange'}>{task.priority}</Badge>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => completeTask(task.id)}
-                    className="p-2 text-gray-300 hover:text-green-600 transition-colors"
-                    title="Marcar como completada"
-                  >
-                    <CheckCircle2 size={24} />
-                  </button>
-                </div>
-              ))}
-              {urgentTasks.length === 0 && (
-                <div className="text-center py-8">
-                  <CheckSquare size={40} className="mx-auto text-gray-200 mb-3" />
-                  <p className="text-gray-400 text-sm italic">¡Todo al día por aquí!</p>
-                </div>
-              )}
-            </div>
-          </Card>
+          <Card title="Tareas pendientes" subtitle="Próximas a vencer">
+                      <div className="space-y-3">
+                        {pendingTasksList.slice(0, 5).map(task => (
+                          <div key={task.id} className="flex items-center gap-4 p-3 rounded-xl border border-gray-100 hover:shadow-sm transition-shadow group">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full shrink-0",
+                              task.status === 'en proceso' ? "bg-blue-500" : "bg-amber-500"
+                            )} />
+                            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate('/tareas')}>
+                              <h4 className="font-bold text-sm truncate text-gray-900">
+                                {task.title}
+                              </h4>
+                              <div className="flex items-center mt-1 gap-2">
+                                <span className="text-xs text-gray-400 flex items-center font-medium">
+                                  <Clock size={12} className="mr-1" />
+                                  {formatDate(task.dueDate)}
+                                </span>
+                                <Badge size="xs" variant={task.priority === 'urgente' ? 'red' : task.priority === 'alta' ? 'orange' : 'blue'}>{task.priority}</Badge>
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => completeTask(task.id)}
+                              className="p-2 text-gray-300 hover:text-green-600 transition-colors"
+                              title="Marcar como completada"
+                            >
+                              <CheckCircle2 size={24} />
+                            </button>
+                          </div>
+                        ))}
+                        {pendingTasksList.length === 0 && (
+                          <div className="text-center py-8">
+                            <CheckSquare size={40} className="mx-auto text-gray-200 mb-3" />
+                            <p className="text-gray-400 text-sm italic">¡Todo al día por aquí!</p>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
         </div>
 
         <div className="space-y-6">

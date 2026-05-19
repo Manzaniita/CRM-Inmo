@@ -331,6 +331,7 @@ export default function Tasks() {
             </div>
           </div>
         ))}
+
         {filteredTasks.length === 0 && (
           <div className="py-20 text-center">
             <CheckSquare size={48} className="mx-auto text-gray-200 mb-4" />
@@ -425,3 +426,39 @@ export default function Tasks() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
