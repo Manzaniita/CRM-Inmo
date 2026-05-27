@@ -23,14 +23,17 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import SearchableSelect from '../components/SearchableSelect';
 import { cn, formatDate } from '../lib/utils';
+import { generateId } from '../lib/id';
+import { validateTask } from '../lib/validators';
 
 export default function Tasks() {
-  const { tasks, clients, properties, addTask, updateTask, completeTask, deleteTask } = useAppContext();
+  const { tasks, clients, properties, addTask, updateTask, completeTask, deleteTask, showToast } = useAppContext();
   const location = useLocation();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -62,7 +65,8 @@ export default function Tasks() {
   const filteredTasks = tasks.filter(t => {
     const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = filterPriority === 'all' || t.priority === filterPriority;
-    return matchesSearch && matchesPriority;
+    const matchesStatus = filterStatus === 'all' || t.status === filterStatus;
+    return matchesSearch && matchesPriority && matchesStatus;
   });
 
   const handleOpenForm = (task?: Task) => {
@@ -87,7 +91,11 @@ export default function Tasks() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title) return alert('El título es obligatorio');
+    const validation = validateTask(formData);
+    if (!validation.valid) {
+      showToast(validation.message || 'Error de validación', 'error');
+      return;
+    }
 
     if (editingTask) {
       const updatedTask = { ...editingTask, ...formData } as Task;
@@ -102,7 +110,7 @@ export default function Tasks() {
     } else {
       const newTask: Task = {
         ...(formData as Task),
-        id: `t${Date.now()}`,
+        id: generateId('t'),
         createdAt: new Date().toISOString()
       };
       addTask(newTask);
@@ -256,7 +264,7 @@ export default function Tasks() {
                   <div className="flex items-start justify-between mb-2">
                     <Badge variant={getPriorityVariant(task.priority)} size="sm">{task.priority}</Badge>
                     <button
-                      onClick={(e) => { e.stopPropagation(); deleteTask(task.id); }}
+                      onClick={(e) => { e.stopPropagation(); if (window.confirm('¿Eliminar esta tarea?')) deleteTask(task.id); }}
                       className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
                     >
                       <Trash2 size={14} />
@@ -325,7 +333,7 @@ export default function Tasks() {
             <div className="flex items-center gap-2">
               <Badge variant={getStatusVariant(task.status)} size="sm">{task.status}</Badge>
               <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                <button onClick={() => deleteTask(task.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                <button onClick={() => { if (window.confirm('¿Eliminar esta tarea?')) deleteTask(task.id); }} className="p-2 text-gray-400 hover:text-red-600 rounded-lg transition-colors"><Trash2 size={18} /></button>
                 <button onClick={() => handleOpenForm(task)} className="p-2 text-gray-400 hover:text-gray-900 rounded-lg transition-colors"><MoreVertical size={18} /></button>
               </div>
             </div>
@@ -335,7 +343,11 @@ export default function Tasks() {
         {filteredTasks.length === 0 && (
           <div className="py-20 text-center">
             <CheckSquare size={48} className="mx-auto text-gray-200 mb-4" />
-            <p className="text-gray-500 font-medium">No hay tareas que coincidan con tu búsqueda.</p>
+            <p className="text-gray-500 font-medium">
+              {searchTerm || filterPriority !== 'all' || filterStatus !== 'all'
+                ? 'No se encontraron tareas con los filtros actuales.'
+                : 'No hay tareas pendientes.'}
+            </p>
           </div>
         )}
       </div>

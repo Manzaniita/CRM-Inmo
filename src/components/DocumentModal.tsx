@@ -5,6 +5,9 @@ import Button from './Button';
 import Badge from './Badge';
 import SearchableSelect from './SearchableSelect';
 import { cn, formatDate } from '../lib/utils';
+import { useAppContext } from '../context/AppContext';
+import { generateId } from '../lib/id';
+import { validateDocument } from '../lib/validators';
 
 type ModalMode = 'create' | 'edit' | 'view';
 
@@ -74,6 +77,7 @@ export default function DocumentModal({
   onDelete,
   onDownload
 }: DocumentModalProps) {
+  const { showToast } = useAppContext();
   const [formData, setFormData] = useState({
     name: document?.name || '',
     type: document?.type || 'Otro' as DocumentType,
@@ -157,8 +161,13 @@ export default function DocumentModal({
   };
 
   const handleSubmit = () => {
-    if (!formData.name.trim()) {
-      alert('El nombre del documento es obligatorio');
+    const validation = validateDocument({
+      name: formData.name,
+      type: formData.type,
+      status: formData.status
+    });
+    if (!validation.valid) {
+      showToast(validation.message || 'Error de validación', 'error');
       return;
     }
 
@@ -181,7 +190,7 @@ export default function DocumentModal({
         simulatedUrl: selectedFile ? '/documents/' + document.id : document.simulatedUrl
       });
     } else {
-      const id = 'd' + Date.now();
+      const id = generateId('d');
       const newDoc: Document = {
         id,
         name: formData.name.trim(),

@@ -26,6 +26,10 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
 import { cn, formatCurrency, formatDate, normalizeSearchText } from '../lib/utils';
+import { generateId } from '../lib/id';
+import { validateClient, validateTask } from '../lib/validators';
+import RelationsPanel from '../components/RelationsPanel';
+import { getClientRelations } from '../lib/relations';
 import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
@@ -85,6 +89,7 @@ export default function Clients() {
   const [filterHasOperation, setFilterHasOperation] = useState<boolean | null>(null);
   const [filterHasPendingTasks, setFilterHasPendingTasks] = useState<boolean | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortName, setSortName] = useState<'asc' | 'desc'>('asc');
 
     // Form State
   const [formData, setFormData] = useState<Partial<Client>>({
@@ -153,6 +158,9 @@ export default function Clients() {
     if (filterHasPendingTasks === false && clientIdsWithPendingTasks.has(c.id)) return false;
 
     return true;
+  }).sort((a, b) => {
+    const cmp = a.name.localeCompare(b.name);
+    return sortName === 'asc' ? cmp : -cmp;
   });
 
     const handleOpenForm = (client?: Client) => {
@@ -182,14 +190,18 @@ export default function Clients() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return alert('El nombre es obligatorio');
+    const result = validateClient(formData);
+    if (!result.valid) {
+      showToast(result.message || 'Error de validación', 'error');
+      return;
+    }
     
     if (editingClient) {
       updateClient(formData as Client);
     } else {
       const newClient: Client = {
         ...(formData as Client),
-        id: `c${Date.now()}`,
+        id: generateId('c'),
         createdAt: new Date().toISOString().split('T')[0],
       };
       addClient(newClient);
@@ -230,12 +242,13 @@ export default function Clients() {
     }));
 
     const handleSaveTask = () => {
-      if (!taskFormData.title) {
-        showToast('El título es obligatorio', 'error');
+      const validation = validateTask({ title: taskFormData.title });
+      if (!validation.valid) {
+        showToast(validation.message || 'Error de validación', 'error');
         return;
       }
       const newTask: Task = {
-        id: `t${Date.now()}${Math.random().toString(36).slice(2, 9)}`,
+        id: generateId('t'),
         title: taskFormData.title,
         description: taskFormData.description,
         dueDate: taskFormData.dueDate,
@@ -359,7 +372,7 @@ export default function Clients() {
         return;
       }
       const newEvent: CalendarEvent = {
-        id: `e${Date.now()}${Math.random().toString(36).slice(2, 9)}`,
+        id: generateId('e'),
         title: eventFormData.title,
         description: eventFormData.description,
         date: eventFormData.date,
@@ -595,7 +608,7 @@ export default function Clients() {
                   notes={selectedClient.historyNotes}
                   onAddNote={(content) => {
                     const newNote: EntityNote = {
-                      id: `n${Date.now()}${Math.random().toString(36).slice(2, 9)}`,
+                      id: generateId('n'),
                       content,
                       createdAt: new Date().toISOString()
                     };
@@ -612,6 +625,34 @@ export default function Clients() {
                   }}
                 />
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-gray-900 text-lg">Propiedades Asociadas</h3>
+              </div>
+              {(() => {
+                const clientProperties = properties.filter(p => p.ownerId === id);
+                if (clientProperties.length === 0) return <p className="text-sm text-gray-400 italic py-2">Sin propiedades asociadas.</p>;
+                return (
+                  <div className="space-y-3">
+                    {clientProperties.map(prop => (
+                      <div key={prop.id} onClick={() => navigate(`/propiedades/${prop.id}`)} className="cursor-pointer">
+                        <Card className="border-gray-100 hover:shadow-md transition-all">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Badge variant={prop.operation === 'venta' ? 'orange' : 'blue'}>{prop.operation}</Badge>
+                              <span className="ml-2 text-sm font-bold text-gray-900">{prop.title}</span>
+                              <p className="text-sm text-gray-500 mt-0.5">{prop.address}, {prop.zone}</p>
+                            </div>
+                            <ChevronRight size={16} className="text-gray-300" />
+                          </div>
+                        </Card>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="space-y-4">
@@ -638,7 +679,7 @@ export default function Clients() {
                             <div>
                               <Badge variant="blue">Venta</Badge>
                               <span className="ml-2 text-sm font-medium text-gray-700">{sale.estado}</span>
-                              <p className="text-sm text-gray-500 mt-1">Propiedad: {sale.propiedadId}</p>
+                              <p className="text-sm text-gray-500 mt-1">{properties.find(p => p.id === sale.propiedadId)?.title || sale.propiedadId}</p>
                             </div>
                             <ChevronRight size={16} className="text-gray-300" />
                           </div>
@@ -654,7 +695,7 @@ export default function Clients() {
                             <div>
                               <Badge variant="green">Alquiler</Badge>
                               <span className="ml-2 text-sm font-medium text-gray-700">{rental.estado}</span>
-                              <p className="text-sm text-gray-500 mt-1">Propiedad: {rental.propiedadId}</p>
+                              <p className="text-sm text-gray-500 mt-1">{properties.find(p => p.id === rental.propiedadId)?.title || rental.propiedadId}</p>
                             </div>
                             <ChevronRight size={16} className="text-gray-300" />
                           </div>
@@ -824,6 +865,8 @@ export default function Clients() {
                 )}
               </div>
             </Card>
+
+            <RelationsPanel groups={getClientRelations(selectedClient.id, { properties, sales, rentals, tasks, events, documents })} />
           </div>
         </div>
         {isFormModalOpen && renderFormModal()}
@@ -1192,6 +1235,17 @@ export default function Clients() {
                   <option value="no">Sin tareas pendientes</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Orden</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  value={sortName}
+                  onChange={e => setSortName(e.target.value as 'asc' | 'desc')}
+                >
+                  <option value="asc">A-Z</option>
+                  <option value="desc">Z-A</option>
+                </select>
+              </div>
             </div>
             <div className="flex gap-2 mt-4">
               <Button
@@ -1204,6 +1258,7 @@ export default function Clients() {
                   setFilterZone('');
                   setFilterHasOperation(null);
                   setFilterHasPendingTasks(null);
+                  setSortName('asc');
                 }}
               >
                 Limpiar filtros
@@ -1249,7 +1304,11 @@ export default function Clients() {
         {filteredClients.length === 0 && (
           <div className="py-20 text-center">
             <Users size={48} className="mx-auto text-gray-200 mb-4" />
-            <p className="text-gray-500 font-medium">No se encontraron clientes.</p>
+            <p className="text-gray-500 font-medium">
+              {searchTerm || filterType || filterStatus || filterOrigin || filterZone || filterHasOperation !== null || filterHasPendingTasks !== null
+                ? 'No se encontraron clientes con los filtros actuales.'
+                : 'No hay clientes cargados.'}
+            </p>
           </div>
         )}
       </div>

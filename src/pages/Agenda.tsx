@@ -26,9 +26,10 @@ import Button from '../components/Button';
 import { Card } from '../components/Card';
 import SearchableSelect from '../components/SearchableSelect';
 import { cn, formatDate, normalizeSearchText } from '../lib/utils';
+import { generateId } from '../lib/id';
 
 export default function Agenda() {
-  const { events, clients, properties, addEvent, updateEvent, completeEvent, cancelEvent, deleteEvent } = useAppContext();
+  const { events, clients, properties, addEvent, updateEvent, completeEvent, cancelEvent, deleteEvent, showToast } = useAppContext();
   const location = useLocation();
   const [view, setView] = useState<'list' | 'week'>('list');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -115,7 +116,10 @@ export default function Agenda() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.date || !formData.time) return alert('Campos obligatorios faltantes');
+    if (!formData.title || !formData.date || !formData.time) {
+      showToast('Campos obligatorios faltantes', 'error');
+      return;
+    }
 
     if (editingEvent) {
       const updatedEvent = { ...editingEvent, ...formData } as CalendarEvent;
@@ -130,7 +134,7 @@ export default function Agenda() {
     } else {
       const newEvent: CalendarEvent = {
         ...(formData as CalendarEvent),
-        id: `e${Date.now()}`,
+        id: generateId('e'),
         createdAt: new Date().toISOString()
       };
       addEvent(newEvent);
@@ -432,7 +436,7 @@ export default function Agenda() {
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-auto">
                           <button onClick={(e) => { e.stopPropagation(); completeEvent(event.id); }} title="Realizado" className="p-1.5 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50"><CheckCircle2 size={16} /></button>
                           <button onClick={(e) => { e.stopPropagation(); cancelEvent(event.id); }} title="Cancelar" className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"><XCircle size={16} /></button>
-                          <button onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }} title="Eliminar" className="p-1.5 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100"><Trash2 size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); if (window.confirm('¿Eliminar este evento?')) deleteEvent(event.id); }} title="Eliminar" className="p-1.5 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100"><Trash2 size={16} /></button>
                         </div>
                       )}
                     </div>

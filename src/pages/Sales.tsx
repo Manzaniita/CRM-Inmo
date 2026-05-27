@@ -26,6 +26,8 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card, StatCard } from '../components/Card';
 import { cn, formatCurrency, formatDate, normalizeSearchText } from '../lib/utils';
+import { generateId } from '../lib/id';
+import { validateSale } from '../lib/validators';
 import { Sale, SaleStatus } from '../types';
 import SearchableSelect from '../components/SearchableSelect';
 
@@ -557,6 +559,10 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
     if (!formData.clientCompradorId || !formData.propiedadId || !formData.estado) {
       return showToast('Por favor completa todos los campos obligatorios', 'error');
     }
+    const validation = validateSale(formData);
+    if (!validation.valid) {
+      return showToast(validation.message || 'Error de validación', 'error');
+    }
 
     const now = new Date().toISOString().split('T')[0];
 
@@ -569,7 +575,7 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
     } else {
       const newSale: Sale = {
         ...(formData as Sale),
-        id: `s${Date.now()}`,
+        id: generateId('s'),
         fechaCreacion: now,
         fechaActualizacion: now
       };

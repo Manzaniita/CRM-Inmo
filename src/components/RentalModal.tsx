@@ -7,6 +7,8 @@ import Button from './Button';
 import { Card } from './Card';
 import SearchableSelect from './SearchableSelect';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
+import { generateId } from '../lib/id';
+import { validateRental } from '../lib/validators';
 
 const RENTAL_STAGES: RentalStatus[] = [
   'consulta', 'visita', 'documentación', 'aprobado', 'contrato', 'firmado', 'en curso', 'renovación', 'finalizado', 'cancelado'
@@ -83,11 +85,16 @@ export default function RentalModal({
     e.preventDefault();
     if (!formData.inquilinoId) return showToast('Debes seleccionar un inquilino', 'error');
     if (!formData.propiedadId) return showToast('Debes seleccionar una propiedad', 'error');
+    const validation = validateRental(formData);
+    if (!validation.valid) {
+      showToast(validation.message || 'Error de validación', 'error');
+      return;
+    }
     const now = new Date().toISOString().split('T')[0];
     if (rental) {
       onSave({ ...rental, ...(formData as Rental), fechaActualizacion: now });
     } else {
-      onSave({ ...(formData as Rental), id: `r${Date.now()}`, fechaCreacion: now, fechaActualizacion: now });
+      onSave({ ...(formData as Rental), id: generateId('r'), fechaCreacion: now, fechaActualizacion: now });
     }
     onClose();
   };

@@ -1,18 +1,19 @@
-import React from 'react';
-import { 
-  Settings, 
-  User, 
-  Bell, 
-  Shield, 
-  Globe, 
-  Smartphone, 
+import React, { useState } from 'react';
+import {
+  Settings,
+  User,
+  Bell,
+  Shield,
+  Globe,
+  Smartphone,
   MessageSquare,
   HelpCircle,
   Save,
   CheckCircle2,
   RotateCcw,
   Download,
-  Upload
+  Upload,
+  AlertTriangle
 } from 'lucide-react';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
@@ -21,12 +22,49 @@ import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
 
 export default function Configuration() {
-  const { resetData, exportData, importData } = useAppContext();
+  const { resetData, exportData, importData, showToast } = useAppContext();
   const [saveStatus, setSaveStatus] = React.useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const handleSave = () => {
     setSaveStatus(true);
     setTimeout(() => setSaveStatus(false), 2000);
+  };
+
+  const handleImport = (content: string) => {
+    try {
+      const parsed = JSON.parse(content);
+      const hasData = parsed && typeof parsed === 'object' && (
+        Array.isArray(parsed.clients) ||
+        Array.isArray(parsed.properties) ||
+        Array.isArray(parsed.tasks) ||
+        Array.isArray(parsed.events) ||
+        Array.isArray(parsed.sales) ||
+        Array.isArray(parsed.rentals) ||
+        Array.isArray(parsed.documents)
+      );
+      if (!hasData) {
+        showToast('El archivo no tiene la estructura esperada de un backup de ImmoFlow.', 'error');
+        return;
+      }
+      if (window.confirm('¿Estás seguro de importar este backup? Se reemplazarán todos los datos actuales.')) {
+        const ok = importData(content);
+        if (ok) {
+          showToast('Datos importados correctamente', 'success');
+        }
+      }
+    } catch {
+      showToast('El archivo no es un JSON válido.', 'error');
+    }
+  };
+
+  const handleReset = () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
+    resetData();
+    setConfirmReset(false);
   };
 
   return (
@@ -141,7 +179,7 @@ export default function Configuration() {
                                       const reader = new FileReader();
                                       reader.onload = (event) => {
                                          const content = event.target?.result as string;
-                                         importData(content);
+                                         handleImport(content);
                                       };
                                       reader.readAsText(file);
                                    }
@@ -156,13 +194,14 @@ export default function Configuration() {
                     <div className="flex-1 p-4 bg-red-50/30 rounded-xl border border-red-100/50">
                        <h4 className="text-sm font-bold text-red-900 mb-1">Restablecer Sistema</h4>
                        <p className="text-xs text-red-600/70 mb-4">Borra todos los cambios locales y vuelve a los datos de prueba iniciales.</p>
-                       <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full border-red-200 text-red-600 hover:bg-red-50"
-                          onClick={() => resetData()}
+                       <Button
+                          variant="outline"
+                          size="sm"
+                          className={cn('w-full', confirmReset ? 'border-red-500 text-red-700 bg-red-50' : 'border-red-200 text-red-600 hover:bg-red-50')}
+                          onClick={handleReset}
                        >
-                          <RotateCcw size={14} className="mr-2" /> Restablecer Datos
+                          <RotateCcw size={14} className="mr-2" />
+                          {confirmReset ? 'Confirmar Restablecimiento' : 'Restablecer Datos'}
                        </Button>
                     </div>
                  </div>

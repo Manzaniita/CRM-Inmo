@@ -37,7 +37,7 @@ export interface Client {
 
 export type PropertyType = 'casa' | 'departamento' | 'local' | 'terreno' | 'oficina' | 'galpón' | 'cochera';
 export type PropertyOperation = 'venta' | 'alquiler';
-export type PropertyStatus = 'disponible' | 'reservada' | 'vendida' | 'alquilada' | 'pausada';
+export type PropertyStatus = 'disponible' | 'reservada' | 'vendida' | 'alquilada' | 'pausada' | 'vencida';
 
 export interface Property {
   id: string;
@@ -61,6 +61,14 @@ export interface Property {
   historyNotes?: EntityNote[];
   ownerId?: string;
   images: string[];
+  imageUrl?: string;
+  contractStartDate?: string;
+  contractEndDate?: string;
+  marketplaceId?: string;
+  marketplaceStatus?: 'no_publicada' | 'lista' | 'publicada' | 'pausada' | 'error';
+  marketplaceTitle?: string;
+  marketplaceDescription?: string;
+  marketplaceLastPublishedAt?: string;
 }
 
 export type EventType = 'visita' | 'llamada' | 'reunión' | 'firma' | 'vencimiento' | 'seguimiento' | 'tasación' | 'entrega_de_llaves' | 'recordatorio';
@@ -94,6 +102,8 @@ export interface Task {
   propertyId?: string;
   notes?: string;
   createdAt: string;
+  source?: 'manual' | 'auto_contract_renewal';
+  autoKey?: string;
 }
 
 export type SaleStatus = 'consulta' | 'visita' | 'oferta' | 'negociación' | 'reserva' | 'boleto' | 'escritura' | 'vendida' | 'caída';
@@ -115,6 +125,25 @@ export interface Sale {
   notas: string;
   fechaCreacion: string;
   fechaActualizacion: string;
+  // Campos extendidos Reservómetro
+  nombre?: string;
+  fecha?: string;
+  vendedor?: string;
+  comprador?: string;
+  inmoAgente?: string;
+  puntas?: number;
+  porcentajeBruto?: number;
+  porcentajeNeto?: number;
+  porcentajeReferido?: number;
+  fechaTomada?: string;
+  valorOfertado?: number;
+  contraoferta1?: number;
+  contraoferta2?: number;
+  valorCierre?: number;
+  escribania?: string;
+  montoEscritura?: number;
+  infoExtra?: string;
+  presupuesto?: number;
 }
 
 export type RentalStatus = 'consulta' | 'visita' | 'documentación' | 'aprobado' | 'contrato' | 'firmado' | 'en curso' | 'renovación' | 'finalizado' | 'cancelado';
@@ -156,4 +185,67 @@ export interface Document {
   fileSize?: number;
   fileExtension?: string;
   simulatedUrl?: string;
+}
+
+export type WaitingRoomStatus = 'pendiente' | 'contactado' | 'descartado' | 'convertido';
+
+export interface WaitingRoomEntry {
+  id: string;
+  nombre: string;
+  telefono: string;
+  email: string;
+  interes: string;
+  propiedadId?: string;
+  estado: WaitingRoomStatus;
+  fechaIngreso: string;
+  notas: string;
+}
+
+export type BuyerStatus = 'activo' | 'pausado' | 'compró' | 'descartado';
+
+export interface Buyer {
+  id: string;
+  nombre: string;
+  telefono: string;
+  email: string;
+  presupuestoMin?: number;
+  presupuestoMax?: number;
+  moneda?: 'USD' | 'ARS';
+  zonaBuscada?: string;
+  tipoPropiedad?: string;
+  estado: BuyerStatus;
+  notas: string;
+  createdAt: string;
+}
+
+export interface ReferredColleague {
+  id: string;
+  nombreApellido: string;
+  oficina: string;
+  respondio: boolean;
+  quienContacto?: string;
+  comoRespondio?: number;
+  yaRefirio: boolean;
+  aQuien?: string;
+  primerContacto?: string;
+  toque1?: string;
+  toque2?: string;
+  toque3?: string;
+  toque4?: string;
+  toque5?: string;
+  toque6?: string;
+  propertyIds?: string[];
+}
+
+export type ActivityLogType = 'client' | 'property' | 'task' | 'sale' | 'rental' | 'document' | 'event' | 'system' | 'waiting_room' | 'buyer' | 'colleague' | 'marketplace';
+export type ActivityLogAction = 'created' | 'updated' | 'deleted' | 'status_changed';
+
+export interface ActivityLog {
+  id: string;
+  type: ActivityLogType;
+  action: ActivityLogAction;
+  title: string;
+  description?: string;
+  createdAt: string;
+  entityId?: string;
 }

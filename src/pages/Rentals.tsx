@@ -23,6 +23,8 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card, StatCard } from '../components/Card';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
+import { generateId } from '../lib/id';
+import { validateRental } from '../lib/validators';
 import { Rental, RentalStatus } from '../types';
 
 const STAGES: RentalStatus[] = [
@@ -34,6 +36,7 @@ export default function Rentals() {
   const [view, setView] = useState<'pipeline' | 'list'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<'fechaInicio' | 'fechaFin' | ''>('');
   
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -50,6 +53,10 @@ export default function Rentals() {
       rental.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || rental.estado === filterStatus;
     return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    if (sortKey === 'fechaInicio') return a.fechaInicio.localeCompare(b.fechaInicio);
+    if (sortKey === 'fechaFin') return a.fechaFin.localeCompare(b.fechaFin);
+    return 0;
   });
 
   const stats = {
@@ -142,6 +149,15 @@ export default function Rentals() {
             <option value="all">Todos los estados</option>
             {STAGES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
             <option value="finalizado">Finalizado</option>
+          </select>
+          <select
+            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+            value={sortKey}
+            onChange={e => setSortKey(e.target.value as 'fechaInicio' | 'fechaFin' | '')}
+          >
+            <option value="">Ordenar por</option>
+            <option value="fechaInicio">Fecha de inicio</option>
+            <option value="fechaFin">Fecha de vencimiento</option>
           </select>
           <Button variant="outline" size="sm">
             <Filter size={16} className="mr-2" /> Más filtros
@@ -257,7 +273,11 @@ export default function Rentals() {
             {filteredRentals.length === 0 && (
               <div className="py-20 text-center">
                  <AlertCircle size={40} className="mx-auto text-gray-200 mb-3" />
-                 <p className="text-gray-500 font-medium tracking-tight">No se encontraron contratos de alquiler.</p>
+                 <p className="text-gray-500 font-medium tracking-tight">
+                   {searchTerm || filterStatus !== 'all'
+                     ? 'No se encontraron contratos con los filtros actuales.'
+                     : 'No hay contratos de alquiler cargados.'}
+                 </p>
               </div>
             )}
           </div>
@@ -457,6 +477,10 @@ function RentalFormModal({ rental, onClose }: { rental: Rental | null, onClose: 
     if (!formData.inquilinoId || !formData.propiedadId || !formData.estado) {
       return showToast('Por favor completa todos los campos obligatorios', 'error');
     }
+    const validation = validateRental(formData);
+    if (!validation.valid) {
+      return showToast(validation.message || 'Error de validación', 'error');
+    }
 
     const now = new Date().toISOString().split('T')[0];
     
@@ -469,7 +493,7 @@ function RentalFormModal({ rental, onClose }: { rental: Rental | null, onClose: 
     } else {
       const newRental: Rental = {
         ...(formData as Rental),
-        id: `r${Date.now()}`,
+        id: generateId('r'),
         fechaCreacion: now,
         fechaActualizacion: now
       };

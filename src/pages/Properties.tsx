@@ -22,7 +22,11 @@ import {
   Key,
   FileText,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  MoreVertical,
+  Camera,
+  Trash2,
+  Clock
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -30,18 +34,26 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
 import { cn, formatCurrency } from '../lib/utils';
+import { contractTimeRemaining } from '../lib/dates';
+import { generateId } from '../lib/id';
+import { validateProperty } from '../lib/validators';
 import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
 import RentalModal from '../components/RentalModal';
 import { Property, PropertyType, PropertyStatus, PropertyOperation, EntityNote, Document, Sale, Rental } from '../types';
+import RelationsPanel from '../components/RelationsPanel';
+import { getPropertyRelations } from '../lib/relations';
 
 export default function Properties() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { properties, clients, events, sales, rentals, documents, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast } = useAppContext();
+  const { properties, clients, events, tasks, sales, rentals, documents, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast } = useAppContext();
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterOperation, setFilterOperation] = useState<'venta' | 'alquiler' | ''>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [sortPrice, setSortPrice] = useState<'asc' | 'desc' | ''>('');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
@@ -59,6 +71,7 @@ export default function Properties() {
   const [isQuickUploadOpen, setIsQuickUploadOpen] = useState(false);
   const [quickUploadTitle, setQuickUploadTitle] = useState('');
   const [quickUploadFile, setQuickUploadFile] = useState<File | null>(null);
+  const [openMenuPropertyId, setOpenMenuPropertyId] = useState<string | null>(null);
 
   // Captar desde Link states
   const [captureUrl, setCaptureUrl] = useState('');
@@ -97,11 +110,19 @@ export default function Properties() {
 
   const selectedProp = properties.find(p => p.id === id);
 
-  const filteredProps = properties.filter(p => 
-    p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.address.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProps = properties.filter(p => {
+    const matchesSearch = 
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      p.address.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      p.code.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesOperation = !filterOperation || p.operation === filterOperation;
+    const matchesStatus = !filterStatus || p.status === filterStatus;
+    return matchesSearch && matchesOperation && matchesStatus;
+  }).sort((a, b) => {
+    if (sortPrice === 'asc') return a.price - b.price;
+    if (sortPrice === 'desc') return b.price - a.price;
+    return 0;
+  });
 
   const handleOpenForm = (prop?: Property) => {
     if (prop) {
@@ -135,14 +156,18 @@ export default function Properties() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title) return alert('El título es obligatorio');
+    const result = validateProperty(formData);
+    if (!result.valid) {
+      showToast(result.message || 'Error de validación', 'error');
+      return;
+    }
     
     if (editingProperty) {
       updateProperty(formData as Property);
     } else {
       const newProp: Property = {
         ...(formData as Property),
-        id: `p${Date.now()}`,
+        id: generateId('p'),
       };
       addProperty(newProp);
     }
@@ -156,6 +181,7 @@ export default function Properties() {
       case 'vendida': return 'red';
       case 'alquilada': return 'blue';
       case 'pausada': return 'gray';
+      case 'vencida': return 'purple';
       default: return 'gray';
     }
   };
@@ -182,7 +208,13 @@ export default function Properties() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="relative group rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white">
-              <img src={selectedProp.images[0]} alt={selectedProp.title} className="w-full h-[400px] object-cover" />
+              {(selectedProp.imageUrl || selectedProp.images?.[0]) ? (
+                <img src={selectedProp.imageUrl || selectedProp.images?.[0]} alt={selectedProp.title} className="w-full h-[400px] object-cover" />
+              ) : (
+                <div className="w-full h-[400px] bg-gray-100 flex items-center justify-center">
+                  <Home size={64} className="text-gray-300" />
+                </div>
+              )}
               <div className="absolute top-4 left-4 flex gap-2">
                 <Badge variant={getStatusVariant(selectedProp.status)} size="md">{selectedProp.status}</Badge>
                 <Badge variant="blue" size="md">{selectedProp.operation}</Badge>
@@ -246,7 +278,7 @@ export default function Properties() {
                   notes={selectedProp.historyNotes}
                   onAddNote={(content) => {
                     const newNote: EntityNote = {
-                      id: `n${Date.now()}${Math.random().toString(36).slice(2, 9)}`,
+                      id: generateId('n'),
                       content,
                       createdAt: new Date().toISOString()
                     };
@@ -419,6 +451,8 @@ export default function Properties() {
                 )}
               </div>
             </Card>
+
+            <RelationsPanel groups={getPropertyRelations(selectedProp.id, { clients, sales, rentals, tasks, events, documents })} />
           </div>
         </div>
         {isFormModalOpen && renderFormModal()}
@@ -545,7 +579,7 @@ export default function Properties() {
                   }
                   const ext = quickUploadFile.name.includes('.') ? quickUploadFile.name.split('.').pop()?.toLowerCase() || '' : '';
                   const newDoc: Document = {
-                    id: `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+                    id: generateId('d'),
                     name: quickUploadTitle.trim(),
                     type: 'Otro',
                     status: 'cargado',
@@ -672,6 +706,48 @@ export default function Properties() {
                 </div>
               </div>
               <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-gray-700 mb-1">Imagen principal</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+                    {formData.imageUrl || (formData.images && formData.images[0]) ? (
+                      <img src={formData.imageUrl || formData.images?.[0]} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera size={24} className="text-gray-300" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 2 * 1024 * 1024) {
+                          showToast('La imagen es demasiado pesada. Máximo 2 MB.', 'error');
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setFormData({...formData, imageUrl: reader.result as string});
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">Máximo 2 MB. Se guarda como base64.</p>
+                  </div>
+                  {(formData.imageUrl || formData.images?.[0]) && (
+                    <button
+                      type="button"
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      onClick={() => setFormData({...formData, imageUrl: undefined, images: []})}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-gray-700 mb-1">Link Externo</label>
                 <input 
                   type="text" 
@@ -680,6 +756,16 @@ export default function Properties() {
                   value={formData.externalLink}
                   onChange={e => setFormData({...formData, externalLink: e.target.value})}
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Inicio de contrato</label>
+                  <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.contractStartDate || ''} onChange={e => setFormData({...formData, contractStartDate: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Fin de contrato</label>
+                  <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.contractEndDate || ''} onChange={e => setFormData({...formData, contractEndDate: e.target.value})} />
+                </div>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-gray-700 mb-1">Notas Internas</label>
@@ -739,60 +825,143 @@ export default function Properties() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-10"><Filter size={16} className="mr-2" /> Filtros</Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white"
+              value={filterOperation}
+              onChange={e => setFilterOperation(e.target.value as 'venta' | 'alquiler' | '')}
+            >
+              <option value="">Todas las operaciones</option>
+              <option value="venta">Venta</option>
+              <option value="alquiler">Alquiler</option>
+            </select>
+            <div className="flex gap-1 flex-wrap">
+              {['', 'disponible', 'reservada', 'vendida', 'alquilada', 'pausada', 'vencida'].map(st => (
+                <button
+                  key={st || 'all'}
+                  type="button"
+                  onClick={() => setFilterStatus(st)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
+                    filterStatus === st
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-500 border-gray-200 hover:border-blue-300"
+                  )}
+                >
+                  {st ? st.charAt(0).toUpperCase() + st.slice(1) : 'Todas'}
+                </button>
+              ))}
+            </div>
+            <select
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white"
+              value={sortPrice}
+              onChange={e => setSortPrice(e.target.value as 'asc' | 'desc' | '')}
+            >
+              <option value="">Ordenar por precio</option>
+              <option value="asc">Precio: menor a mayor</option>
+              <option value="desc">Precio: mayor a menor</option>
+            </select>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
-          {filteredProps.map((prop) => (
-            <div 
-              key={prop.id} 
-              className="group bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer relative"
-              onClick={() => navigate(`/propiedades/${prop.id}`)}
-            >
-              <div className="relative aspect-[4/3] overflow-hidden">
-                <img 
-                  src={prop.images[0]} 
-                  alt="" 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                />
-                <div className="absolute top-2 left-2 shadow-sm">
-                  <Badge variant={getStatusVariant(prop.status)}>{prop.status}</Badge>
+          {filteredProps.map((prop) => {
+            const remaining = contractTimeRemaining(prop.contractEndDate);
+            const imgSrc = prop.imageUrl || (prop.images && prop.images[0]) || '';
+            return (
+              <div
+                key={prop.id}
+                className="group bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer relative"
+                onClick={() => navigate(`/propiedades/${prop.id}`)}
+              >
+                <div className="relative aspect-[4/3] overflow-hidden">
+                  {imgSrc ? (
+                    <img
+                      src={imgSrc}
+                      alt=""
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <Home size={32} className="text-gray-300" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 left-2 shadow-sm">
+                    <Badge variant={getStatusVariant(prop.status)}>{prop.status}</Badge>
+                  </div>
+                  {/* 3-dots menu */}
+                  <div className="absolute top-2 right-2">
+                    <button
+                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white transition-colors"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setOpenMenuPropertyId(openMenuPropertyId === prop.id ? null : prop.id);
+                      }}
+                    >
+                      <MoreVertical size={16} className="text-gray-600" />
+                    </button>
+                    {openMenuPropertyId === prop.id && (
+                      <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-xl border border-gray-100 z-20 overflow-hidden">
+                        {(['disponible','reservada','vendida','alquilada','pausada','vencida'] as PropertyStatus[]).map(st => (
+                          <button
+                            key={st}
+                            className="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={e => {
+                              e.stopPropagation();
+                              updateProperty({ ...prop, status: st });
+                              showToast(`Estado cambiado a ${st}`, 'success');
+                              setOpenMenuPropertyId(null);
+                            }}
+                          >
+                            {st.charAt(0).toUpperCase() + st.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                    <p className="text-white font-black text-lg">{formatCurrency(prop.price, prop.currency)}</p>
+                  </div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                  <p className="text-white font-black text-lg">{formatCurrency(prop.price, prop.currency)}</p>
+                <div className="p-4">
+                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">{prop.type} • {prop.operation}</p>
+                  <h3 className="font-bold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">{prop.title}</h3>
+                  <p className="text-xs text-gray-500 flex items-center mt-1 truncate">
+                    <MapPin size={12} className="mr-1 text-gray-400" /> {prop.zone}, {prop.city}
+                  </p>
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50 text-gray-400">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <BedDouble size={14} />
+                        <span className="text-xs font-bold text-gray-700">{prop.bedrooms}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Bath size={14} />
+                        <span className="text-xs font-bold text-gray-700">{prop.bathrooms}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Square size={14} />
+                        <span className="text-xs font-bold text-gray-700">{prop.surface} m²</span>
+                      </div>
+                    </div>
+                    <div className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", remaining.expired ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>
+                      {remaining.text}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="p-4">
-                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">{prop.type} • {prop.operation}</p>
-                <h3 className="font-bold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">{prop.title}</h3>
-                <p className="text-xs text-gray-500 flex items-center mt-1 truncate">
-                  <MapPin size={12} className="mr-1 text-gray-400" /> {prop.zone}, {prop.city}
-                </p>
-                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-50 text-gray-400">
-                  <div className="flex items-center gap-1.5">
-                    <BedDouble size={14} />
-                    <span className="text-xs font-bold text-gray-700">{prop.bedrooms}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Bath size={14} />
-                    <span className="text-xs font-bold text-gray-700">{prop.bathrooms}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Square size={14} />
-                    <span className="text-xs font-bold text-gray-700">{prop.surface} m²</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {filteredProps.length === 0 && (
           <div className="py-20 text-center">
             <Home size={48} className="mx-auto text-gray-200 mb-4" />
-            <p className="text-gray-500 font-medium">No se encontraron propiedades.</p>
+            <p className="text-gray-500 font-medium">
+              {searchTerm || filterOperation || filterStatus
+                ? 'No se encontraron propiedades con los filtros actuales.'
+                : 'Todavía no hay propiedades cargadas.'}
+            </p>
           </div>
         )}
       </div>
@@ -984,7 +1153,7 @@ export default function Properties() {
                   if (!capturePreview) return;
                   const newProp: Property = {
                     ...(capturePreview as Property),
-                    id: `p${Date.now()}`
+                    id: generateId('p')
                   };
                   addProperty(newProp);
                   showToast('Propiedad captada correctamente', 'success');

@@ -7,6 +7,8 @@ import Button from './Button';
 import { Card } from './Card';
 import SearchableSelect from './SearchableSelect';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
+import { generateId } from '../lib/id';
+import { validateSale } from '../lib/validators';
 
 const SALE_STAGES: SaleStatus[] = [
   'consulta', 'visita', 'oferta', 'negociación', 'reserva', 'boleto', 'escritura', 'vendida', 'caída'
@@ -83,11 +85,16 @@ export default function SaleModal({
     e.preventDefault();
     if (!formData.clientCompradorId) return showToast('Debes seleccionar un comprador', 'error');
     if (!formData.propiedadId) return showToast('Debes seleccionar una propiedad', 'error');
+    const validation = validateSale(formData);
+    if (!validation.valid) {
+      showToast(validation.message || 'Error de validación', 'error');
+      return;
+    }
     const now = new Date().toISOString().split('T')[0];
     if (sale) {
       onSave({ ...sale, ...(formData as Sale), fechaActualizacion: now });
     } else {
-      onSave({ ...(formData as Sale), id: `s${Date.now()}`, fechaCreacion: now, fechaActualizacion: now });
+      onSave({ ...(formData as Sale), id: generateId('s'), fechaCreacion: now, fechaActualizacion: now });
     }
     onClose();
   };

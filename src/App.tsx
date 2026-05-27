@@ -1,18 +1,22 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  Home, 
-  Calendar, 
-  CheckSquare, 
-  TrendingUp, 
-  Key, 
-  FileText, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Users,
+  Home,
+  Calendar,
+  CheckSquare,
+  Key,
+  FileText,
+  BarChart3,
   Settings,
   Menu,
   X,
   Bell,
-  LogOut
+  LogOut,
+  Sofa,
+  ShoppingCart,
+  Briefcase,
+  Store,
+  Gauge
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
@@ -30,17 +34,22 @@ import Rentals from './pages/Rentals';
 import Documents from './pages/Documents';
 import Reports from './pages/Reports';
 import Configuration from './pages/Configuration';
+import WaitingRoom from './pages/WaitingRoom';
+import Buyers from './pages/Buyers';
+import ReferredColleagues from './pages/ReferredColleagues';
+import Marketplace from './pages/Marketplace';
+import Reservometro from './pages/Reservometro';
 
 const MENU_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+  { id: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/dashboard' },
   { id: 'clientes', label: 'Clientes', icon: Users, path: '/clientes' },
   { id: 'propiedades', label: 'Propiedades', icon: Home, path: '/propiedades' },
   { id: 'agenda', label: 'Agenda', icon: Calendar, path: '/agenda' },
-  { id: 'tareas', label: 'Tareas', icon: CheckSquare, path: '/tareas' },
-  { id: 'ventas', label: 'Ventas', icon: TrendingUp, path: '/ventas' },
-  { id: 'alquileres', label: 'Alquileres', icon: Key, path: '/alquileres' },
-  { id: 'documentos', label: 'Documentos', icon: FileText, path: '/documentos' },
-  { id: 'reportes', label: 'Reportes', icon: BarChart3, path: '/reportes' },
+  { id: 'sala-espera', label: 'Sala de Espera', icon: Sofa, path: '/sala-espera' },
+  { id: 'compradores', label: 'Compradores', icon: ShoppingCart, path: '/compradores' },
+  { id: 'colegas-referidos', label: 'Colegas Referidos', icon: Briefcase, path: '/colegas-referidos' },
+  { id: 'marketplace', label: 'Marketplace', icon: Store, path: '/marketplace' },
+  { id: 'reservometro', label: 'Reservómetro', icon: Gauge, path: '/reservometro' },
   { id: 'configuracion', label: 'Configuración', icon: Settings, path: '/configuracion' },
 ];
 
@@ -62,14 +71,14 @@ export default function App() {
     <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
       {/* Sidebar Overlay for Mobile */}
       {!sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 z-40 lg:hidden" 
+        <div
+          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
           onClick={() => setSidebarOpen(true)}
         />
       )}
 
       {/* Sidebar */}
-      <aside 
+      <aside
         className={cn(
           "bg-white border-r border-gray-200 transition-all duration-300 z-50 flex flex-col",
           sidebarOpen ? "w-64" : "w-20"
@@ -97,8 +106,8 @@ export default function App() {
                 to={item.path}
                 className={cn(
                   "flex items-center w-full px-3 py-2.5 rounded-lg transition-all group relative",
-                  isActive 
-                    ? "bg-blue-50 text-blue-700" 
+                  isActive
+                    ? "bg-blue-50 text-blue-700"
                     : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 )}
                 id={`nav-${item.id}`}
@@ -119,7 +128,7 @@ export default function App() {
 
         {/* User / Logout */}
         <div className="p-4 border-t border-gray-100">
-          <button 
+          <button
             className={cn(
               "flex items-center w-full px-3 py-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors group",
               !sidebarOpen && "justify-center"
@@ -138,7 +147,7 @@ export default function App() {
         {/* Header */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0">
           <div className="flex items-center">
-            <button 
+            <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
               id="toggle-sidebar"
@@ -183,6 +192,11 @@ export default function App() {
               <Route path="/documentos" element={<Documents />} />
               <Route path="/reportes" element={<Reports />} />
               <Route path="/configuracion" element={<Configuration />} />
+              <Route path="/sala-espera" element={<WaitingRoom />} />
+              <Route path="/compradores" element={<Buyers />} />
+              <Route path="/colegas-referidos" element={<ReferredColleagues />} />
+              <Route path="/marketplace" element={<Marketplace />} />
+              <Route path="/reservometro" element={<Reservometro />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>

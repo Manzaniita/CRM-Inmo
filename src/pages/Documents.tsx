@@ -31,6 +31,8 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
 import { cn, formatDate } from '../lib/utils';
+import { generateId } from '../lib/id';
+import { validateDocument } from '../lib/validators';
 
 const DOCUMENT_TYPES: DocumentType[] = [
   'DNI', 'Escritura', 'Contrato', 'Reserva', 'Boleto', 'Garantía', 'Recibo', 'Comprobante', 'Otro'
@@ -113,18 +115,6 @@ export default function Documents() {
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [deleteConfirmDocId, setDeleteConfirmDocId] = React.useState<string | null>(null);
 
-  // Generate next ID (robusto: solo considera IDs con formato d123)
-  const nextId = React.useMemo(() => {
-    const existingIds = documents
-      .map(d => {
-        const match = d.id.match(/^d(\d+)$/);
-        return match ? parseInt(match[1], 10) : NaN;
-      })
-      .filter(num => !isNaN(num));
-    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
-    return 'd' + (maxId + 1);
-  }, [documents]);
-
   // Filtered documents
   const filteredDocs = documents.filter(d => {
     const matchesSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -183,8 +173,13 @@ export default function Documents() {
 
   // Save document (create or update)
   const handleSave = () => {
-    if (!formData.name.trim()) {
-      showToast('El nombre del documento es obligatorio', 'error');
+    const validation = validateDocument({
+      name: formData.name,
+      type: formData.type,
+      status: formData.status
+    });
+    if (!validation.valid) {
+      showToast(validation.message || 'Error de validación', 'error');
       return;
     }
 
@@ -203,8 +198,9 @@ export default function Documents() {
         notes: formData.notes || undefined
       });
     } else {
+      const newId = generateId('d');
       const newDoc: Document = {
-        id: nextId,
+        id: newId,
         name: formData.name.trim(),
         type: formData.type,
         status: formData.status,
@@ -217,7 +213,7 @@ export default function Documents() {
         fileName: selectedFile ? selectedFile.name : undefined,
         fileSize: selectedFile ? selectedFile.size : undefined,
         fileExtension: selectedFile ? selectedFile.name.split('.').pop() || undefined : undefined,
-        simulatedUrl: selectedFile ? '/documents/' + nextId : undefined
+        simulatedUrl: selectedFile ? '/documents/' + newId : undefined
       };
       addDocument(newDoc);
     }
