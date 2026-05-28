@@ -4,7 +4,7 @@
 
 export type ClientType = 'comprador' | 'vendedor' | 'inquilino' | 'propietario' | 'inversor' | 'interesado';
 export type ClientStatus = 'nuevo' | 'contactado' | 'interesado' | 'en seguimiento' | 'negociación' | 'cerrado' | 'perdido';
-export type ClientOrigin = 'WhatsApp' | 'Instagram' | 'Web' | 'Referido' | 'Llamada' | 'Oficina';
+export type ClientOrigin = 'WhatsApp' | 'Instagram' | 'Web' | 'Referido' | 'Llamada' | 'Oficina' | 'Marketplace' | 'Manual' | 'Otro';
 
 export interface EntityNote {
   id: string;
@@ -91,8 +91,13 @@ export interface CalendarEvent {
   createdAt: string;
 }
 
-export type TaskStatus = 'pendiente' | 'en proceso' | 'completada' | 'vencida' | 'reprogramado';
+export type TaskStatus = 'pendiente' | 'en proceso' | 'completada' | 'vencida' | 'reprogramado' | 'cancelada';
 export type TaskPriority = 'baja' | 'media' | 'alta' | 'urgente';
+
+export interface TaskRelatedEntity {
+  type: 'client' | 'property' | 'colleague' | 'sale' | 'buyer';
+  id: string;
+}
 
 export interface Task {
   id: string;
@@ -107,6 +112,7 @@ export interface Task {
   createdAt: string;
   source?: 'manual' | 'auto_contract_renewal';
   autoKey?: string;
+  relatedEntities?: TaskRelatedEntity[];
 }
 
 export type SaleStatus = 'consulta' | 'visita' | 'oferta' | 'negociación' | 'reserva' | 'boleto' | 'escritura' | 'vendida' | 'caída';
@@ -144,7 +150,10 @@ export interface Sale {
   contraoferta2?: number;
   valorCierre?: number;
   escribania?: string;
-  montoEscritura?: number;
+  montoEscritura?: string | number;
+  operationStatus?: 'activa' | 'vendida' | 'caída';
+  isCollected?: boolean;
+  grossCommissionUsd?: number;
   infoExtra?: string;
   presupuesto?: number;
   // Propiedad manual (sin vincular)
@@ -208,7 +217,7 @@ export interface WaitingRoomEntry {
   notas: string;
 }
 
-export type BuyerStatus = 'activo' | 'pausado' | 'compró' | 'descartado';
+export type BuyerStatus = 'activo' | 'pausado' | 'compró' | 'compro' | 'descartado' | 'seguimiento';
 
 export interface Buyer {
   id: string;

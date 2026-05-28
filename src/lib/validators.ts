@@ -72,6 +72,12 @@ export function validateSale(sale: Partial<Sale>): ValidationResult {
   if (typeof sale.porcentajeReferido === 'number' && sale.porcentajeReferido < 0) {
     return { valid: false, message: 'El % referido no puede ser negativo.' };
   }
+  if (typeof sale.grossCommissionUsd === 'number' && sale.grossCommissionUsd < 0) {
+    return { valid: false, message: 'La comisión bruta no puede ser negativa.' };
+  }
+  if (sale.operationStatus && !['activa', 'vendida', 'caída'].includes(sale.operationStatus)) {
+    return { valid: false, message: 'El estado de operación no es válido.' };
+  }
   return { valid: true };
 }
 
@@ -114,6 +120,12 @@ export function validateTask(task: Partial<Task>): ValidationResult {
   if (!task.title || !task.title.trim()) {
     return { valid: false, message: 'El título de la tarea es obligatorio.' };
   }
+  if (task.dueDate && !/\d{4}-\d{2}-\d{2}/.test(task.dueDate)) {
+    return { valid: false, message: 'La fecha límite no es válida.' };
+  }
+  if (task.relatedEntities && task.relatedEntities.some(r => !r.type || !r.id)) {
+    return { valid: false, message: 'Las entidades relacionadas deben tener tipo e ID.' };
+  }
   return { valid: true };
 }
 
@@ -129,9 +141,14 @@ export function validateWaitingRoom(entry: Partial<WaitingRoomEntry>): Validatio
   return { valid: true };
 }
 
+const VALID_BUYER_STATUSES = ['activo', 'pausado', 'compró', 'compro', 'descartado', 'seguimiento'];
+
 export function validateBuyer(buyer: Partial<Buyer>): ValidationResult {
   if (!buyer.nombre || !buyer.nombre.trim()) {
     return { valid: false, message: 'El nombre es obligatorio.' };
+  }
+  if (buyer.estado && !VALID_BUYER_STATUSES.includes(buyer.estado)) {
+    return { valid: false, message: 'El estado del comprador no es válido.' };
   }
   if (typeof buyer.presupuestoMin === 'number' && buyer.presupuestoMin < 0) {
     return { valid: false, message: 'El presupuesto mínimo no puede ser negativo.' };

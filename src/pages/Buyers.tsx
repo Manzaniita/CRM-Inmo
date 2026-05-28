@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Plus, Search, ShoppingCart, X, Trash2, Edit3, Link2
+  Plus, Search, ShoppingCart, X, Trash2, Edit3, Link2, MoreVertical
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import Badge from '../components/Badge';
@@ -16,16 +17,67 @@ const STATUS_VARIANT: Record<BuyerStatus, string> = {
   activo: 'green',
   pausado: 'gray',
   'compró': 'blue',
-  descartado: 'red'
+  'compro': 'blue',
+  descartado: 'red',
+  seguimiento: 'purple'
 };
 
+function BuyerOperationMenu({ buyer, onUpdate, onLog, showToast }: { buyer: Buyer; onUpdate: (b: Buyer) => void; onLog: (log: any) => void; showToast: (message: string, type: any) => void }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const changeStatus = (status: BuyerStatus) => {
+    setOpen(false);
+    onUpdate({ ...buyer, estado: status });
+    onLog({ type: 'buyer', action: 'status_changed', title: `Comprador ${buyer.nombre} marcado como ${status}`, entityId: buyer.id });
+    showToast(`Estado actualizado a ${status}`, 'success');
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
+        <MoreVertical size={16} />
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 text-xs font-medium">
+          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700" onClick={() => changeStatus('activo')}>Marcar como Activo</button>
+          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-blue-700" onClick={() => changeStatus('compro')}>Marcar como Compró</button>
+          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-red-700" onClick={() => changeStatus('descartado')}>Marcar como Descartado</button>
+          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-purple-700" onClick={() => changeStatus('seguimiento')}>Marcar como Seguimiento</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BuyersPage() {
-  const { buyers, addBuyer, updateBuyer, deleteBuyer, showToast } = useAppContext();
+  const { buyers, addBuyer, updateBuyer, deleteBuyer, showToast, addActivityLog } = useAppContext();
   const { openRelations } = useRelationsDrawer();
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBuyer, setEditingBuyer] = useState<Buyer | null>(null);
+
+  useEffect(() => {
+    const buyerId = searchParams.get('buyerId');
+    if (buyerId) {
+      const buyer = buyers.find(b => b.id === buyerId);
+      if (buyer) {
+        setEditingBuyer(buyer);
+        setFormData(buyer);
+        setIsFormOpen(true);
+      }
+    }
+  }, [searchParams, buyers]);
 
   const [formData, setFormData] = useState<Partial<Buyer>>({
     nombre: '',
@@ -54,7 +106,7 @@ export default function BuyersPage() {
   const openForm = (buyer?: Buyer) => {
     if (buyer) {
       setEditingBuyer(buyer);
-      setFormData(buyer);
+      setFormData({ ...buyer, estado: buyer.estado === 'compró' ? 'compro' : buyer.estado });
     } else {
       setEditingBuyer(null);
       setFormData({
@@ -126,9 +178,9 @@ export default function BuyersPage() {
           >
             <option value="">Todos los estados</option>
             <option value="activo">Activo</option>
-            <option value="pausado">Pausado</option>
-            <option value="compró">Compró</option>
+            <option value="compro">Compró</option>
             <option value="descartado">Descartado</option>
+            <option value="seguimiento">Seguimiento</option>
           </select>
         </div>
       </div>
@@ -164,6 +216,7 @@ export default function BuyersPage() {
                 {buyer.notas && <p className="text-gray-500 text-xs italic">{buyer.notas}</p>}
               </div>
               <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
+                <BuyerOperationMenu buyer={buyer} onUpdate={updateBuyer} onLog={addActivityLog} showToast={showToast} />
                 <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" onClick={() => openForm(buyer)} title="Editar">
                   <Edit3 size={16} />
                 </button>
@@ -234,9 +287,9 @@ export default function BuyersPage() {
                 <label className="block text-sm font-bold text-gray-700 mb-1">Estado</label>
                 <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.estado} onChange={e => setFormData({...formData, estado: e.target.value as BuyerStatus})}>
                   <option value="activo">Activo</option>
-                  <option value="pausado">Pausado</option>
-                  <option value="compró">Compró</option>
+                  <option value="compro">Compró</option>
                   <option value="descartado">Descartado</option>
+                  <option value="seguimiento">Seguimiento</option>
                 </select>
               </div>
               <div>

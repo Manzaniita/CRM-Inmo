@@ -17,6 +17,7 @@ interface SearchData {
   documents: Document[];
   tasks: Task[];
   referredColleagues: ReferredColleague[];
+  buyers: import('../types').Buyer[];
 }
 
 export function searchAll(data: SearchData, query: string): SearchResultItem[] {
@@ -77,16 +78,22 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
   data.sales.forEach((s) => {
     const buyer = data.clients.find((c) => c.id === s.clientCompradorId);
     const prop = data.properties.find((p) => p.id === s.propiedadId);
-    const buyerName = buyer?.name || 'Comprador';
+    const buyerName = buyer?.name || s.comprador || 'Comprador';
+    const sellerName = data.clients.find((c) => c.id === s.propietarioId)?.name || s.vendedor || '';
+    const agentName = s.inmoAgente || '';
     const propTitle = prop?.title || s.externalPropertyAddress || s.propiedadId;
     if (
       matches(s.id) ||
       matches(buyerName) ||
+      matches(sellerName) ||
+      matches(agentName) ||
       matches(propTitle) ||
       matches(s.estado) ||
+      matches(s.operationStatus) ||
       matches(s.externalPropertyAddress) ||
       matches(s.externalPropertyLink) ||
-      matches(s.externalPropertyCode)
+      matches(s.externalPropertyCode) ||
+      matches(String(s.montoEscritura || ''))
     ) {
       found.push({
         id: s.id,
@@ -116,6 +123,26 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
         subtitle: `${tenantName} · ${propTitle} · ${r.estado}`,
         type: 'alquiler',
         path: '/alquileres',
+      });
+    }
+  });
+
+  // Compradores
+  data.buyers.forEach((b) => {
+    if (
+      matches(b.nombre) ||
+      matches(b.telefono) ||
+      matches(b.email) ||
+      matches(b.estado) ||
+      matches(b.zonaBuscada) ||
+      matches(b.tipoPropiedad)
+    ) {
+      found.push({
+        id: b.id,
+        title: b.nombre,
+        subtitle: `${b.telefono} · ${b.estado}`,
+        type: 'cliente',
+        path: '/compradores',
       });
     }
   });
@@ -160,11 +187,20 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
 
   // Tareas
   data.tasks.forEach((t) => {
+    const relatedNames = (t.relatedEntities || []).map(r => {
+      if (r.type === 'client') return data.clients.find(c => c.id === r.id)?.name;
+      if (r.type === 'property') return data.properties.find(p => p.id === r.id)?.title;
+      if (r.type === 'sale') return `Operación ${r.id.slice(0, 6)}`;
+      if (r.type === 'colleague') return data.referredColleagues.find(c => c.id === r.id)?.nombreApellido;
+      if (r.type === 'buyer') return data.buyers.find(b => b.id === r.id)?.nombre;
+      return '';
+    }).filter(Boolean).join(', ');
     if (
       matches(t.title) ||
       matches(t.description) ||
       matches(t.status) ||
-      matches(t.priority)
+      matches(t.priority) ||
+      matches(relatedNames)
     ) {
       found.push({
         id: t.id,

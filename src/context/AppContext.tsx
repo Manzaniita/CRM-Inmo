@@ -94,8 +94,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<Client[]>(() => loadFromStorage(STORAGE_KEYS.CLIENTS, MOCK_CLIENTS));
   const [properties, setProperties] = useState<Property[]>(() => loadFromStorage(STORAGE_KEYS.PROPERTIES, MOCK_PROPERTIES));
   const [events, setEvents] = useState<CalendarEvent[]>(() => loadFromStorage(STORAGE_KEYS.EVENTS, MOCK_EVENTS));
-  const [tasks, setTasks] = useState<Task[]>(() => loadFromStorage(STORAGE_KEYS.TASKS, MOCK_TASKS));
-  const [sales, setSales] = useState<Sale[]>(() => loadFromStorage(STORAGE_KEYS.SALES, MOCK_SALES));
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const loaded = loadFromStorage<Task[]>(STORAGE_KEYS.TASKS, MOCK_TASKS);
+    return loaded.map(t => ({
+      ...t,
+      relatedEntities: t.relatedEntities ?? []
+    }));
+  });
+  const [sales, setSales] = useState<Sale[]>(() => {
+    const loaded = loadFromStorage<Sale[]>(STORAGE_KEYS.SALES, MOCK_SALES);
+    return loaded.map(s => ({
+      ...s,
+      operationStatus: s.operationStatus || 'activa',
+      isCollected: s.isCollected ?? false,
+      montoEscritura: typeof s.montoEscritura === 'number' ? String(s.montoEscritura) : s.montoEscritura
+    }));
+  });
   const [rentals, setRentals] = useState<Rental[]>(() => loadFromStorage(STORAGE_KEYS.RENTALS, MOCK_RENTALS));
   const [documents, setDocuments] = useState<Document[]>(() => loadFromStorage(STORAGE_KEYS.DOCUMENTS, MOCK_DOCUMENTS));
   const [waitingRoom, setWaitingRoom] = useState<WaitingRoomEntry[]>(() => loadFromStorage(STORAGE_KEYS.WAITING_ROOM, []));
@@ -441,9 +455,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const data = JSON.parse(jsonData);
       if (data.clients) setClients(data.clients);
       if (data.properties) setProperties(data.properties);
-      if (data.tasks) setTasks(data.tasks);
+      if (data.tasks) setTasks(data.tasks.map((t: Task) => ({ ...t, relatedEntities: t.relatedEntities ?? [] })));
       if (data.events) setEvents(data.events);
-      if (data.sales) setSales(data.sales);
+      if (data.sales) setSales(data.sales.map((s: Sale) => ({
+        ...s,
+        operationStatus: s.operationStatus || 'activa',
+        isCollected: s.isCollected ?? false,
+        montoEscritura: typeof s.montoEscritura === 'number' ? String(s.montoEscritura) : s.montoEscritura
+      })));
       if (data.rentals) setRentals(data.rentals);
       if (data.documents) setDocuments(data.documents);
       if (data.waitingRoom) setWaitingRoom(data.waitingRoom);

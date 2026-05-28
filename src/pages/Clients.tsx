@@ -20,7 +20,7 @@ import {
   ListTodo,
   Link2
 } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { Client, ClientType, ClientStatus, ClientOrigin, EntityNote, Document, Sale, Rental, Task, CalendarEvent, TaskStatus, TaskPriority, EventType, EventStatus, Property, ReferredColleague } from '../types';
 import Badge from '../components/Badge';
@@ -41,6 +41,9 @@ import SearchableSelect from '../components/SearchableSelect';
 export default function Clients() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const clientIdFromQuery = searchParams.get('clientId');
+  const effectiveClientId = id || clientIdFromQuery || undefined;
   const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addReferredColleague, updateReferredColleague, addActivityLog } = useAppContext();
   const { openRelations } = useRelationsDrawer();
   
@@ -118,7 +121,7 @@ export default function Clients() {
     dashboardArchived: false,
   });
 
-  const selectedClient = clients.find(c => c.id === id);
+  const selectedClient = clients.find(c => c.id === effectiveClientId);
 
   const lowerSearch = normalizeSearchText(searchTerm);
 
@@ -1148,6 +1151,9 @@ export default function Clients() {
                   <option value="Referido">Referido</option>
                   <option value="Llamada">Llamada</option>
                   <option value="Oficina">Oficina</option>
+                  <option value="Marketplace">Marketplace</option>
+                  <option value="Manual">Manual</option>
+                  <option value="Otro">Otro</option>
                 </select>
               </div>
               {(formData.origin === 'Referido') && (
@@ -1316,6 +1322,9 @@ export default function Clients() {
                   <option value="Referido">Referido</option>
                   <option value="Llamada">Llamada</option>
                   <option value="Oficina">Oficina</option>
+                  <option value="Marketplace">Marketplace</option>
+                  <option value="Manual">Manual</option>
+                  <option value="Otro">Otro</option>
                 </select>
               </div>
               <div>

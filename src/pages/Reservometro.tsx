@@ -1,15 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Gauge, Search, Plus, ChevronRight, Clock, DollarSign, Grid, List as ListIcon, X, ArrowUpDown, Edit3, Trash2
+  Gauge, Search, Plus, ChevronRight, Clock, DollarSign, Grid, List as ListIcon, X, ArrowUpDown, Edit3, Trash2, MoreVertical, Link2
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card, StatCard } from '../components/Card';
 import { cn, formatCurrency, formatDate, normalizeSearchText } from '../lib/utils';
 import { generateId } from '../lib/id';
 import { validateSale } from '../lib/validators';
-import type { Sale, SaleStatus } from '../types';
+import type { Sale, SaleStatus, ActivityLog } from '../types';
 import SearchableSelect from '../components/SearchableSelect';
 
 const STAGES: SaleStatus[] = [
@@ -22,13 +24,39 @@ function getBestDate(sale: Sale): string {
 
 export default function Reservometro() {
   const { sales, clients, properties, addSale, updateSale, deleteSale, showToast, addActivityLog } = useAppContext();
+  const { openRelations } = useRelationsDrawer();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<'pipeline' | 'list'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterOperationStatus, setFilterOperationStatus] = useState<string>('all');
+  const [filterPropertyType, setFilterPropertyType] = useState<string>('all');
+  const [filterBuyer, setFilterBuyer] = useState<string>('');
+  const [filterSeller, setFilterSeller] = useState<string>('');
+  const [filterAgent, setFilterAgent] = useState<string>('');
   const [sortKey, setSortKey] = useState<string>('fecha-desc');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [highlightedSaleId, setHighlightedSaleId] = useState<string | null>(null);
+
+  // Handle query param saleId
+  useEffect(() => {
+    const saleId = searchParams.get('saleId');
+    if (saleId) {
+      setHighlightedSaleId(saleId);
+      const el = document.getElementById(`sale-row-${saleId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      // optionally open form
+      const sale = sales.find(s => s.id === saleId);
+      if (sale) {
+        setEditingSale(sale);
+        setIsFormOpen(true);
+      }
+    }
+  }, [searchParams, sales]);
 
   const lowerSearch = normalizeSearchText(searchTerm);
 
@@ -36,14 +64,23 @@ export default function Reservometro() {
     let result = sales.filter(sale => {
       const property = properties.find(p => p.id === sale.propiedadId);
       const client = clients.find(c => c.id === sale.clientCompradorId);
+      const seller = clients.find(c => c.id === sale.propietarioId);
       const matchesSearch = !lowerSearch ||
         normalizeSearchText(property?.address || sale.externalPropertyAddress).includes(lowerSearch) ||
-        normalizeSearchText(client?.name).includes(lowerSearch) ||
+        normalizeSearchText(client?.name || sale.comprador).includes(lowerSearch) ||
+        normalizeSearchText(seller?.name || sale.vendedor).includes(lowerSearch) ||
+        normalizeSearchText(sale.inmoAgente).includes(lowerSearch) ||
         normalizeSearchText(sale.nombre).includes(lowerSearch) ||
         normalizeSearchText(sale.id).includes(lowerSearch) ||
         normalizeSearchText(sale.externalPropertyCode).includes(lowerSearch);
       const matchesStatus = filterStatus === 'all' || sale.estado === filterStatus;
-      return matchesSearch && matchesStatus;
+      const matchesOpStatus = filterOperationStatus === 'all' || (sale.operationStatus || 'activa') === filterOperationStatus;
+      const matchesPropertyType = filterPropertyType === 'all' ||
+        (filterPropertyType === 'vinculada' ? !!sale.propiedadId : !sale.propiedadId);
+      const matchesBuyer = !filterBuyer || sale.clientCompradorId === filterBuyer;
+      const matchesSeller = !filterSeller || sale.propietarioId === filterSeller;
+      const matchesAgent = !filterAgent || normalizeSearchText(sale.inmoAgente || '').includes(normalizeSearchText(filterAgent));
+      return matchesSearch && matchesStatus && matchesOpStatus && matchesPropertyType && matchesBuyer && matchesSeller && matchesAgent;
     });
 
     result.sort((a, b) => {
@@ -74,7 +111,7 @@ export default function Reservometro() {
     });
 
     return result;
-  }, [sales, lowerSearch, filterStatus, sortKey, sortDirection, clients, properties]);
+  }, [sales, lowerSearch, filterStatus, filterOperationStatus, filterPropertyType, filterBuyer, filterSeller, filterAgent, sortKey, sortDirection, clients, properties]);
 
   const stats = {
     active: sales.filter(s => !['vendida', 'caída'].includes(s.estado)).length,
@@ -83,6 +120,9 @@ export default function Reservometro() {
     totalCommissions: sales
       .filter(s => s.estado === 'vendida')
       .reduce((acc, s) => acc + (s.moneda === 'ARS' ? s.comisionEstimada : 0), 0),
+    grossCommissionsUsd: sales
+      .filter(s => s.operationStatus === 'vendida' && s.isCollected)
+      .reduce((acc, s) => acc + (s.grossCommissionUsd || (typeof s.valorCierre === 'number' && typeof s.porcentajeBruto === 'number' ? s.valorCierre * s.porcentajeBruto / 100 : 0)), 0),
   };
 
   const getStatusVariant = (status: string): string => {
@@ -118,34 +158,53 @@ export default function Reservometro() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard label="Activas" value={stats.active.toString()} icon={Gauge} color="blue" />
         <StatCard label="En Negociación" value={stats.negotiation.toString()} icon={Clock} color="orange" />
         <StatCard label="Reservadas" value={stats.reserved.toString()} icon={Gauge} color="purple" />
         <StatCard label="Comisiones (ARS)" value={formatCurrency(stats.totalCommissions, 'ARS')} icon={DollarSign} color="green" />
+        <StatCard label="Com. brutas cobradas (USD)" value={formatCurrency(stats.grossCommissionsUsd, 'USD')} icon={DollarSign} color="green" />
       </div>
 
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-        <div className="relative flex-1 max-w-md w-full">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Buscar por comprador, propiedad o ID..." className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+          <div className="relative flex-1 max-w-md w-full">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input type="text" placeholder="Buscar por comprador, propiedad o ID..." className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+          <div className="flex gap-2 w-full md:w-auto flex-wrap">
+            <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterOperationStatus} onChange={e => setFilterOperationStatus(e.target.value)}>
+              <option value="all">Todas las operaciones</option>
+              <option value="activa">Activas</option>
+              <option value="vendida">Vendidas</option>
+              <option value="caída">Caídas</option>
+            </select>
+            <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterPropertyType} onChange={e => setFilterPropertyType(e.target.value)}>
+              <option value="all">Tipo propiedad</option>
+              <option value="vinculada">Vinculada</option>
+              <option value="manual">Manual</option>
+            </select>
+            <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={sortKey} onChange={e => setSortKey(e.target.value)}>
+              <option value="fecha">Fecha (más próxima)</option>
+              <option value="fecha-desc">Fecha (más lejana)</option>
+              <option value="estado">Estado</option>
+              <option value="comision">Comisión</option>
+              <option value="precio">Precio</option>
+            </select>
+            <button onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')} className="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors" title={sortDirection === 'asc' ? 'Ascendente' : 'Descendente'}>
+              <ArrowUpDown size={16} className={cn("transition-transform", sortDirection === 'asc' ? 'rotate-180' : '')} />
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto flex-wrap">
+          <SearchableSelect placeholder="Filtrar comprador" value={filterBuyer} onChange={setFilterBuyer} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} allowEmpty emptyLabel="Todos los compradores" />
+          <SearchableSelect placeholder="Filtrar vendedor" value={filterSeller} onChange={setFilterSeller} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} allowEmpty emptyLabel="Todos los vendedores" />
+          <input type="text" placeholder="Agente / Inmo" className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterAgent} onChange={e => setFilterAgent(e.target.value)} />
           <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-            <option value="all">Todos los estados</option>
+            <option value="all">Estado trámite</option>
             {STAGES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
             <option value="caída">Caída</option>
           </select>
-          <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={sortKey} onChange={e => setSortKey(e.target.value)}>
-            <option value="fecha">Fecha (más próxima)</option>
-            <option value="fecha-desc">Fecha (más lejana)</option>
-            <option value="estado">Estado</option>
-            <option value="comision">Comisión</option>
-            <option value="precio">Precio</option>
-          </select>
-          <button onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')} className="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors" title={sortDirection === 'asc' ? 'Ascendente' : 'Descendente'}>
-            <ArrowUpDown size={16} className={cn("transition-transform", sortDirection === 'asc' ? 'rotate-180' : '')} />
-          </button>
         </div>
       </div>
 
@@ -167,7 +226,10 @@ export default function Reservometro() {
                       <div key={sale.id}>
                         <Card className="p-4 cursor-pointer hover:border-blue-300 transition-all active:scale-[0.98] group relative">
                           <div className="flex items-center justify-between mb-3">
-                            <Badge size="xs" variant={getStatusVariant(sale.estado) as any}>{sale.estado}</Badge>
+                            <div className="flex gap-1">
+                              <Badge size="xs" variant={getStatusVariant(sale.estado) as any}>{sale.estado}</Badge>
+                              <Badge size="xs" variant={(sale.operationStatus || 'activa') === 'activa' ? 'blue' : (sale.operationStatus || 'activa') === 'vendida' ? 'green' : 'red'}>{sale.operationStatus || 'activa'}</Badge>
+                            </div>
                             <p className="text-[10px] font-bold text-gray-400 uppercase">#{sale.id}</p>
                           </div>
                           <h4 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{sale.nombre || property?.title || sale.externalPropertyAddress || 'Propiedad no vinculada'}</h4>
@@ -200,44 +262,57 @@ export default function Reservometro() {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Operación</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Precios</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Comisión</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Acciones</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Operación</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Precios</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Comisión</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Monto escritura</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Operación</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredSales.map(sale => {
                   const property = properties.find(p => p.id === sale.propiedadId);
                   const client = clients.find(c => c.id === sale.clientCompradorId);
+                  const isHighlighted = highlightedSaleId === sale.id;
                   return (
-                    <tr key={sale.id} className="hover:bg-gray-50/50 transition-colors group cursor-pointer" onClick={() => { setEditingSale(sale); setIsFormOpen(true); }}>
-                      <td className="px-6 py-4">
+                    <tr key={sale.id} id={`sale-row-${sale.id}`} className={cn("hover:bg-gray-50/50 transition-colors group cursor-pointer", isHighlighted && "bg-yellow-50")} onClick={() => { setEditingSale(sale); setIsFormOpen(true); }}>
+                      <td className="px-4 py-3">
                         <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{sale.nombre || property?.address || sale.externalPropertyAddress || 'Propiedad no vinculada'}</p>
-                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">{client?.name || 'Sin comprador'} • {property?.title || sale.externalPropertyCode || sale.propiedadId || 'Sin vincular'}</p>
+                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">{client?.name || sale.comprador || 'Sin comprador'} • {property?.title || sale.externalPropertyCode || sale.propiedadId || 'Sin vincular'}</p>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
                         <div className="flex flex-col text-xs">
                           <span className="font-bold text-gray-700">Pub: {formatCurrency(sale.precioPublicado, sale.moneda)}</span>
                           {sale.valorOfertado !== undefined && <span className="text-blue-600 font-medium">Ofertado: {formatCurrency(sale.valorOfertado, sale.moneda)}</span>}
                           {sale.valorCierre !== undefined && <span className="text-green-600 font-medium">Cierre: {formatCurrency(sale.valorCierre, sale.moneda)}</span>}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
                         <span className="text-xs font-bold text-blue-600">{formatCurrency(sale.comisionEstimada, sale.moneda)}</span>
+                        {sale.grossCommissionUsd !== undefined && <span className="block text-[10px] text-green-600">Bruta USD {sale.grossCommissionUsd}</span>}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-gray-600">{sale.montoEscritura ?? '-'}</span>
+                      </td>
+                      <td className="px-4 py-3">
                         <span className="text-xs text-gray-500">{formatDate(getBestDate(sale))}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
                         <Badge variant={getStatusVariant(sale.estado) as any}>{sale.estado}</Badge>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 py-3">
+                        <Badge size="xs" variant={(sale.operationStatus || 'activa') === 'activa' ? 'blue' : (sale.operationStatus || 'activa') === 'vendida' ? 'green' : 'red'}>{sale.operationStatus || 'activa'}</Badge>
+                        {sale.isCollected && <span className="block text-[10px] text-green-600 font-bold mt-0.5">Cobrada</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setEditingSale(sale); setIsFormOpen(true); }}><Edit3 size={18} /></button>
-                          <button className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" onClick={e => { e.stopPropagation(); if (confirm('¿Eliminar esta operación?')) deleteSale(sale.id); }}><Trash2 size={18} /></button>
+                          <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Ver vínculos" onClick={e => { e.stopPropagation(); openRelations('sale', sale.id); }}><Link2 size={16} /></button>
+                          <SaleOperationMenu sale={sale} onUpdate={updateSale} onLog={addActivityLog} showToast={showToast} />
+                          <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setEditingSale(sale); setIsFormOpen(true); }}><Edit3 size={16} /></button>
+                          <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" onClick={e => { e.stopPropagation(); if (confirm('¿Eliminar esta operación?')) deleteSale(sale.id); }}><Trash2 size={16} /></button>
                         </div>
                       </td>
                     </tr>
@@ -262,44 +337,102 @@ export default function Reservometro() {
   );
 }
 
+function SaleOperationMenu({ sale, onUpdate, onLog, showToast }: { sale: Sale; onUpdate: (s: Sale) => void; onLog: (log: Omit<ActivityLog, 'id' | 'createdAt'>) => void; showToast: (message: string, type: any) => void }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const changeStatus = (status: 'activa' | 'vendida' | 'caída') => {
+    setOpen(false);
+    onUpdate({ ...sale, operationStatus: status });
+    onLog({ type: 'sale', action: 'status_changed', title: `Operación ${sale.nombre || sale.id} marcada como ${status}`, entityId: sale.id });
+    showToast(`Estado de operación actualizado a ${status}`, 'success');
+  };
+
+  const toggleCollected = () => {
+    setOpen(false);
+    const next = !sale.isCollected;
+    onUpdate({ ...sale, isCollected: next });
+    onLog({ type: 'sale', action: 'updated', title: `Operación ${sale.nombre || sale.id} ${next ? 'marcada como cobrada' : 'desmarcada como cobrada'}`, entityId: sale.id });
+    showToast(next ? 'Operación marcada como cobrada' : 'Operación desmarcada como cobrada', 'success');
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
+        <MoreVertical size={16} />
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 text-xs font-medium">
+          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700" onClick={() => changeStatus('activa')}>Marcar como Activa</button>
+          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-green-700" onClick={() => changeStatus('vendida')}>Marcar como Vendida</button>
+          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-red-700" onClick={() => changeStatus('caída')}>Marcar como Caída</button>
+          <div className="border-t border-gray-100 my-1" />
+          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-blue-700" onClick={toggleCollected}>{sale.isCollected ? 'Desmarcar cobrada' : 'Marcar como cobrada'}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => void }) {
   const { clients, properties, addSale, updateSale, showToast, addActivityLog } = useAppContext();
 
   const hasManualProperty = !!(sale?.externalPropertyAddress || sale?.externalPropertyLink || sale?.externalPropertyCode);
   const [propertyMode, setPropertyMode] = useState<'existing' | 'manual'>(sale ? (sale.propiedadId ? 'existing' : hasManualProperty ? 'manual' : 'existing') : 'existing');
 
-  const [formData, setFormData] = useState<Partial<Sale>>(sale || {
-    estado: 'consulta',
-    moneda: 'USD',
-    precioPublicado: 0,
-    comisionEstimada: 0,
-    notas: '',
-    clientCompradorId: '',
-    propiedadId: '',
-    propietarioId: '',
-    vendedorId: '',
-    nombre: '',
-    fecha: '',
-    vendedor: '',
-    comprador: '',
-    inmoAgente: '',
-    puntas: undefined,
-    porcentajeBruto: undefined,
-    porcentajeNeto: undefined,
-    porcentajeReferido: undefined,
-    fechaTomada: '',
-    valorOfertado: undefined,
-    contraoferta1: undefined,
-    contraoferta2: undefined,
-    valorCierre: undefined,
-    escribania: '',
-    montoEscritura: undefined,
-    infoExtra: '',
-    presupuesto: undefined,
-    fechaCreacion: new Date().toISOString().split('T')[0],
-    externalPropertyAddress: '',
-    externalPropertyLink: '',
-    externalPropertyCode: '',
+  const [formData, setFormData] = useState<Partial<Sale>>(() => {
+    if (sale) {
+      return {
+        ...sale,
+        operationStatus: sale.operationStatus || 'activa',
+        isCollected: sale.isCollected ?? false,
+        montoEscritura: typeof sale.montoEscritura === 'number' ? String(sale.montoEscritura) : sale.montoEscritura
+      };
+    }
+    return {
+      estado: 'consulta',
+      moneda: 'USD',
+      precioPublicado: 0,
+      comisionEstimada: 0,
+      notas: '',
+      clientCompradorId: '',
+      propiedadId: '',
+      propietarioId: '',
+      vendedorId: '',
+      nombre: '',
+      fecha: '',
+      vendedor: '',
+      comprador: '',
+      inmoAgente: '',
+      puntas: undefined,
+      porcentajeBruto: undefined,
+      porcentajeNeto: undefined,
+      porcentajeReferido: undefined,
+      fechaTomada: '',
+      valorOfertado: undefined,
+      contraoferta1: undefined,
+      contraoferta2: undefined,
+      valorCierre: undefined,
+      escribania: '',
+      montoEscritura: undefined,
+      infoExtra: '',
+      presupuesto: undefined,
+      operationStatus: 'activa' as 'activa' | 'vendida' | 'caída',
+      isCollected: false,
+      grossCommissionUsd: undefined,
+      fechaCreacion: new Date().toISOString().split('T')[0],
+      externalPropertyAddress: '',
+      externalPropertyLink: '',
+      externalPropertyCode: '',
+    };
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -438,13 +571,33 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
                 { key: 'porcentajeBruto', label: '% Bruto' },
                 { key: 'porcentajeNeto', label: '% Neto' },
                 { key: 'porcentajeReferido', label: '% Referido' },
-                { key: 'montoEscritura', label: 'Monto Escritura' },
+                { key: 'grossCommissionUsd', label: 'Comisión bruta USD' },
               ].map(field => (
                 <div key={field.key}>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{field.label}</label>
                   <input type="number" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={(formData as any)[field.key] ?? ''} onChange={e => setFormData({...formData, [field.key]: e.target.value ? Number(e.target.value) : undefined})} />
                 </div>
               ))}
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Monto Escritura</label>
+                <input type="text" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={(formData as any).montoEscritura ?? ''} onChange={e => setFormData({...formData, montoEscritura: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Estado operación</label>
+                <select className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.operationStatus || 'activa'} onChange={e => setFormData({...formData, operationStatus: e.target.value as any})}>
+                  <option value="activa">Activa</option>
+                  <option value="vendida">Vendida</option>
+                  <option value="caída">Caída</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Cobrada</label>
+                <div className="flex items-center h-[42px]">
+                  <button type="button" onClick={() => setFormData({...formData, isCollected: !formData.isCollected})} className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition-all", formData.isCollected ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-500 border-gray-200")}>
+                    {formData.isCollected ? 'Sí' : 'No'}
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

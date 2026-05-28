@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo } from 'react';
-import { X, ChevronRight, Link2, Activity, User, Home, Briefcase, ShoppingCart, Key, CheckSquare, Calendar, FileText, Store, ClipboardList } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { X, ChevronRight, Link2, Activity, User, Home, Briefcase, ShoppingCart, Key, CheckSquare, Calendar, FileText, Store, ClipboardList, Plus, ChevronDown } from 'lucide-react';
 import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import { useAppContext } from '../context/AppContext';
-import { getClientRelations, getPropertyRelations, getColleagueRelations, getBuyerRelations, type RelationEntityType, type RelationGroup, type RelationItem } from '../lib/relations';
+import { getClientRelations, getPropertyRelations, getColleagueRelations, getBuyerRelations, getSaleRelations, type RelationEntityType, type RelationGroup, type RelationItem } from '../lib/relations';
 import { cn, formatDate } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import { generateId } from '../lib/id';
+import Button from './Button';
 
 const typeIcons: Record<RelationEntityType, React.ElementType> = {
   client: User,
@@ -73,7 +75,14 @@ function EmptyGroupState({ title }: { title: string }) {
 
 export default function EntityRelationsDrawer() {
   const { isOpen, entityType, entityId, closeRelations } = useRelationsDrawer();
-  const data = useAppContext();
+  const { clients, properties, sales, rentals, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs, addTask, addActivityLog, showToast } = useAppContext();
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', dueDate: new Date().toISOString().split('T')[0], priority: 'media' as 'baja' | 'media' | 'alta' | 'urgente' });
+
+  const toggleGroup = (groupId: string) => {
+    setCollapsedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
 
   // Close on Escape
   useEffect(() => {
@@ -87,17 +96,17 @@ export default function EntityRelationsDrawer() {
   const groups = useMemo<RelationGroup[]>(() => {
     if (!entityType || !entityId) return [];
     const appData = {
-      clients: data.clients,
-      properties: data.properties,
-      sales: data.sales,
-      rentals: data.rentals,
-      tasks: data.tasks,
-      events: data.events,
-      documents: data.documents,
-      referredColleagues: data.referredColleagues,
-      waitingRoom: data.waitingRoom,
-      buyers: data.buyers,
-      activityLogs: data.activityLogs
+      clients,
+      properties,
+      sales,
+      rentals,
+      tasks,
+      events,
+      documents,
+      referredColleagues,
+      waitingRoom,
+      buyers,
+      activityLogs
     };
     switch (entityType) {
       case 'client':
@@ -108,24 +117,32 @@ export default function EntityRelationsDrawer() {
         return getColleagueRelations(entityId, appData);
       case 'buyer':
         return getBuyerRelations(entityId, appData);
+      case 'sale':
+        return getSaleRelations(entityId, appData);
       default:
         return [];
     }
-  }, [entityType, entityId, data]);
+  }, [entityType, entityId, clients, properties, sales, rentals, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs]);
 
   const entityName = useMemo(() => {
     if (!entityType || !entityId) return '';
     if (entityType === 'client') {
-      return data.clients.find(c => c.id === entityId)?.name || 'Cliente';
+      return clients.find(c => c.id === entityId)?.name || 'Cliente';
     }
     if (entityType === 'property') {
-      return data.properties.find(p => p.id === entityId)?.title || 'Propiedad';
+      return properties.find(p => p.id === entityId)?.title || 'Propiedad';
     }
     if (entityType === 'colleague') {
-      return data.referredColleagues.find(c => c.id === entityId)?.nombreApellido || 'Colega';
+      return referredColleagues.find(c => c.id === entityId)?.nombreApellido || 'Colega';
+    }
+    if (entityType === 'buyer') {
+      return buyers.find(b => b.id === entityId)?.nombre || 'Comprador';
+    }
+    if (entityType === 'sale') {
+      return sales.find(s => s.id === entityId)?.nombre || 'Operación';
     }
     return '';
-  }, [entityType, entityId, data]);
+  }, [entityType, entityId, clients, properties, referredColleagues, buyers, sales]);
 
   if (!isOpen) return null;
 
@@ -170,25 +187,86 @@ export default function EntityRelationsDrawer() {
               <p className="text-sm text-gray-500">No se encontraron vínculos para este objeto.</p>
             </div>
           ) : (
-            groups.map(group => (
-              <div key={group.id} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">{group.title}</h3>
-                  <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{group.count}</span>
-                </div>
-                {group.count > 0 ? (
-                  <div className="space-y-2">
-                    {group.items.map(item => (
-                      <React.Fragment key={`${item.type}-${item.id}`}>
-                        <RelationItemCard item={item} />
-                      </React.Fragment>
-                    ))}
+            <>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setShowTaskForm(s => !s)}>
+                <Plus size={14} className="mr-2" /> Crear tarea relacionada
+              </Button>
+              {showTaskForm && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Título</label>
+                    <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
                   </div>
-                ) : (
-                  <EmptyGroupState title={group.title} />
-                )}
-              </div>
-            ))
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Descripción</label>
+                    <textarea rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Fecha límite</label>
+                      <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.dueDate} onChange={e => setTaskForm({...taskForm, dueDate: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Prioridad</label>
+                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.priority} onChange={e => setTaskForm({...taskForm, priority: e.target.value as any})}>
+                        <option value="baja">Baja</option>
+                        <option value="media">Media</option>
+                        <option value="alta">Alta</option>
+                        <option value="urgente">Urgente</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setShowTaskForm(false)}>Cancelar</Button>
+                    <Button variant="primary" size="sm" onClick={() => {
+                      if (!taskForm.title.trim()) { showToast('El título es obligatorio', 'error'); return; }
+                      const newTask = {
+                        id: generateId('t'),
+                        title: taskForm.title,
+                        description: taskForm.description,
+                        dueDate: taskForm.dueDate,
+                        priority: taskForm.priority,
+                        status: 'pendiente' as const,
+                        relatedEntities: [{ type: entityType as any, id: entityId }],
+                        createdAt: new Date().toISOString()
+                      };
+                      addTask(newTask);
+                      addActivityLog({ type: 'task', action: 'created', title: `Tarea creada desde Vista 360: ${newTask.title}`, entityId: newTask.id });
+                      showToast('Tarea creada', 'success');
+                      setShowTaskForm(false);
+                      setTaskForm({ title: '', description: '', dueDate: new Date().toISOString().split('T')[0], priority: 'media' });
+                    }}>Crear</Button>
+                  </div>
+                </div>
+              )}
+              {groups.map(group => (
+                <div key={group.id} className="space-y-3">
+                  <button className="flex items-center justify-between w-full" onClick={() => toggleGroup(group.id)}>
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">{group.title}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{group.count}</span>
+                      <ChevronDown size={14} className={cn("text-gray-400 transition-transform", collapsedGroups[group.id] ? "-rotate-90" : "")} />
+                    </div>
+                  </button>
+                  {!collapsedGroups[group.id] && (
+                    group.count > 0 ? (
+                      <div className="space-y-2">
+                        {group.items.slice(0, 5).map(item => (
+                          <React.Fragment key={`${item.type}-${item.id}`}>
+                            <RelationItemCard item={item} />
+                          </React.Fragment>
+                        ))}
+                        {group.items.length > 5 && (
+                          <p className="text-xs text-gray-400 text-center">+ {group.items.length - 5} más</p>
+                        )}
+                      </div>
+                    ) : (
+                      <EmptyGroupState title={group.title} />
+                    )
+                  )}
+                </div>
+              ))}
+            </>
           )}
         </div>
       </div>

@@ -141,7 +141,7 @@ export function getClientRelations(
     title: p.title,
     subtitle: `${p.address}, ${p.zone}`,
     status: p.status,
-    route: `/propiedades/${p.id}`
+    route: `/propiedades?propertyId=${p.id}`
   })));
   if (ownedGroup) groups.push(ownedGroup);
 
@@ -155,7 +155,7 @@ export function getClientRelations(
       title: `Compra: ${findPropertyTitle(data.properties, s.propiedadId) || s.externalPropertyAddress || s.id}`,
       subtitle: formatStatusLabel(s.estado),
       status: s.estado,
-      route: '/reservometro' as string
+      route: `/reservometro?saleId=${s.id}` as string
     })),
     ...asSeller.map(s => ({
       id: s.id,
@@ -163,7 +163,7 @@ export function getClientRelations(
       title: `Venta (propietario): ${findPropertyTitle(data.properties, s.propiedadId) || s.externalPropertyAddress || s.id}`,
       subtitle: formatStatusLabel(s.estado),
       status: s.estado,
-      route: '/reservometro' as string
+      route: `/reservometro?saleId=${s.id}` as string
     }))
   ];
   // Text-match fallback for sales without explicit IDs
@@ -176,7 +176,7 @@ export function getClientRelations(
           title: `Coincidencia por texto: ${s.nombre || s.id}`,
           subtitle: `${formatStatusLabel(s.estado)} — ${s.comprador}`,
           status: s.estado,
-          route: '/reservometro'
+          route: `/reservometro?saleId=${s.id}`
         });
       }
     }
@@ -188,7 +188,7 @@ export function getClientRelations(
           title: `Coincidencia por texto (vendedor): ${s.nombre || s.id}`,
           subtitle: `${formatStatusLabel(s.estado)} — ${s.vendedor}`,
           status: s.estado,
-          route: '/reservometro'
+          route: `/reservometro?saleId=${s.id}`
         });
       }
     }
@@ -209,14 +209,14 @@ export function getClientRelations(
   if (rentalGroup) groups.push(rentalGroup);
 
   // 6. Tareas
-  const clientTasks = data.tasks.filter(t => t.clientId === clientId);
+  const clientTasks = data.tasks.filter(t => t.clientId === clientId || t.relatedEntities?.some(r => r.type === 'client' && r.id === clientId));
   const taskGroup = buildGroup('Tareas', clientTasks.map(t => ({
     id: t.id,
     type: 'task',
     title: t.title,
     subtitle: t.status,
     status: t.status,
-    route: '/tareas'
+    route: `/tareas?taskId=${t.id}`
   })));
   if (taskGroup) groups.push(taskGroup);
 
@@ -306,7 +306,7 @@ export function getPropertyRelations(
       type: 'client',
       title: owner.name,
       subtitle: owner.phone,
-      route: `/clientes/${owner.id}`
+      route: `/clientes?clientId=${owner.id}`
     }]);
     if (g) groups.push(g);
   }
@@ -325,7 +325,7 @@ export function getPropertyRelations(
       title: `Venta: ${findClientName(data.clients, s.clientCompradorId) || 'Sin comprador'}`,
       subtitle: formatStatusLabel(s.estado),
       status: s.estado,
-      route: '/reservometro' as string
+      route: `/reservometro?saleId=${s.id}` as string
     })),
     ...manualSales.map(s => ({
       id: s.id,
@@ -333,7 +333,7 @@ export function getPropertyRelations(
       title: `Venta manual: ${s.externalPropertyAddress || s.id}`,
       subtitle: formatStatusLabel(s.estado),
       status: s.estado,
-      route: '/reservometro' as string
+      route: `/reservometro?saleId=${s.id}` as string
     }))
   ];
   // Optional address match
@@ -347,7 +347,7 @@ export function getPropertyRelations(
             title: `Coincidencia por dirección: ${s.nombre || s.id}`,
             subtitle: s.externalPropertyAddress,
             status: s.estado,
-            route: '/reservometro'
+            route: `/reservometro?saleId=${s.id}`
           });
         }
       }
@@ -376,7 +376,7 @@ export function getPropertyRelations(
 
   // 5. Tareas
   const propTasks = data.tasks.filter(t =>
-    t.propertyId === propertyId || t.clientId === property.ownerId
+    t.propertyId === propertyId || t.clientId === property.ownerId || t.relatedEntities?.some(r => r.type === 'property' && r.id === propertyId)
   );
   const taskGroup = buildGroup('Tareas', propTasks.map(t => ({
     id: t.id,
@@ -384,7 +384,7 @@ export function getPropertyRelations(
     title: t.title,
     subtitle: t.status,
     status: t.status,
-    route: '/tareas'
+    route: `/tareas?taskId=${t.id}`
   })));
   if (taskGroup) groups.push(taskGroup);
 
@@ -470,7 +470,7 @@ export function getColleagueRelations(
     type: 'client',
     title: c.name,
     subtitle: c.phone,
-    route: `/clientes/${c.id}`
+    route: `/clientes?clientId=${c.id}`
   })));
   if (rcGroup) groups.push(rcGroup);
 
@@ -486,7 +486,7 @@ export function getColleagueRelations(
     title: p.title,
     subtitle: p.address,
     status: p.status,
-    route: `/propiedades/${p.id}`
+    route: `/propiedades?propertyId=${p.id}`
   })));
   if (propGroup) groups.push(propGroup);
 
@@ -504,9 +504,23 @@ export function getColleagueRelations(
     title: `Venta: ${findPropertyTitle(data.properties, s.propiedadId) || s.externalPropertyAddress || s.id}`,
     subtitle: formatStatusLabel(s.estado),
     status: s.estado,
-    route: '/reservometro'
+    route: `/reservometro?saleId=${s.id}`
   })));
   if (opGroup) groups.push(opGroup);
+
+  // 5. Tareas relacionadas
+  const colleagueTasks = data.tasks.filter(t =>
+    t.relatedEntities?.some(r => r.type === 'colleague' && r.id === colleagueId)
+  );
+  const taskGroup = buildGroup('Tareas', colleagueTasks.map(t => ({
+    id: t.id,
+    type: 'task',
+    title: t.title,
+    subtitle: t.status,
+    status: t.status,
+    route: `/tareas?taskId=${t.id}`
+  })));
+  if (taskGroup) groups.push(taskGroup);
 
   // 5. Últimos movimientos
   const logs = data.activityLogs.filter(l =>
@@ -517,6 +531,121 @@ export function getColleagueRelations(
   const logGroup = buildGroup('Últimos movimientos', logs.map(l => ({
     id: l.id,
     type: 'colleague',
+    title: l.title,
+    subtitle: l.description || l.action,
+    date: l.createdAt,
+    metadata: { action: l.action, tipo: l.type }
+  })));
+  if (logGroup) groups.push(logGroup);
+
+  return groups;
+}
+
+/* ------------------------------------------------------------------ */
+/*  SALE RELATIONS                                                     */
+/* ------------------------------------------------------------------ */
+
+export function getSaleRelations(
+  saleId: string,
+  data: AppData
+): RelationGroup[] {
+  const groups: RelationGroup[] = [];
+  const sale = data.sales.find(s => s.id === saleId);
+  if (!sale) return groups;
+
+  const property = data.properties.find(p => p.id === sale.propiedadId);
+  const buyer = data.clients.find(c => c.id === sale.clientCompradorId);
+  const seller = data.clients.find(c => c.id === sale.propietarioId);
+
+  // 1. Datos principales
+  groups.push({
+    id: 'datos_principales',
+    title: 'Datos principales',
+    count: 1,
+    items: [{
+      id: sale.id,
+      type: 'sale',
+      title: sale.nombre || property?.title || sale.externalPropertyAddress || `Operación ${sale.id}`,
+      subtitle: `${formatStatusLabel(sale.estado)} · ${sale.operationStatus || 'activa'}`,
+      status: sale.estado,
+      metadata: {
+        montoEscritura: sale.montoEscritura ? String(sale.montoEscritura) : undefined,
+        valorCierre: sale.valorCierre,
+        comisionBruta: sale.grossCommissionUsd,
+        cobrada: sale.isCollected ? 'Sí' : 'No'
+      }
+    }]
+  });
+
+  // 2. Propiedad
+  if (property) {
+    const g = buildGroup('Propiedad', [{
+      id: property.id,
+      type: 'property',
+      title: property.title,
+      subtitle: property.address,
+      status: property.status,
+      route: `/propiedades?propertyId=${property.id}`
+    }]);
+    if (g) groups.push(g);
+  } else if (sale.externalPropertyAddress) {
+    const g = buildGroup('Propiedad manual', [{
+      id: sale.id + '_manual',
+      type: 'property',
+      title: sale.externalPropertyAddress,
+      subtitle: sale.externalPropertyCode || 'Sin código',
+      route: `/reservometro?saleId=${sale.id}`
+    }]);
+    if (g) groups.push(g);
+  }
+
+  // 3. Comprador
+  if (buyer) {
+    const g = buildGroup('Comprador', [{
+      id: buyer.id,
+      type: 'client',
+      title: buyer.name,
+      subtitle: buyer.phone,
+      route: `/clientes?clientId=${buyer.id}`
+    }]);
+    if (g) groups.push(g);
+  }
+
+  // 4. Vendedor / Propietario
+  if (seller) {
+    const g = buildGroup('Vendedor / Propietario', [{
+      id: seller.id,
+      type: 'client',
+      title: seller.name,
+      subtitle: seller.phone,
+      route: `/clientes?clientId=${seller.id}`
+    }]);
+    if (g) groups.push(g);
+  }
+
+  // 5. Tareas relacionadas
+  const saleTasks = data.tasks.filter(t =>
+    t.relatedEntities?.some(r => r.type === 'sale' && r.id === saleId)
+  );
+  const taskGroup = buildGroup('Tareas', saleTasks.map(t => ({
+    id: t.id,
+    type: 'task',
+    title: t.title,
+    subtitle: t.status,
+    status: t.status,
+    route: `/tareas?taskId=${t.id}`
+  })));
+  if (taskGroup) groups.push(taskGroup);
+
+  // 6. Últimos movimientos
+  const logs = data.activityLogs.filter(l =>
+    l.entityId === saleId ||
+    normalizeText(l.title).includes(normalizeText(sale.nombre || '')) ||
+    normalizeText(l.description || '').includes(normalizeText(sale.nombre || ''))
+  ).slice(0, 15);
+  const logGroup = buildGroup('Últimos movimientos', logs.map(l => ({
+    id: l.id,
+    type: 'sale',
     title: l.title,
     subtitle: l.description || l.action,
     date: l.createdAt,
@@ -560,7 +689,33 @@ export function getBuyerRelations(
     }]
   });
 
-  // 2. Últimos movimientos
+  // 2. Operaciones relacionadas
+  const buyerSales = data.sales.filter(s => s.clientCompradorId === buyerId);
+  const saleGroup = buildGroup('Operaciones', buyerSales.map(s => ({
+    id: s.id,
+    type: 'sale',
+    title: s.nombre || data.properties.find(p => p.id === s.propiedadId)?.title || s.externalPropertyAddress || `Operación ${s.id}`,
+    subtitle: formatStatusLabel(s.estado),
+    status: s.estado,
+    route: `/reservometro?saleId=${s.id}`
+  })));
+  if (saleGroup) groups.push(saleGroup);
+
+  // 3. Tareas relacionadas
+  const buyerTasks = data.tasks.filter(t =>
+    t.relatedEntities?.some(r => r.type === 'buyer' && r.id === buyerId)
+  );
+  const taskGroup = buildGroup('Tareas', buyerTasks.map(t => ({
+    id: t.id,
+    type: 'task',
+    title: t.title,
+    subtitle: t.status,
+    status: t.status,
+    route: `/tareas?taskId=${t.id}`
+  })));
+  if (taskGroup) groups.push(taskGroup);
+
+  // 4. Últimos movimientos
   const logs = data.activityLogs.filter(l =>
     l.entityId === buyerId ||
     normalizeText(l.title).includes(normalizeText(buyer.nombre)) ||

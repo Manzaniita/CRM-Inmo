@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
-  Plus, Search, Briefcase, X, Trash2, Edit3, CheckCircle2, XCircle, Link2
+  Plus, Search, Briefcase, X, Trash2, Edit3, CheckCircle2, XCircle, Link2, Eye, Phone, Mail, MapPin, Home
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import Badge from '../components/Badge';
@@ -9,17 +10,30 @@ import { cn, normalizeSearchText } from '../lib/utils';
 import { generateId } from '../lib/id';
 import { validateReferredColleague } from '../lib/validators';
 import { useRelationsDrawer } from '../context/RelationsDrawerContext';
-import type { ReferredColleague } from '../types';
+import type { ReferredColleague, Client } from '../types';
 
 export default function ReferredColleagues() {
-  const { referredColleagues, clients, properties, sales, rentals, tasks, events, documents, waitingRoom, buyers, activityLogs, addReferredColleague, updateReferredColleague, deleteReferredColleague, showToast } = useAppContext();
+  const { referredColleagues, clients, properties, sales, rentals, tasks, events, documents, waitingRoom, buyers, activityLogs, addReferredColleague, updateReferredColleague, deleteReferredColleague, showToast, updateClient, addActivityLog } = useAppContext();
   const { openRelations } = useRelationsDrawer();
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRespondio, setFilterRespondio] = useState<string>('');
   const [filterYaRefirio, setFilterYaRefirio] = useState<string>('');
   const [filterAprobado, setFilterAprobado] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingColleague, setEditingColleague] = useState<ReferredColleague | null>(null);
+  const [viewingColleague, setViewingColleague] = useState<ReferredColleague | null>(null);
+  const [editingReferredClient, setEditingReferredClient] = useState<Client | null>(null);
+  const [referredClientForm, setReferredClientForm] = useState<Partial<Client>>({});
+  const [sortReferrals, setSortReferrals] = useState<'default' | 'desc' | 'asc'>('default');
+
+  useEffect(() => {
+    const colleagueId = searchParams.get('colleagueId');
+    if (colleagueId) {
+      const col = referredColleagues.find(c => c.id === colleagueId);
+      if (col) setViewingColleague(col);
+    }
+  }, [searchParams, referredColleagues]);
 
   const [formData, setFormData] = useState<Partial<ReferredColleague>>({
     nombreApellido: '',
@@ -42,6 +56,15 @@ export default function ReferredColleagues() {
 
   const lowerSearch = normalizeSearchText(searchTerm);
 
+  const getReferredClients = (colleague: ReferredColleague): Client[] => {
+    const ids = new Set<string>();
+    (colleague.referredClientIds || []).forEach(id => ids.add(id));
+    clients.forEach(c => {
+      if (c.referredByColleagueId === colleague.id) ids.add(c.id);
+    });
+    return Array.from(ids).map(id => clients.find(c => c.id === id)).filter(Boolean) as Client[];
+  };
+
   const filtered = referredColleagues.filter(c => {
     const matchesSearch = normalizeSearchText(c.nombreApellido).includes(lowerSearch) ||
       normalizeSearchText(c.oficina).includes(lowerSearch) ||
@@ -51,6 +74,11 @@ export default function ReferredColleagues() {
     const aprobado = typeof c.comoRespondio === 'number' && c.comoRespondio >= 7;
     const matchesAprobado = filterAprobado === '' || String(aprobado) === filterAprobado;
     return matchesSearch && matchesRespondio && matchesYaRefirio && matchesAprobado;
+  }).sort((a, b) => {
+    if (sortReferrals === 'default') return 0;
+    const countA = getReferredClients(a).length;
+    const countB = getReferredClients(b).length;
+    return sortReferrals === 'desc' ? countB - countA : countA - countB;
   });
 
   const openForm = (colleague?: ReferredColleague) => {
@@ -111,6 +139,17 @@ export default function ReferredColleagues() {
     }
   };
 
+  const openEditReferredClient = (client: Client) => {
+    setEditingReferredClient(client);
+    setReferredClientForm({
+      name: client.name,
+      phone: client.phone,
+      email: client.email,
+      notes: client.notes,
+      interestZone: client.interestZone
+    });
+  };
+
   return (
     <div className="space-y-6 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -149,6 +188,11 @@ export default function ReferredColleagues() {
             <option value="">Aprobado</option>
             <option value="true">Sí (≥7)</option>
             <option value="false">No (&lt;7)</option>
+          </select>
+          <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={sortReferrals} onChange={e => setSortReferrals(e.target.value as any)}>
+            <option value="default">Orden normal</option>
+            <option value="desc">Más referidos</option>
+            <option value="asc">Menos referidos</option>
           </select>
         </div>
       </div>
@@ -197,9 +241,15 @@ export default function ReferredColleagues() {
                       {c.yaRefirio ? <CheckCircle2 size={16} className="text-green-500" /> : <XCircle size={16} className="text-gray-300" />}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {(c.referredClientIds && c.referredClientIds.length > 0)
-                        ? c.referredClientIds.map(cid => clients.find(cl => cl.id === cid)?.name).filter(Boolean).join(', ')
-                        : '-'}
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold">{getReferredClients(c).length}</span>
+                        <button
+                          className="text-xs text-blue-600 hover:underline"
+                          onClick={(e) => { e.stopPropagation(); setViewingColleague(c); }}
+                        >
+                          Ver referidos
+                        </button>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{c.aQuien || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{c.primerContacto || '-'}</td>
@@ -224,6 +274,105 @@ export default function ReferredColleagues() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {viewingColleague && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setViewingColleague(null); setEditingReferredClient(null); }} />
+          <div className="bg-white rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="font-bold text-xl text-gray-900">{viewingColleague.nombreApellido}</h2>
+                <p className="text-sm text-gray-500">{viewingColleague.oficina} · {getReferredClients(viewingColleague).length} clientes referidos</p>
+              </div>
+              <button onClick={() => { setViewingColleague(null); setEditingReferredClient(null); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-4">
+              {getReferredClients(viewingColleague).length === 0 ? (
+                <p className="text-gray-500 text-center py-8">Este colega aún no tiene clientes referidos.</p>
+              ) : (
+                getReferredClients(viewingColleague).map(client => {
+                  const clientProperties = properties.filter(p => p.ownerId === client.id);
+                  return (
+                    <div key={client.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-sm transition-shadow">
+                      {editingReferredClient?.id === client.id ? (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-bold text-gray-700 mb-1">Nombre</label>
+                              <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={referredClientForm.name || ''} onChange={e => setReferredClientForm({...referredClientForm, name: e.target.value})} />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-700 mb-1">Teléfono</label>
+                              <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={referredClientForm.phone || ''} onChange={e => setReferredClientForm({...referredClientForm, phone: e.target.value})} />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-700 mb-1">Email</label>
+                              <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={referredClientForm.email || ''} onChange={e => setReferredClientForm({...referredClientForm, email: e.target.value})} />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-700 mb-1">Ubicación / Zona</label>
+                              <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={referredClientForm.interestZone || ''} onChange={e => setReferredClientForm({...referredClientForm, interestZone: e.target.value})} />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Notas</label>
+                            <textarea rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={referredClientForm.notes || ''} onChange={e => setReferredClientForm({...referredClientForm, notes: e.target.value})} />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => setEditingReferredClient(null)}>Cancelar</Button>
+                            <Button variant="primary" size="sm" onClick={() => {
+                              if (!referredClientForm.name?.trim()) { showToast('El nombre es obligatorio', 'error'); return; }
+                              updateClient({ ...client, ...referredClientForm } as Client);
+                              addActivityLog({ type: 'client', action: 'updated', title: `Cliente referido editado: ${referredClientForm.name}`, entityId: client.id });
+                              showToast('Cliente actualizado', 'success');
+                              setEditingReferredClient(null);
+                            }}>Guardar</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 space-y-1">
+                            <p className="font-bold text-gray-900">{client.name}</p>
+                            <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                              {client.phone && <span className="flex items-center gap-1"><Phone size={12} /> {client.phone}</span>}
+                              {client.email && <span className="flex items-center gap-1"><Mail size={12} /> {client.email}</span>}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {clientProperties.length > 0 ? (
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  {clientProperties.map(prop => (
+                                    <span key={prop.id} className="flex items-center gap-1 text-blue-600">
+                                      <Home size={12} />
+                                      {prop.title} · {prop.address}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="italic text-gray-400 flex items-center gap-1 mt-1"><Home size={12} /> Sin propiedad asociada</span>
+                              )}
+                            </div>
+                            {client.notes && <p className="text-xs text-gray-500 italic mt-1">{client.notes}</p>}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {clientProperties.length > 0 && (
+                              <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Ver propiedad" onClick={() => openRelations('property', clientProperties[0].id)}>
+                                <Link2 size={14} />
+                              </button>
+                            )}
+                            <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar" onClick={() => openEditReferredClient(client)}>
+                              <Edit3 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       )}
 

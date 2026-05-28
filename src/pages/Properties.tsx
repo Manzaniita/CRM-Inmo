@@ -30,7 +30,7 @@ import {
   Clock,
   Link2
 } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
@@ -51,6 +51,9 @@ import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 export default function Properties() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const propertyIdFromQuery = searchParams.get('propertyId');
+  const effectivePropertyId = id || propertyIdFromQuery || undefined;
   const { properties, clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addClient, addActivityLog } = useAppContext();
   const { openRelations } = useRelationsDrawer();
   
@@ -129,7 +132,7 @@ export default function Properties() {
     subtitle: c.type
   })), [clients]);
 
-  const selectedProp = properties.find(p => p.id === id);
+  const selectedProp = properties.find(p => p.id === effectivePropertyId);
 
   const filteredProps = properties.filter(p => {
     const matchesSearch = 

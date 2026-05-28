@@ -27,7 +27,7 @@ const TYPE_CONFIG = {
 
 export default function GlobalSearch() {
   const navigate = useNavigate();
-  const { clients, properties, tasks, sales, rentals, documents, referredColleagues } = useAppContext();
+  const { clients, properties, tasks, sales, rentals, documents, referredColleagues, buyers } = useAppContext();
 
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -35,7 +35,7 @@ export default function GlobalSearch() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const results: SearchResultItem[] = useMemo(() => {
-    return searchAll({ clients, properties, tasks, sales, rentals, documents, referredColleagues }, query);
+    return searchAll({ clients, properties, tasks, sales, rentals, documents, referredColleagues, buyers }, query);
   }, [query, clients, properties, tasks, sales, rentals, documents, referredColleagues]);
 
   const grouped = useMemo(() => {
