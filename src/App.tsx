@@ -39,12 +39,14 @@ import Buyers from './pages/Buyers';
 import ReferredColleagues from './pages/ReferredColleagues';
 import Marketplace from './pages/Marketplace';
 import Reservometro from './pages/Reservometro';
+import EntityRelationsDrawer from './components/EntityRelationsDrawer';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/dashboard' },
   { id: 'clientes', label: 'Clientes', icon: Users, path: '/clientes' },
   { id: 'propiedades', label: 'Propiedades', icon: Home, path: '/propiedades' },
   { id: 'agenda', label: 'Agenda', icon: Calendar, path: '/agenda' },
+  { id: 'tareas', label: 'Tareas', icon: CheckSquare, path: '/tareas' },
   { id: 'sala-espera', label: 'Sala de Espera', icon: Sofa, path: '/sala-espera' },
   { id: 'compradores', label: 'Compradores', icon: ShoppingCart, path: '/compradores' },
   { id: 'colegas-referidos', label: 'Colegas Referidos', icon: Briefcase, path: '/colegas-referidos' },
@@ -202,6 +204,7 @@ export default function App() {
           </div>
         </main>
       </div>
+      <EntityRelationsDrawer />
     </div>
   );
 }

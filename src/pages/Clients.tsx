@@ -17,7 +17,8 @@ import {
   X,
   FileText,
   Clock,
-  ListTodo
+  ListTodo,
+  Link2
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -30,6 +31,7 @@ import { generateId } from '../lib/id';
 import { validateClient, validateTask } from '../lib/validators';
 import RelationsPanel from '../components/RelationsPanel';
 import { getClientRelations } from '../lib/relations';
+import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
@@ -39,7 +41,8 @@ import SearchableSelect from '../components/SearchableSelect';
 export default function Clients() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addReferredColleague, updateReferredColleague, addActivityLog } = useAppContext();
+  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addReferredColleague, updateReferredColleague, addActivityLog } = useAppContext();
+  const { openRelations } = useRelationsDrawer();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -946,7 +949,10 @@ export default function Clients() {
               </div>
             </Card>
 
-            <RelationsPanel groups={getClientRelations(selectedClient.id, { properties, sales, rentals, tasks, events, documents, referredColleagues })} />
+            <Button variant="outline" className="w-full" onClick={() => openRelations('client', selectedClient.id)}>
+              <Link2 size={16} className="mr-2" /> Ver vínculos (Vista 360°)
+            </Button>
+            <RelationsPanel groups={getClientRelations(selectedClient.id, { clients, properties, sales, rentals, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs })} />
           </div>
         </div>
         {isFormModalOpen && renderFormModal()}
@@ -1413,6 +1419,16 @@ export default function Clients() {
                   <Badge variant="gray" size="sm">{client.profession}</Badge>
                 )}
               </div>
+              <button
+                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mr-1"
+                onClick={e => {
+                  e.stopPropagation();
+                  openRelations('client', client.id);
+                }}
+                title="Ver vínculos"
+              >
+                <Link2 size={14} />
+              </button>
               <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
             </div>
           ))}

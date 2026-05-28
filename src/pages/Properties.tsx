@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useReducer } from 'react';
+import { createPortal } from 'react-dom';
 import SearchableSelect from '../components/SearchableSelect';
 import { 
   Home, 
@@ -26,7 +27,8 @@ import {
   MoreVertical,
   Camera,
   Trash2,
-  Clock
+  Clock,
+  Link2
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -44,11 +46,13 @@ import RentalModal from '../components/RentalModal';
 import { Property, PropertyType, PropertyStatus, PropertyOperation, EntityNote, Document, Sale, Rental, Client } from '../types';
 import RelationsPanel from '../components/RelationsPanel';
 import { getPropertyRelations } from '../lib/relations';
+import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 
 export default function Properties() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { properties, clients, events, tasks, sales, rentals, documents, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addClient, addActivityLog } = useAppContext();
+  const { properties, clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addClient, addActivityLog } = useAppContext();
+  const { openRelations } = useRelationsDrawer();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOperation, setFilterOperation] = useState<'venta' | 'alquiler' | 'ambas' | ''>('');
@@ -72,6 +76,7 @@ export default function Properties() {
   const [quickUploadTitle, setQuickUploadTitle] = useState('');
   const [quickUploadFile, setQuickUploadFile] = useState<File | null>(null);
   const [openMenuPropertyId, setOpenMenuPropertyId] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
   // Captar desde Link states
   const [captureUrl, setCaptureUrl] = useState('');
@@ -254,6 +259,7 @@ export default function Properties() {
       case 'alquilada': return 'blue';
       case 'pausada': return 'gray';
       case 'vencida': return 'purple';
+      case 'en_seguimiento': return 'purple';
       default: return 'gray';
     }
   };
@@ -524,7 +530,10 @@ export default function Properties() {
               </div>
             </Card>
 
-            <RelationsPanel groups={getPropertyRelations(selectedProp.id, { clients, properties, sales, rentals, tasks, events, documents })} />
+            <Button variant="outline" className="w-full" onClick={() => openRelations('property', selectedProp.id)}>
+              <Link2 size={16} className="mr-2" /> Ver vínculos (Vista 360°)
+            </Button>
+            <RelationsPanel groups={getPropertyRelations(selectedProp.id, { clients, properties, sales, rentals, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs })} />
           </div>
         </div>
         {isFormModalOpen && renderFormModal()}
@@ -734,6 +743,8 @@ export default function Properties() {
                   <option value="vendida">Vendida</option>
                   <option value="alquilada">Alquilada</option>
                   <option value="pausada">Pausada</option>
+                  <option value="vencida">Vencida</option>
+                  <option value="en_seguimiento">En seguimiento</option>
                 </select>
               </div>
               <div>
@@ -965,7 +976,7 @@ export default function Properties() {
               <option value="ambas">Ambas</option>
             </select>
             <div className="flex gap-1 flex-wrap">
-              {['', 'disponible', 'reservada', 'vendida', 'alquilada', 'pausada', 'vencida'].map(st => (
+              {['', 'disponible', 'reservada', 'vendida', 'alquilada', 'pausada', 'vencida', 'en_seguimiento'].map(st => (
                 <button
                   key={st || 'all'}
                   type="button"
@@ -1018,34 +1029,75 @@ export default function Properties() {
                   <div className="absolute top-2 left-2 shadow-sm">
                     <Badge variant={getStatusVariant(prop.status)}>{prop.status}</Badge>
                   </div>
-                  {/* 3-dots menu */}
-                  <div className="absolute top-2 right-2">
+                  {/* 3-dots menu + 360 button */}
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <button
+                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white transition-colors text-[10px] font-bold text-blue-700"
+                      onClick={e => {
+                        e.stopPropagation();
+                        openRelations('property', prop.id);
+                      }}
+                      title="Ver vínculos"
+                    >
+                      360°
+                    </button>
                     <button
                       className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white transition-colors"
                       onClick={e => {
                         e.stopPropagation();
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setMenuPos({ top: rect.bottom + 4, left: Math.min(rect.left - 120, window.innerWidth - 180) });
                         setOpenMenuPropertyId(openMenuPropertyId === prop.id ? null : prop.id);
                       }}
                     >
                       <MoreVertical size={16} className="text-gray-600" />
                     </button>
-                    {openMenuPropertyId === prop.id && (
-                      <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-xl border border-gray-100 z-20 overflow-hidden">
-                        {(['disponible','reservada','vendida','alquilada','pausada','vencida'] as PropertyStatus[]).map(st => (
-                          <button
-                            key={st}
-                            className="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                            onClick={e => {
-                              e.stopPropagation();
-                              updateProperty({ ...prop, status: st });
-                              showToast(`Estado cambiado a ${st}`, 'success');
-                              setOpenMenuPropertyId(null);
-                            }}
-                          >
-                            {st.charAt(0).toUpperCase() + st.slice(1)}
-                          </button>
-                        ))}
-                      </div>
+                    {openMenuPropertyId === prop.id && menuPos && createPortal(
+                      <>
+                        <div
+                          className="fixed inset-0 z-[150]"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setOpenMenuPropertyId(null);
+                            setMenuPos(null);
+                          }}
+                        />
+                        <div
+                          className="fixed z-[160] w-44 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden"
+                          style={{ top: menuPos.top, left: menuPos.left }}
+                        >
+                          <div className="px-3 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                            Cambiar estado
+                          </div>
+                          {(['disponible','reservada','vendida','alquilada','pausada','vencida','en_seguimiento'] as PropertyStatus[]).map(st => (
+                            <button
+                              key={st}
+                              className={cn(
+                                "w-full text-left px-3 py-2 text-xs font-medium transition-colors",
+                                prop.status === st ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"
+                              )}
+                              onClick={e => {
+                                e.stopPropagation();
+                                if (prop.status !== st) {
+                                  updateProperty({ ...prop, status: st });
+                                  addActivityLog({
+                                    type: 'property',
+                                    action: 'status_changed',
+                                    title: `Estado cambiado: ${prop.title} pasó a ${st.charAt(0).toUpperCase() + st.slice(1)}`,
+                                    entityId: prop.id
+                                  });
+                                  showToast(`Estado cambiado a ${st}`, 'success');
+                                }
+                                setOpenMenuPropertyId(null);
+                                setMenuPos(null);
+                              }}
+                            >
+                              {st.charAt(0).toUpperCase() + st.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+                      </>,
+                      document.body
                     )}
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">

@@ -1,332 +1,539 @@
-import type { Client, Property, ReferredColleague, Task, CalendarEvent, Document, Sale, Rental } from '../types';
+import type {
+  Client,
+  Property,
+  ReferredColleague,
+  Task,
+  CalendarEvent,
+  Document,
+  Sale,
+  Rental,
+  ActivityLog,
+  WaitingRoomEntry,
+  Buyer
+} from '../types';
+
+export type RelationEntityType =
+  | 'client'
+  | 'property'
+  | 'colleague'
+  | 'buyer'
+  | 'sale'
+  | 'rental'
+  | 'task'
+  | 'event'
+  | 'document'
+  | 'marketplace'
+  | 'waitingRoom';
 
 export interface RelationItem {
   id: string;
+  type: RelationEntityType;
   title: string;
   subtitle?: string;
+  status?: string;
+  date?: string;
   route?: string;
+  metadata?: Record<string, string | number | boolean | null | undefined>;
 }
 
 export interface RelationGroup {
-  label: string;
+  id: string;
+  title: string;
+  count: number;
   items: RelationItem[];
 }
 
+interface AppData {
+  clients: Client[];
+  properties: Property[];
+  sales: Sale[];
+  rentals: Rental[];
+  tasks: Task[];
+  events: CalendarEvent[];
+  documents: Document[];
+  referredColleagues: ReferredColleague[];
+  waitingRoom: WaitingRoomEntry[];
+  buyers: Buyer[];
+  activityLogs: ActivityLog[];
+}
+
+function buildGroup(title: string, items: RelationItem[]): RelationGroup | null {
+  if (items.length === 0) return null;
+  return {
+    id: title.toLowerCase().replace(/\s+/g, '_'),
+    title,
+    count: items.length,
+    items
+  };
+}
+
+function findClientName(clients: Client[], id?: string): string | undefined {
+  if (!id) return undefined;
+  return clients.find(c => c.id === id)?.name;
+}
+
+function findPropertyTitle(properties: Property[], id?: string): string | undefined {
+  if (!id) return undefined;
+  return properties.find(p => p.id === id)?.title;
+}
+
+function formatStatusLabel(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+/* ------------------------------------------------------------------ */
+/*  CLIENT RELATIONS                                                   */
+/* ------------------------------------------------------------------ */
+
 export function getClientRelations(
   clientId: string,
-  data: {
-    properties: Property[];
-    sales: Sale[];
-    rentals: Rental[];
-    tasks: Task[];
-    events: CalendarEvent[];
-    documents: Document[];
-    referredColleagues: ReferredColleague[];
-  }
+  data: AppData
 ): RelationGroup[] {
   const groups: RelationGroup[] = [];
+  const client = data.clients.find(c => c.id === clientId);
+  if (!client) return groups;
 
-  const ownedProperties = data.properties.filter(p => p.ownerId === clientId);
-  if (ownedProperties.length > 0) {
+  // 1. Datos principales
+  groups.push({
+    id: 'datos_principales',
+    title: 'Datos principales',
+    count: 1,
+    items: [{
+      id: client.id,
+      type: 'client',
+      title: client.name,
+      subtitle: [client.phone, client.email].filter(Boolean).join(' • '),
+      status: client.status,
+      metadata: {
+        origen: client.origin,
+        notas: client.notes || undefined
+      }
+    }]
+  });
+
+  // 2. Referido por
+  const referrer = data.referredColleagues.find(c =>
+    c.referredClientIds?.includes(clientId) || c.id === client.referredByColleagueId
+  );
+  if (referrer) {
+    const g = buildGroup('Referido por', [{
+      id: referrer.id,
+      type: 'colleague',
+      title: referrer.nombreApellido,
+      subtitle: referrer.oficina,
+      route: '/colegas-referidos'
+    }]);
+    if (g) groups.push(g);
+  } else {
     groups.push({
-      label: 'Propiedades como dueño',
-      items: ownedProperties.map(p => ({
-        id: p.id,
-        title: p.title,
-        subtitle: `${p.address}, ${p.zone}`,
-        route: `/propiedades/${p.id}`
-      }))
+      id: 'referido_por',
+      title: 'Referido por',
+      count: 0,
+      items: []
     });
   }
 
+  // 3. Propiedades donde es dueño
+  const owned = data.properties.filter(p => p.ownerId === clientId);
+  const ownedGroup = buildGroup('Propiedades como dueño', owned.map(p => ({
+    id: p.id,
+    type: 'property',
+    title: p.title,
+    subtitle: `${p.address}, ${p.zone}`,
+    status: p.status,
+    route: `/propiedades/${p.id}`
+  })));
+  if (ownedGroup) groups.push(ownedGroup);
+
+  // 4. Reservómetro / operaciones (comprador)
   const boughtSales = data.sales.filter(s => s.clientCompradorId === clientId);
-  if (boughtSales.length > 0) {
-    groups.push({
-      label: 'Compras / Reservas',
-      items: boughtSales.map(s => ({
-        id: s.id,
-        title: `Venta: ${data.properties.find(p => p.id === s.propiedadId)?.title || s.propiedadId}`,
-        subtitle: s.estado,
-        route: `/reservometro`
-      }))
-    });
-  }
+  const asSeller = data.sales.filter(s => s.propietarioId === clientId);
+  const saleItems: RelationItem[] = [
+    ...boughtSales.map(s => ({
+      id: s.id,
+      type: 'sale' as RelationEntityType,
+      title: `Compra: ${findPropertyTitle(data.properties, s.propiedadId) || s.externalPropertyAddress || s.id}`,
+      subtitle: formatStatusLabel(s.estado),
+      status: s.estado,
+      route: '/reservometro' as string
+    })),
+    ...asSeller.map(s => ({
+      id: s.id,
+      type: 'sale' as RelationEntityType,
+      title: `Venta (propietario): ${findPropertyTitle(data.properties, s.propiedadId) || s.externalPropertyAddress || s.id}`,
+      subtitle: formatStatusLabel(s.estado),
+      status: s.estado,
+      route: '/reservometro' as string
+    }))
+  ];
+  // Text-match fallback for sales without explicit IDs
+  data.sales.forEach(s => {
+    if (s.comprador && normalizeText(s.comprador) === normalizeText(client.name)) {
+      if (!saleItems.find(i => i.id === s.id)) {
+        saleItems.push({
+          id: s.id,
+          type: 'sale',
+          title: `Coincidencia por texto: ${s.nombre || s.id}`,
+          subtitle: `${formatStatusLabel(s.estado)} — ${s.comprador}`,
+          status: s.estado,
+          route: '/reservometro'
+        });
+      }
+    }
+    if (s.vendedor && normalizeText(s.vendedor) === normalizeText(client.name)) {
+      if (!saleItems.find(i => i.id === s.id)) {
+        saleItems.push({
+          id: s.id,
+          type: 'sale',
+          title: `Coincidencia por texto (vendedor): ${s.nombre || s.id}`,
+          subtitle: `${formatStatusLabel(s.estado)} — ${s.vendedor}`,
+          status: s.estado,
+          route: '/reservometro'
+        });
+      }
+    }
+  });
+  const salesGroup = buildGroup('Operaciones Reservómetro', saleItems);
+  if (salesGroup) groups.push(salesGroup);
 
+  // 5. Alquileres
   const rented = data.rentals.filter(r => r.inquilinoId === clientId);
-  if (rented.length > 0) {
-    groups.push({
-      label: 'Alquileres',
-      items: rented.map(r => ({
-        id: r.id,
-        title: `Alquiler: ${data.properties.find(p => p.id === r.propiedadId)?.title || r.propiedadId}`,
-        subtitle: r.estado,
-        route: `/alquileres`
-      }))
-    });
-  }
+  const rentalGroup = buildGroup('Alquileres', rented.map(r => ({
+    id: r.id,
+    type: 'rental',
+    title: `Alquiler: ${findPropertyTitle(data.properties, r.propiedadId) || r.propiedadId}`,
+    subtitle: formatStatusLabel(r.estado),
+    status: r.estado,
+    route: '/alquileres'
+  })));
+  if (rentalGroup) groups.push(rentalGroup);
 
+  // 6. Tareas
   const clientTasks = data.tasks.filter(t => t.clientId === clientId);
-  if (clientTasks.length > 0) {
-    groups.push({
-      label: 'Tareas asociadas',
-      items: clientTasks.map(t => ({
-        id: t.id,
-        title: t.title,
-        subtitle: t.status,
-        route: `/tareas`
-      }))
-    });
-  }
+  const taskGroup = buildGroup('Tareas', clientTasks.map(t => ({
+    id: t.id,
+    type: 'task',
+    title: t.title,
+    subtitle: t.status,
+    status: t.status,
+    route: '/tareas'
+  })));
+  if (taskGroup) groups.push(taskGroup);
 
+  // 7. Agenda / Eventos
   const clientEvents = data.events.filter(e => e.clientId === clientId);
-  if (clientEvents.length > 0) {
-    groups.push({
-      label: 'Eventos asociados',
-      items: clientEvents.map(e => ({
-        id: e.id,
-        title: e.title,
-        subtitle: `${e.date} ${e.time}`,
-        route: `/agenda`
-      }))
-    });
-  }
+  const eventGroup = buildGroup('Eventos', clientEvents.map(e => ({
+    id: e.id,
+    type: 'event',
+    title: e.title,
+    subtitle: `${e.date} ${e.time}`,
+    status: e.status,
+    route: '/agenda'
+  })));
+  if (eventGroup) groups.push(eventGroup);
 
+  // 8. Documentos
   const clientDocs = data.documents.filter(d => d.clientId === clientId);
-  if (clientDocs.length > 0) {
-    groups.push({
-      label: 'Documentos asociados',
-      items: clientDocs.map(d => ({
-        id: d.id,
-        title: d.name,
-        subtitle: d.type,
-        route: `/documentos`
-      }))
-    });
-  }
+  const docGroup = buildGroup('Documentos', clientDocs.map(d => ({
+    id: d.id,
+    type: 'document',
+    title: d.name,
+    subtitle: d.type,
+    status: d.status,
+    route: '/documentos'
+  })));
+  if (docGroup) groups.push(docGroup);
 
-  const client = data.referredColleagues.find(c => c.referredClientIds?.includes(clientId));
-  if (client) {
-    groups.push({
-      label: 'Referido por colega',
-      items: [{
-        id: client.id,
-        title: client.nombreApellido,
-        subtitle: client.oficina,
-        route: `/colegas-referidos`
-      }]
-    });
-  }
+  // 9. Últimos movimientos
+  const logs = data.activityLogs.filter(l =>
+    l.entityId === clientId ||
+    normalizeText(l.title).includes(normalizeText(client.name)) ||
+    normalizeText(l.description || '').includes(normalizeText(client.name))
+  ).slice(0, 15);
+  const logGroup = buildGroup('Últimos movimientos', logs.map(l => ({
+    id: l.id,
+    type: 'client',
+    title: l.title,
+    subtitle: l.description || l.action,
+    date: l.createdAt,
+    metadata: { action: l.action, tipo: l.type }
+  })));
+  if (logGroup) groups.push(logGroup);
 
   return groups;
 }
+
+/* ------------------------------------------------------------------ */
+/*  PROPERTY RELATIONS                                                 */
+/* ------------------------------------------------------------------ */
 
 export function getPropertyRelations(
   propertyId: string,
-  data: {
-    clients: Client[];
-    properties: Property[];
-    sales: Sale[];
-    rentals: Rental[];
-    tasks: Task[];
-    events: CalendarEvent[];
-    documents: Document[];
-  }
+  data: AppData
 ): RelationGroup[] {
   const groups: RelationGroup[] = [];
   const property = data.properties.find(p => p.id === propertyId);
+  if (!property) return groups;
 
-  const owner = data.clients.find(c => c.id === property?.ownerId);
+  // 1. Datos principales
+  groups.push({
+    id: 'datos_principales',
+    title: 'Datos principales',
+    count: 1,
+    items: [{
+      id: property.id,
+      type: 'property',
+      title: property.title,
+      subtitle: `${property.address}, ${property.zone}`,
+      status: property.status,
+      metadata: {
+        codigo: property.propertyCode || property.code,
+        ubicacion: `${property.city}`,
+        estado: property.status,
+        operacion: property.operation,
+        precio: `${property.price} ${property.currency}`,
+        link: property.propertyLink || property.externalLink || undefined,
+        tiempoRestante: property.contractEndDate || undefined
+      }
+    }]
+  });
+
+  // 2. Dueño
+  const owner = data.clients.find(c => c.id === property.ownerId);
   if (owner) {
+    const g = buildGroup('Dueño', [{
+      id: owner.id,
+      type: 'client',
+      title: owner.name,
+      subtitle: owner.phone,
+      route: `/clientes/${owner.id}`
+    }]);
+    if (g) groups.push(g);
+  }
+
+  // 3. Reservómetro
+  const propSales = data.sales.filter(s => s.propiedadId === propertyId);
+  const manualSales = data.sales.filter(s => {
+    if (s.propiedadId) return false;
+    const code = property.propertyCode || property.code;
+    return code && s.externalPropertyCode && s.externalPropertyCode === code;
+  });
+  const saleItems: RelationItem[] = [
+    ...propSales.map(s => ({
+      id: s.id,
+      type: 'sale' as RelationEntityType,
+      title: `Venta: ${findClientName(data.clients, s.clientCompradorId) || 'Sin comprador'}`,
+      subtitle: formatStatusLabel(s.estado),
+      status: s.estado,
+      route: '/reservometro' as string
+    })),
+    ...manualSales.map(s => ({
+      id: s.id,
+      type: 'sale' as RelationEntityType,
+      title: `Venta manual: ${s.externalPropertyAddress || s.id}`,
+      subtitle: formatStatusLabel(s.estado),
+      status: s.estado,
+      route: '/reservometro' as string
+    }))
+  ];
+  // Optional address match
+  if (property.address) {
+    data.sales.forEach(s => {
+      if (s.externalPropertyAddress && normalizeText(s.externalPropertyAddress).includes(normalizeText(property.address))) {
+        if (!saleItems.find(i => i.id === s.id)) {
+          saleItems.push({
+            id: s.id,
+            type: 'sale',
+            title: `Coincidencia por dirección: ${s.nombre || s.id}`,
+            subtitle: s.externalPropertyAddress,
+            status: s.estado,
+            route: '/reservometro'
+          });
+        }
+      }
+    });
+  }
+  const salesGroup = buildGroup('Reservómetro', saleItems);
+  if (salesGroup) groups.push(salesGroup);
+
+  // 4. Marketplace
+  if (property.marketplaceId || property.marketplaceStatus) {
     groups.push({
-      label: 'Dueño',
+      id: 'marketplace',
+      title: 'Marketplace',
+      count: 1,
       items: [{
-        id: owner.id,
-        title: owner.name,
-        subtitle: owner.phone,
-        route: `/clientes/${owner.id}`
+        id: property.marketplaceId || property.id,
+        type: 'marketplace',
+        title: property.marketplaceTitle || property.title,
+        subtitle: property.marketplaceStatus || 'Sin estado',
+        status: property.marketplaceStatus || undefined,
+        date: property.marketplaceLastPublishedAt,
+        route: '/marketplace'
       }]
     });
   }
 
-  const propSales = data.sales.filter(s => s.propiedadId === propertyId);
-  if (propSales.length > 0) {
-    groups.push({
-      label: 'Operaciones Reservómetro',
-      items: propSales.map(s => {
-        const buyer = data.clients.find(c => c.id === s.clientCompradorId);
-        return {
-          id: s.id,
-          title: `Venta: ${buyer?.name || 'Sin comprador'}`,
-          subtitle: s.estado,
-          route: `/reservometro`
-        };
-      })
-    });
-  }
+  // 5. Tareas
+  const propTasks = data.tasks.filter(t =>
+    t.propertyId === propertyId || t.clientId === property.ownerId
+  );
+  const taskGroup = buildGroup('Tareas', propTasks.map(t => ({
+    id: t.id,
+    type: 'task',
+    title: t.title,
+    subtitle: t.status,
+    status: t.status,
+    route: '/tareas'
+  })));
+  if (taskGroup) groups.push(taskGroup);
 
-  // Manual sales linked by externalPropertyCode matching propertyCode
-  if (property?.propertyCode || property?.code) {
-    const manualSales = data.sales.filter(s =>
-      !s.propiedadId && s.externalPropertyCode &&
-      (s.externalPropertyCode === property.propertyCode || s.externalPropertyCode === property.code)
-    );
-    if (manualSales.length > 0) {
-      groups.push({
-        label: 'Operaciones manuales vinculadas',
-        items: manualSales.map(s => ({
-          id: s.id,
-          title: `Venta manual: ${s.externalPropertyAddress || s.id}`,
-          subtitle: s.estado,
-          route: `/reservometro`
-        }))
-      });
-    }
-  }
-
-  const rental = data.rentals.find(r => r.propiedadId === propertyId);
-  if (rental) {
-    const tenant = data.clients.find(c => c.id === rental.inquilinoId);
-    if (tenant) {
-      groups.push({
-        label: 'Inquilino',
-        items: [{
-          id: tenant.id,
-          title: tenant.name,
-          subtitle: rental.estado,
-          route: `/clientes/${tenant.id}`
-        }]
-      });
-    }
-  }
-
-  const propTasks = data.tasks.filter(t => t.propertyId === propertyId);
-  if (propTasks.length > 0) {
-    groups.push({
-      label: 'Tareas asociadas',
-      items: propTasks.map(t => ({
-        id: t.id,
-        title: t.title,
-        subtitle: t.status,
-        route: `/tareas`
-      }))
-    });
-  }
-
-  const propEvents = data.events.filter(e => e.propertyId === propertyId);
-  if (propEvents.length > 0) {
-    groups.push({
-      label: 'Eventos asociados',
-      items: propEvents.map(e => ({
-        id: e.id,
-        title: e.title,
-        subtitle: `${e.date} ${e.time}`,
-        route: `/agenda`
-      }))
-    });
-  }
-
+  // 6. Documentos
   const propDocs = data.documents.filter(d => d.propertyId === propertyId);
-  if (propDocs.length > 0) {
-    groups.push({
-      label: 'Documentos asociados',
-      items: propDocs.map(d => ({
-        id: d.id,
-        title: d.name,
-        subtitle: d.type,
-        route: `/documentos`
-      }))
-    });
-  }
+  const docGroup = buildGroup('Documentos', propDocs.map(d => ({
+    id: d.id,
+    type: 'document',
+    title: d.name,
+    subtitle: d.type,
+    status: d.status,
+    route: '/documentos'
+  })));
+  if (docGroup) groups.push(docGroup);
+
+  // 7. Últimos movimientos
+  const logs = data.activityLogs.filter(l =>
+    l.entityId === propertyId ||
+    normalizeText(l.title).includes(normalizeText(property.title)) ||
+    normalizeText(l.title).includes(normalizeText(property.code)) ||
+    normalizeText(l.description || '').includes(normalizeText(property.title))
+  ).slice(0, 15);
+  const logGroup = buildGroup('Últimos movimientos', logs.map(l => ({
+    id: l.id,
+    type: 'property',
+    title: l.title,
+    subtitle: l.description || l.action,
+    date: l.createdAt,
+    metadata: { action: l.action, tipo: l.type }
+  })));
+  if (logGroup) groups.push(logGroup);
 
   return groups;
 }
 
+/* ------------------------------------------------------------------ */
+/*  COLLEAGUE RELATIONS                                                */
+/* ------------------------------------------------------------------ */
+
 export function getColleagueRelations(
   colleagueId: string,
-  data: {
-    clients: Client[];
-    properties: Property[];
-    sales: Sale[];
-    rentals: Rental[];
-    referredColleagues: ReferredColleague[];
-  }
+  data: AppData
 ): RelationGroup[] {
   const groups: RelationGroup[] = [];
   const colleague = data.referredColleagues.find(c => c.id === colleagueId);
   if (!colleague) return groups;
 
+  // 1. Datos principales
+  groups.push({
+    id: 'datos_principales',
+    title: 'Datos principales',
+    count: 1,
+    items: [{
+      id: colleague.id,
+      type: 'colleague',
+      title: colleague.nombreApellido,
+      subtitle: colleague.oficina,
+      metadata: {
+        respondio: colleague.respondio ? 'Sí' : 'No',
+        quienContacto: colleague.quienContacto,
+        comoRespondio: colleague.comoRespondio,
+        aprueba: typeof colleague.comoRespondio === 'number' && colleague.comoRespondio >= 7 ? 'Sí' : 'No',
+        yaRefirio: colleague.yaRefirio ? 'Sí' : 'No',
+        aQuien: colleague.aQuien,
+        primerContacto: colleague.primerContacto,
+        toques: [colleague.toque1, colleague.toque2, colleague.toque3, colleague.toque4, colleague.toque5, colleague.toque6].filter(Boolean).length
+      }
+    }]
+  });
+
+  // 2. Clientes referidos
   const referredClients = (colleague.referredClientIds || [])
     .map(cid => data.clients.find(c => c.id === cid))
     .filter(Boolean) as Client[];
+  // Also include clients whose referredByColleagueId points to this colleague
+  data.clients.forEach(c => {
+    if (c.referredByColleagueId === colleagueId && !referredClients.find(rc => rc.id === c.id)) {
+      referredClients.push(c);
+    }
+  });
+  const rcGroup = buildGroup('Clientes referidos', referredClients.map(c => ({
+    id: c.id,
+    type: 'client',
+    title: c.name,
+    subtitle: c.phone,
+    route: `/clientes/${c.id}`
+  })));
+  if (rcGroup) groups.push(rcGroup);
 
-  if (referredClients.length > 0) {
-    groups.push({
-      label: 'Clientes referidos',
-      items: referredClients.map(c => ({
-        id: c.id,
-        title: c.name,
-        subtitle: c.phone,
-        route: `/clientes/${c.id}`
-      }))
-    });
-  }
+  // 3. Propiedades asociadas
+  const linkedPropIds = new Set(colleague.propertyIds || []);
+  referredClients.forEach(c => {
+    data.properties.filter(p => p.ownerId === c.id).forEach(p => linkedPropIds.add(p.id));
+  });
+  const linkedProps = data.properties.filter(p => linkedPropIds.has(p.id));
+  const propGroup = buildGroup('Propiedades asociadas', linkedProps.map(p => ({
+    id: p.id,
+    type: 'property',
+    title: p.title,
+    subtitle: p.address,
+    status: p.status,
+    route: `/propiedades/${p.id}`
+  })));
+  if (propGroup) groups.push(propGroup);
 
-  if (colleague.propertyIds && colleague.propertyIds.length > 0) {
-    const linkedProps = data.properties.filter(p => colleague.propertyIds?.includes(p.id));
-    groups.push({
-      label: 'Propiedades vinculadas',
-      items: linkedProps.map(p => ({
-        id: p.id,
-        title: p.title,
-        subtitle: p.address,
-        route: `/propiedades/${p.id}`
-      }))
-    });
-  }
+  // 4. Operaciones vinculadas
+  const relatedSaleIds = new Set<string>();
+  data.sales.forEach(s => {
+    if (s.vendedorId === colleagueId) relatedSaleIds.add(s.id);
+    if (referredClients.some(c => c.id === s.clientCompradorId)) relatedSaleIds.add(s.id);
+    if (referredClients.some(c => c.id === s.propietarioId)) relatedSaleIds.add(s.id);
+  });
+  const relatedSales = data.sales.filter(s => relatedSaleIds.has(s.id));
+  const opGroup = buildGroup('Operaciones vinculadas', relatedSales.map(s => ({
+    id: s.id,
+    type: 'sale',
+    title: `Venta: ${findPropertyTitle(data.properties, s.propiedadId) || s.externalPropertyAddress || s.id}`,
+    subtitle: formatStatusLabel(s.estado),
+    status: s.estado,
+    route: '/reservometro'
+  })));
+  if (opGroup) groups.push(opGroup);
 
-  const relatedSales = data.sales.filter(s => s.vendedorId === colleagueId);
-  if (relatedSales.length > 0) {
-    groups.push({
-      label: 'Operaciones vinculadas',
-      items: relatedSales.map(s => ({
-        id: s.id,
-        title: `Venta: ${data.properties.find(p => p.id === s.propiedadId)?.title || s.propiedadId}`,
-        subtitle: s.estado,
-        route: `/reservometro`
-      }))
-    });
-  }
-
-  const clientPropertyIds = referredClients.flatMap(c =>
-    data.properties.filter(p => p.ownerId === c.id).map(p => p.id)
-  );
-  const clientProperties = data.properties.filter(p => clientPropertyIds.includes(p.id));
-  if (clientProperties.length > 0) {
-    groups.push({
-      label: 'Propiedades de clientes referidos',
-      items: clientProperties.map(p => ({
-        id: p.id,
-        title: p.title,
-        subtitle: p.address,
-        route: `/propiedades/${p.id}`
-      }))
-    });
-  }
-
-  const clientSales = data.sales.filter(s =>
-    referredClients.some(c => c.id === s.clientCompradorId)
-  );
-  if (clientSales.length > 0) {
-    groups.push({
-      label: 'Operaciones de clientes referidos',
-      items: clientSales.map(s => ({
-        id: s.id,
-        title: `Venta: ${data.properties.find(p => p.id === s.propiedadId)?.title || s.propiedadId}`,
-        subtitle: s.estado,
-        route: `/reservometro`
-      }))
-    });
-  }
+  // 5. Últimos movimientos
+  const logs = data.activityLogs.filter(l =>
+    l.entityId === colleagueId ||
+    normalizeText(l.title).includes(normalizeText(colleague.nombreApellido)) ||
+    normalizeText(l.description || '').includes(normalizeText(colleague.nombreApellido))
+  ).slice(0, 15);
+  const logGroup = buildGroup('Últimos movimientos', logs.map(l => ({
+    id: l.id,
+    type: 'colleague',
+    title: l.title,
+    subtitle: l.description || l.action,
+    date: l.createdAt,
+    metadata: { action: l.action, tipo: l.type }
+  })));
+  if (logGroup) groups.push(logGroup);
 
   return groups;
+}
+
+/* ------------------------------------------------------------------ */
+/*  UTILS                                                              */
+/* ------------------------------------------------------------------ */
+
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }

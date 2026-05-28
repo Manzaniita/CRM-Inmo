@@ -4,12 +4,15 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import { AppProvider } from './context/AppContext';
+import { RelationsDrawerProvider } from './context/RelationsDrawerContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AppProvider>
-        <App />
+        <RelationsDrawerProvider>
+          <App />
+        </RelationsDrawerProvider>
       </AppProvider>
     </BrowserRouter>
   </StrictMode>,

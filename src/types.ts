@@ -38,7 +38,7 @@ export interface Client {
 
 export type PropertyType = 'casa' | 'departamento' | 'local' | 'terreno' | 'oficina' | 'galpón' | 'cochera';
 export type PropertyOperation = 'venta' | 'alquiler' | 'ambas';
-export type PropertyStatus = 'disponible' | 'reservada' | 'vendida' | 'alquilada' | 'pausada' | 'vencida';
+export type PropertyStatus = 'disponible' | 'reservada' | 'vendida' | 'alquilada' | 'pausada' | 'vencida' | 'en_seguimiento';
 
 export interface Property {
   id: string;

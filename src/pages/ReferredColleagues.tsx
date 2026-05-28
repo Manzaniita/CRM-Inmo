@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Plus, Search, Briefcase, X, Trash2, Edit3, CheckCircle2, XCircle
+  Plus, Search, Briefcase, X, Trash2, Edit3, CheckCircle2, XCircle, Link2
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import Badge from '../components/Badge';
@@ -8,10 +8,12 @@ import Button from '../components/Button';
 import { cn, normalizeSearchText } from '../lib/utils';
 import { generateId } from '../lib/id';
 import { validateReferredColleague } from '../lib/validators';
+import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import type { ReferredColleague } from '../types';
 
 export default function ReferredColleagues() {
-  const { referredColleagues, clients, addReferredColleague, updateReferredColleague, deleteReferredColleague, showToast } = useAppContext();
+  const { referredColleagues, clients, properties, sales, rentals, tasks, events, documents, waitingRoom, buyers, activityLogs, addReferredColleague, updateReferredColleague, deleteReferredColleague, showToast } = useAppContext();
+  const { openRelations } = useRelationsDrawer();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRespondio, setFilterRespondio] = useState<string>('');
   const [filterYaRefirio, setFilterYaRefirio] = useState<string>('');
@@ -206,6 +208,9 @@ export default function ReferredColleagues() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" onClick={(e) => { e.stopPropagation(); openRelations('colleague', c.id); }} title="Ver vínculos">
+                          <Link2 size={16} />
+                        </button>
                         <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" onClick={() => openForm(c)} title="Editar">
                           <Edit3 size={16} />
                         </button>
