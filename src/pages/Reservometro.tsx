@@ -21,7 +21,7 @@ function getBestDate(sale: Sale): string {
 }
 
 export default function Reservometro() {
-  const { sales, clients, properties, addSale, updateSale, deleteSale, showToast } = useAppContext();
+  const { sales, clients, properties, addSale, updateSale, deleteSale, showToast, addActivityLog } = useAppContext();
   const [view, setView] = useState<'pipeline' | 'list'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -37,10 +37,11 @@ export default function Reservometro() {
       const property = properties.find(p => p.id === sale.propiedadId);
       const client = clients.find(c => c.id === sale.clientCompradorId);
       const matchesSearch = !lowerSearch ||
-        normalizeSearchText(property?.address).includes(lowerSearch) ||
+        normalizeSearchText(property?.address || sale.externalPropertyAddress).includes(lowerSearch) ||
         normalizeSearchText(client?.name).includes(lowerSearch) ||
         normalizeSearchText(sale.nombre).includes(lowerSearch) ||
-        normalizeSearchText(sale.id).includes(lowerSearch);
+        normalizeSearchText(sale.id).includes(lowerSearch) ||
+        normalizeSearchText(sale.externalPropertyCode).includes(lowerSearch);
       const matchesStatus = filterStatus === 'all' || sale.estado === filterStatus;
       return matchesSearch && matchesStatus;
     });
@@ -169,7 +170,7 @@ export default function Reservometro() {
                             <Badge size="xs" variant={getStatusVariant(sale.estado) as any}>{sale.estado}</Badge>
                             <p className="text-[10px] font-bold text-gray-400 uppercase">#{sale.id}</p>
                           </div>
-                          <h4 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{sale.nombre || property?.title || 'Propiedad'}</h4>
+                          <h4 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{sale.nombre || property?.title || sale.externalPropertyAddress || 'Propiedad no vinculada'}</h4>
                           <div className="flex items-center gap-2 mt-2">
                             <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-bold text-blue-600 uppercase">{client?.name?.charAt(0) || '?'}</div>
                             <p className="text-[11px] text-gray-500 font-medium truncate">{client?.name || 'Sin comprador'}</p>
@@ -214,8 +215,8 @@ export default function Reservometro() {
                   return (
                     <tr key={sale.id} className="hover:bg-gray-50/50 transition-colors group cursor-pointer" onClick={() => { setEditingSale(sale); setIsFormOpen(true); }}>
                       <td className="px-6 py-4">
-                        <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{sale.nombre || property?.address || 'Propiedad'}</p>
-                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">{client?.name || 'Sin comprador'} • {property?.title || sale.propiedadId}</p>
+                        <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{sale.nombre || property?.address || sale.externalPropertyAddress || 'Propiedad no vinculada'}</p>
+                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">{client?.name || 'Sin comprador'} • {property?.title || sale.externalPropertyCode || sale.propiedadId || 'Sin vincular'}</p>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col text-xs">
@@ -262,7 +263,10 @@ export default function Reservometro() {
 }
 
 function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => void }) {
-  const { clients, properties, addSale, updateSale, showToast } = useAppContext();
+  const { clients, properties, addSale, updateSale, showToast, addActivityLog } = useAppContext();
+
+  const hasManualProperty = !!(sale?.externalPropertyAddress || sale?.externalPropertyLink || sale?.externalPropertyCode);
+  const [propertyMode, setPropertyMode] = useState<'existing' | 'manual'>(sale ? (sale.propiedadId ? 'existing' : hasManualProperty ? 'manual' : 'existing') : 'existing');
 
   const [formData, setFormData] = useState<Partial<Sale>>(sale || {
     estado: 'consulta',
@@ -293,23 +297,49 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
     infoExtra: '',
     presupuesto: undefined,
     fechaCreacion: new Date().toISOString().split('T')[0],
+    externalPropertyAddress: '',
+    externalPropertyLink: '',
+    externalPropertyCode: '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.clientCompradorId || !formData.propiedadId || !formData.estado) {
-      return showToast('Por favor completa todos los campos obligatorios', 'error');
+    if (!formData.clientCompradorId || !formData.estado) {
+      return showToast('El comprador y el estado son obligatorios', 'error');
     }
-    const validation = validateSale(formData);
+    const hasManual = propertyMode === 'manual' && !!(formData.externalPropertyAddress || formData.externalPropertyLink || formData.externalPropertyCode);
+    if (propertyMode === 'existing' && !formData.propiedadId) {
+      return showToast('Debes seleccionar una propiedad existente o cambiar a propiedad manual', 'error');
+    }
+    if (propertyMode === 'manual' && !hasManual) {
+      return showToast('Debes completar al menos un dato de la propiedad manual', 'error');
+    }
+    const data: Partial<Sale> = { ...formData };
+    if (propertyMode === 'manual') {
+      data.propiedadId = '';
+    } else {
+      data.externalPropertyAddress = '';
+      data.externalPropertyLink = '';
+      data.externalPropertyCode = '';
+    }
+    const validation = validateSale(data);
     if (!validation.valid) {
       return showToast(validation.message || 'Error de validación', 'error');
     }
     const now = new Date().toISOString().split('T')[0];
     if (sale) {
-      updateSale({ ...sale, ...(formData as Sale), fechaActualizacion: now });
+      updateSale({ ...sale, ...(data as Sale), fechaActualizacion: now });
     } else {
-      const newSale: Sale = { ...(formData as Sale), id: generateId('s'), fechaCreacion: now, fechaActualizacion: now };
+      const newSale: Sale = { ...(data as Sale), id: generateId('s'), fechaCreacion: now, fechaActualizacion: now };
       addSale(newSale);
+      if (propertyMode === 'manual') {
+        addActivityLog({
+          type: 'sale',
+          action: 'created',
+          title: `Operación creada con propiedad manual: ${newSale.nombre || newSale.externalPropertyAddress || newSale.id}`,
+          entityId: newSale.id
+        });
+      }
     }
     onClose();
   };
@@ -337,8 +367,30 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
               <div>
                 <SearchableSelect label="Comprador *" value={formData.clientCompradorId || ''} onChange={val => setFormData({...formData, clientCompradorId: val})} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} placeholder="Seleccionar Cliente" allowEmpty={false} />
               </div>
-              <div>
-                <SearchableSelect label="Propiedad *" value={formData.propiedadId || ''} onChange={val => setFormData({...formData, propiedadId: val})} options={properties.filter(p => p.operation === 'venta').map(p => ({ value: p.id, label: p.address, subtitle: p.code }))} placeholder="Seleccionar Propiedad" allowEmpty={false} />
+              <div className="md:col-span-2">
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Propiedad</label>
+                <div className="flex gap-2 mb-3">
+                  <button type="button" onClick={() => setPropertyMode('existing')} className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition-all", propertyMode === 'existing' ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-500 border-gray-200")}>Existente</button>
+                  <button type="button" onClick={() => setPropertyMode('manual')} className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition-all", propertyMode === 'manual' ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-500 border-gray-200")}>Manual / No creada</button>
+                </div>
+                {propertyMode === 'existing' ? (
+                  <SearchableSelect value={formData.propiedadId || ''} onChange={val => setFormData({...formData, propiedadId: val})} options={properties.map(p => ({ value: p.id, label: p.address, subtitle: p.code }))} placeholder="Seleccionar Propiedad" allowEmpty={false} />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Dirección</label>
+                      <input className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.externalPropertyAddress || ''} onChange={e => setFormData({...formData, externalPropertyAddress: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Link</label>
+                      <input className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.externalPropertyLink || ''} onChange={e => setFormData({...formData, externalPropertyLink: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">ID / Código</label>
+                      <input className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.externalPropertyCode || ''} onChange={e => setFormData({...formData, externalPropertyCode: e.target.value})} />
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <SearchableSelect label="Propietario" value={formData.propietarioId || ''} onChange={val => setFormData({...formData, propietarioId: val || undefined})} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} placeholder="Seleccionar propietario (opcional)" allowEmpty />

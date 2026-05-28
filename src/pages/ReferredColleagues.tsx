@@ -11,7 +11,7 @@ import { validateReferredColleague } from '../lib/validators';
 import type { ReferredColleague } from '../types';
 
 export default function ReferredColleagues() {
-  const { referredColleagues, addReferredColleague, updateReferredColleague, deleteReferredColleague, showToast } = useAppContext();
+  const { referredColleagues, clients, addReferredColleague, updateReferredColleague, deleteReferredColleague, showToast } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRespondio, setFilterRespondio] = useState<string>('');
   const [filterYaRefirio, setFilterYaRefirio] = useState<string>('');
@@ -34,7 +34,8 @@ export default function ReferredColleagues() {
     toque4: '',
     toque5: '',
     toque6: '',
-    propertyIds: []
+    propertyIds: [],
+    referredClientIds: []
   });
 
   const lowerSearch = normalizeSearchText(searchTerm);
@@ -71,7 +72,8 @@ export default function ReferredColleagues() {
         toque4: '',
         toque5: '',
         toque6: '',
-        propertyIds: []
+        propertyIds: [],
+        referredClientIds: []
       });
     }
     setIsFormOpen(true);
@@ -85,9 +87,18 @@ export default function ReferredColleagues() {
       return;
     }
     if (editingColleague) {
-      updateReferredColleague({ ...(formData as ReferredColleague), id: editingColleague.id });
+      updateReferredColleague({
+        ...editingColleague,
+        ...(formData as ReferredColleague),
+        id: editingColleague.id,
+        referredClientIds: editingColleague.referredClientIds || []
+      });
     } else {
-      addReferredColleague({ ...(formData as ReferredColleague), id: generateId('col') });
+      addReferredColleague({
+        ...(formData as ReferredColleague),
+        id: generateId('col'),
+        referredClientIds: (formData as ReferredColleague).referredClientIds || []
+      });
     }
     setIsFormOpen(false);
   };
@@ -157,6 +168,7 @@ export default function ReferredColleagues() {
                 <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Resp.</th>
                 <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cómo</th>
                 <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Refirió</th>
+                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Clientes referidos</th>
                 <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">A quién</th>
                 <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">1er contacto</th>
                 <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Toques</th>
@@ -181,6 +193,11 @@ export default function ReferredColleagues() {
                     </td>
                     <td className="px-4 py-3">
                       {c.yaRefirio ? <CheckCircle2 size={16} className="text-green-500" /> : <XCircle size={16} className="text-gray-300" />}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {(c.referredClientIds && c.referredClientIds.length > 0)
+                        ? c.referredClientIds.map(cid => clients.find(cl => cl.id === cid)?.name).filter(Boolean).join(', ')
+                        : '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{c.aQuien || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{c.primerContacto || '-'}</td>

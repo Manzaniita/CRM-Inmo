@@ -31,12 +31,13 @@ export interface Client {
   createdAt: string;
   profession?: string;
   referredBy?: string;
+  referredByColleagueId?: string;
   dashboardPinned?: boolean;
   dashboardArchived?: boolean;
 }
 
 export type PropertyType = 'casa' | 'departamento' | 'local' | 'terreno' | 'oficina' | 'galpón' | 'cochera';
-export type PropertyOperation = 'venta' | 'alquiler';
+export type PropertyOperation = 'venta' | 'alquiler' | 'ambas';
 export type PropertyStatus = 'disponible' | 'reservada' | 'vendida' | 'alquilada' | 'pausada' | 'vencida';
 
 export interface Property {
@@ -56,6 +57,7 @@ export interface Property {
   bathrooms: number;
   surface: number;
   externalLink?: string;
+  propertyLink?: string;
   externalSource?: string;
   notes: string;
   historyNotes?: EntityNote[];
@@ -64,6 +66,7 @@ export interface Property {
   imageUrl?: string;
   contractStartDate?: string;
   contractEndDate?: string;
+  propertyCode?: string;
   marketplaceId?: string;
   marketplaceStatus?: 'no_publicada' | 'lista' | 'publicada' | 'pausada' | 'error';
   marketplaceTitle?: string;
@@ -144,6 +147,10 @@ export interface Sale {
   montoEscritura?: number;
   infoExtra?: string;
   presupuesto?: number;
+  // Propiedad manual (sin vincular)
+  externalPropertyAddress?: string;
+  externalPropertyLink?: string;
+  externalPropertyCode?: string;
 }
 
 export type RentalStatus = 'consulta' | 'visita' | 'documentación' | 'aprobado' | 'contrato' | 'firmado' | 'en curso' | 'renovación' | 'finalizado' | 'cancelado';
@@ -235,6 +242,7 @@ export interface ReferredColleague {
   toque5?: string;
   toque6?: string;
   propertyIds?: string[];
+  referredClientIds?: string[];
 }
 
 export type ActivityLogType = 'client' | 'property' | 'task' | 'sale' | 'rental' | 'document' | 'event' | 'system' | 'waiting_room' | 'buyer' | 'colleague' | 'marketplace';

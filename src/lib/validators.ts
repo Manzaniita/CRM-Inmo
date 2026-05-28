@@ -25,20 +25,8 @@ export function validateClient(client: Partial<Client>): ValidationResult {
 }
 
 export function validateProperty(property: Partial<Property>): ValidationResult {
-  if (!property.title || !property.title.trim()) {
-    return { valid: false, message: 'El título de la propiedad es obligatorio.' };
-  }
   if (typeof property.price === 'number' && property.price < 0) {
     return { valid: false, message: 'El precio no puede ser negativo.' };
-  }
-  if (!property.currency) {
-    return { valid: false, message: 'La moneda es obligatoria.' };
-  }
-  if (!property.operation) {
-    return { valid: false, message: 'La operación es obligatoria.' };
-  }
-  if (!property.status) {
-    return { valid: false, message: 'El estado es obligatorio.' };
   }
   return { valid: true };
 }
@@ -47,8 +35,9 @@ export function validateSale(sale: Partial<Sale>): ValidationResult {
   if (!sale.clientCompradorId) {
     return { valid: false, message: 'El comprador es obligatorio.' };
   }
-  if (!sale.propiedadId) {
-    return { valid: false, message: 'La propiedad es obligatoria.' };
+  const hasManualProperty = !!(sale.externalPropertyAddress || sale.externalPropertyLink || sale.externalPropertyCode);
+  if (!sale.propiedadId && !hasManualProperty) {
+    return { valid: false, message: 'Debe seleccionar una propiedad o completar los datos de propiedad manual.' };
   }
   if (typeof sale.precioPublicado === 'number' && sale.precioPublicado < 0) {
     return { valid: false, message: 'El precio publicado no puede ser negativo.' };

@@ -70,6 +70,7 @@ interface AppContextType {
   resetData: () => void;
   exportData: () => void;
   importData: (jsonData: string) => boolean;
+  addActivityLog: (log: Omit<ActivityLog, 'id' | 'createdAt'>) => void;
 }
 
 const STORAGE_KEYS = {
@@ -447,7 +448,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (data.documents) setDocuments(data.documents);
       if (data.waitingRoom) setWaitingRoom(data.waitingRoom);
       if (data.buyers) setBuyers(data.buyers);
-      if (data.referredColleagues) setReferredColleagues(data.referredColleagues);
+      if (data.referredColleagues) {
+        setReferredColleagues(data.referredColleagues.map((c: ReferredColleague) => ({
+          ...c,
+          referredClientIds: c.referredClientIds ?? []
+        })));
+      }
       if (data.activityLogs) setActivityLogs(data.activityLogs);
       showToast('Datos importados correctamente', 'success');
       return true;
@@ -504,7 +510,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       deleteReferredColleague,
       resetData,
       exportData,
-      importData
+      importData,
+      addActivityLog
     }}>
       {children}
       {toast && (

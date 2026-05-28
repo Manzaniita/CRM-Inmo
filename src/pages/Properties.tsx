@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useReducer } from 'react';
 import SearchableSelect from '../components/SearchableSelect';
 import { 
   Home, 
@@ -41,17 +41,17 @@ import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
 import RentalModal from '../components/RentalModal';
-import { Property, PropertyType, PropertyStatus, PropertyOperation, EntityNote, Document, Sale, Rental } from '../types';
+import { Property, PropertyType, PropertyStatus, PropertyOperation, EntityNote, Document, Sale, Rental, Client } from '../types';
 import RelationsPanel from '../components/RelationsPanel';
 import { getPropertyRelations } from '../lib/relations';
 
 export default function Properties() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { properties, clients, events, tasks, sales, rentals, documents, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast } = useAppContext();
+  const { properties, clients, events, tasks, sales, rentals, documents, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addClient, addActivityLog } = useAppContext();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterOperation, setFilterOperation] = useState<'venta' | 'alquiler' | ''>('');
+  const [filterOperation, setFilterOperation] = useState<'venta' | 'alquiler' | 'ambas' | ''>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [sortPrice, setSortPrice] = useState<'asc' | 'desc' | ''>('');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -95,12 +95,28 @@ export default function Properties() {
     rooms: 1,
     surface: 0,
     externalLink: '',
+    propertyLink: '',
     externalSource: '',
     notes: '',
     ownerId: '',
     images: ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'],
-    code: `P${Math.floor(Math.random() * 1000)}`
+    code: `P${Math.floor(Math.random() * 1000)}`,
+    propertyCode: ''
   });
+
+  // Force re-render every 60s to update contract remaining time
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate(), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // New owner mini-form state
+  const [showNewOwnerForm, setShowNewOwnerForm] = useState(false);
+  const [newOwnerName, setNewOwnerName] = useState('');
+  const [newOwnerPhone, setNewOwnerPhone] = useState('');
+  const [newOwnerEmail, setNewOwnerEmail] = useState('');
+  const [newOwnerNotes, setNewOwnerNotes] = useState('');
 
   const clientOptions = React.useMemo(() => clients.map(c => ({
     value: c.id,
@@ -115,7 +131,7 @@ export default function Properties() {
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       p.address.toLowerCase().includes(searchTerm.toLowerCase()) || 
       p.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesOperation = !filterOperation || p.operation === filterOperation;
+    const matchesOperation = !filterOperation || p.operation === filterOperation || (filterOperation === 'ambas' && p.operation === 'ambas') || (filterOperation === 'venta' && p.operation === 'ambas') || (filterOperation === 'alquiler' && p.operation === 'ambas');
     const matchesStatus = !filterStatus || p.status === filterStatus;
     return matchesSearch && matchesOperation && matchesStatus;
   }).sort((a, b) => {
@@ -145,33 +161,89 @@ export default function Properties() {
         rooms: 1,
         surface: 0,
         externalLink: '',
+        propertyLink: '',
         externalSource: '',
         notes: '',
         images: ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'],
-        code: `P${Math.floor(Math.random() * 1000)}`
+        code: `P${Math.floor(Math.random() * 1000)}`,
+        propertyCode: ''
       });
     }
+    setShowNewOwnerForm(false);
+    setNewOwnerName('');
+    setNewOwnerPhone('');
+    setNewOwnerEmail('');
+    setNewOwnerNotes('');
     setIsFormModalOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const result = validateProperty(formData);
+    const data = { ...formData };
+    if (!data.title || !data.title.trim()) {
+      data.title = 'Propiedad sin nombre';
+    }
+    const result = validateProperty(data);
     if (!result.valid) {
       showToast(result.message || 'Error de validación', 'error');
       return;
     }
-    
+    if (!data.status) data.status = 'disponible';
+    if (!data.operation) data.operation = 'venta';
+    if (!data.currency) data.currency = 'USD';
+
     if (editingProperty) {
-      updateProperty(formData as Property);
+      updateProperty(data as Property);
     } else {
       const newProp: Property = {
-        ...(formData as Property),
+        ...(data as Property),
         id: generateId('p'),
       };
       addProperty(newProp);
     }
     setIsFormModalOpen(false);
+  };
+
+  const handleCreateOwnerFromForm = () => {
+    if (!newOwnerName.trim()) {
+      showToast('El nombre del dueño es obligatorio', 'error');
+      return;
+    }
+    const newClient: Client = {
+      id: generateId('c'),
+      name: newOwnerName.trim(),
+      phone: newOwnerPhone.trim(),
+      email: newOwnerEmail.trim(),
+      type: 'propietario',
+      types: ['propietario'],
+      status: 'nuevo',
+      origin: 'Oficina',
+      lastContact: new Date().toISOString().split('T')[0],
+      notes: newOwnerNotes.trim(),
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    addClient(newClient);
+    setFormData(prev => ({ ...prev, ownerId: newClient.id }));
+    addActivityLog({
+      type: 'client',
+      action: 'created',
+      title: `Cliente creado desde propiedad: ${newClient.name}`,
+      description: 'Creado como nuevo dueño',
+      entityId: newClient.id
+    });
+    addActivityLog({
+      type: 'property',
+      action: 'updated',
+      title: `Dueño asignado: ${newClient.name}`,
+      description: 'Se asignó un nuevo dueño a la propiedad',
+      entityId: editingProperty?.id || newClient.id
+    });
+    showToast('Dueño creado y asignado', 'success');
+    setShowNewOwnerForm(false);
+    setNewOwnerName('');
+    setNewOwnerPhone('');
+    setNewOwnerEmail('');
+    setNewOwnerNotes('');
   };
 
   const getStatusVariant = (status: string): any => {
@@ -452,7 +524,7 @@ export default function Properties() {
               </div>
             </Card>
 
-            <RelationsPanel groups={getPropertyRelations(selectedProp.id, { clients, sales, rentals, tasks, events, documents })} />
+            <RelationsPanel groups={getPropertyRelations(selectedProp.id, { clients, properties, sales, rentals, tasks, events, documents })} />
           </div>
         </div>
         {isFormModalOpen && renderFormModal()}
@@ -616,9 +688,8 @@ export default function Properties() {
           <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[70vh]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Título *</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Nombre</label>
                 <input 
-                  required
                   type="text" 
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.title}
@@ -640,7 +711,7 @@ export default function Properties() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Operación *</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Operación</label>
                 <select 
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.operation}
@@ -648,6 +719,7 @@ export default function Properties() {
                 >
                   <option value="venta">Venta</option>
                   <option value="alquiler">Alquiler</option>
+                  <option value="ambas">Ambas</option>
                 </select>
               </div>
               <div>
@@ -747,14 +819,23 @@ export default function Properties() {
                   )}
                 </div>
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Link Externo</label>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Link</label>
                 <input 
                   type="text" 
                   placeholder="https://..."
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.externalLink}
-                  onChange={e => setFormData({...formData, externalLink: e.target.value})}
+                  value={formData.propertyLink || ''}
+                  onChange={e => setFormData({...formData, propertyLink: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">ID / Código</label>
+                <input 
+                  type="text" 
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={formData.propertyCode || ''}
+                  onChange={e => setFormData({...formData, propertyCode: e.target.value})}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2">
@@ -784,6 +865,53 @@ export default function Properties() {
                   onChange={value => setFormData({...formData, ownerId: value})}
                   options={clientOptions}
                 />
+                {!showNewOwnerForm ? (
+                  <button
+                    type="button"
+                    className="mt-2 text-xs font-bold text-blue-600 hover:text-blue-800"
+                    onClick={() => setShowNewOwnerForm(true)}
+                  >
+                    + Crear nuevo dueño
+                  </button>
+                ) : (
+                  <div className="mt-3 p-3 border border-blue-100 rounded-xl bg-blue-50/50 space-y-3">
+                    <p className="text-xs font-bold text-blue-700">Nuevo Dueño</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Nombre *"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                        value={newOwnerName}
+                        onChange={e => setNewOwnerName(e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Teléfono"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                        value={newOwnerPhone}
+                        onChange={e => setNewOwnerPhone(e.target.value)}
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                        value={newOwnerEmail}
+                        onChange={e => setNewOwnerEmail(e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Notas"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                        value={newOwnerNotes}
+                        onChange={e => setNewOwnerNotes(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleCreateOwnerFromForm}>Agregar dueño</button>
+                      <button type="button" className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-700" onClick={() => setShowNewOwnerForm(false)}>Cancelar</button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-8 flex justify-end gap-3">
@@ -829,11 +957,12 @@ export default function Properties() {
             <select
               className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white"
               value={filterOperation}
-              onChange={e => setFilterOperation(e.target.value as 'venta' | 'alquiler' | '')}
+              onChange={e => setFilterOperation(e.target.value as 'venta' | 'alquiler' | 'ambas' | '')}
             >
               <option value="">Todas las operaciones</option>
               <option value="venta">Venta</option>
               <option value="alquiler">Alquiler</option>
+              <option value="ambas">Ambas</option>
             </select>
             <div className="flex gap-1 flex-wrap">
               {['', 'disponible', 'reservada', 'vendida', 'alquilada', 'pausada', 'vencida'].map(st => (
@@ -928,6 +1057,26 @@ export default function Properties() {
                   <h3 className="font-bold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">{prop.title}</h3>
                   <p className="text-xs text-gray-500 flex items-center mt-1 truncate">
                     <MapPin size={12} className="mr-1 text-gray-400" /> {prop.zone}, {prop.city}
+                  </p>
+                  {(prop.propertyCode || prop.code) && (
+                    <p className="text-[10px] text-gray-400 mt-1 font-medium">Ref: {prop.propertyCode || prop.code}</p>
+                  )}
+                  {(prop.propertyLink || prop.externalLink) && (
+                    <a
+                      href={prop.propertyLink || prop.externalLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-blue-600 hover:underline mt-0.5 block truncate"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      Ver link
+                    </a>
+                  )}
+                  {prop.notes && (
+                    <p className="text-[10px] text-gray-400 mt-1 truncate">{prop.notes}</p>
+                  )}
+                  <p className="text-[10px] text-gray-500 mt-1 font-medium">
+                    Dueño: {clients.find(c => c.id === prop.ownerId)?.name || 'Sin dueño asignado'}
                   </p>
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50 text-gray-400">
                     <div className="flex items-center gap-4">

@@ -1,11 +1,11 @@
-import type { Client, Property, Sale, Rental, Document, Task } from '../types';
+import type { Client, Property, Sale, Rental, Document, Task, ReferredColleague } from '../types';
 import { normalizeSearchText } from './utils';
 
 export interface SearchResultItem {
   id: string;
   title: string;
   subtitle: string;
-  type: 'cliente' | 'propiedad' | 'venta' | 'alquiler' | 'documento' | 'tarea';
+  type: 'cliente' | 'propiedad' | 'venta' | 'alquiler' | 'documento' | 'tarea' | 'colega';
   path: string;
 }
 
@@ -16,6 +16,7 @@ interface SearchData {
   rentals: Rental[];
   documents: Document[];
   tasks: Task[];
+  referredColleagues: ReferredColleague[];
 }
 
 export function searchAll(data: SearchData, query: string): SearchResultItem[] {
@@ -28,10 +29,13 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
 
   // Clientes
   data.clients.forEach((c) => {
+    const colleague = data.referredColleagues.find(col => col.id === c.referredByColleagueId);
     if (
       matches(c.name) ||
       matches(c.phone) ||
-      matches(c.email)
+      matches(c.email) ||
+      matches(c.referredByColleagueId) ||
+      matches(colleague?.nombreApellido)
     ) {
       found.push({
         id: c.id,
@@ -45,12 +49,19 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
 
   // Propiedades
   data.properties.forEach((p) => {
+    const owner = data.clients.find(c => c.id === p.ownerId);
     if (
       matches(p.title) ||
       matches(p.address) ||
       matches(p.city) ||
       matches(p.operation) ||
-      matches(p.status)
+      matches(p.status) ||
+      matches(p.propertyCode) ||
+      matches(p.propertyLink) ||
+      matches(p.externalLink) ||
+      matches(p.notes) ||
+      matches(p.contractEndDate) ||
+      matches(owner?.name)
     ) {
       found.push({
         id: p.id,
@@ -67,19 +78,22 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
     const buyer = data.clients.find((c) => c.id === s.clientCompradorId);
     const prop = data.properties.find((p) => p.id === s.propiedadId);
     const buyerName = buyer?.name || 'Comprador';
-    const propTitle = prop?.title || s.propiedadId;
+    const propTitle = prop?.title || s.externalPropertyAddress || s.propiedadId;
     if (
       matches(s.id) ||
       matches(buyerName) ||
       matches(propTitle) ||
-      matches(s.estado)
+      matches(s.estado) ||
+      matches(s.externalPropertyAddress) ||
+      matches(s.externalPropertyLink) ||
+      matches(s.externalPropertyCode)
     ) {
       found.push({
         id: s.id,
         title: `Venta #${s.id.toUpperCase()}`,
         subtitle: `${buyerName} · ${propTitle} · ${s.estado}`,
         type: 'venta',
-        path: '/ventas',
+        path: '/reservometro',
       });
     }
   });
@@ -102,6 +116,27 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
         subtitle: `${tenantName} · ${propTitle} · ${r.estado}`,
         type: 'alquiler',
         path: '/alquileres',
+      });
+    }
+  });
+
+  // Colegas referidos
+  data.referredColleagues.forEach((col) => {
+    const clientNames = (col.referredClientIds || [])
+      .map(cid => data.clients.find(c => c.id === cid)?.name)
+      .filter(Boolean)
+      .join(', ');
+    if (
+      matches(col.nombreApellido) ||
+      matches(col.oficina) ||
+      matches(clientNames)
+    ) {
+      found.push({
+        id: col.id,
+        title: col.nombreApellido,
+        subtitle: `${col.oficina} · Referidos: ${clientNames || '—'}`,
+        type: 'colega',
+        path: '/colegas-referidos',
       });
     }
   });

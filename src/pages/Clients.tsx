@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Client, ClientType, ClientStatus, ClientOrigin, EntityNote, Document, Sale, Rental, Task, CalendarEvent, TaskStatus, TaskPriority, EventType, EventStatus, Property } from '../types';
+import { Client, ClientType, ClientStatus, ClientOrigin, EntityNote, Document, Sale, Rental, Task, CalendarEvent, TaskStatus, TaskPriority, EventType, EventStatus, Property, ReferredColleague } from '../types';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
@@ -39,7 +39,7 @@ import SearchableSelect from '../components/SearchableSelect';
 export default function Clients() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { clients, properties, events, tasks, sales, rentals, documents, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast } = useAppContext();
+  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addReferredColleague, updateReferredColleague, addActivityLog } = useAppContext();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -81,6 +81,12 @@ export default function Clients() {
     notes: ''
   });
 
+  // Colleague referral mini-form state
+  const [showNewColleagueForm, setShowNewColleagueForm] = useState(false);
+  const [newColleagueName, setNewColleagueName] = useState('');
+  const [newColleagueOffice, setNewColleagueOffice] = useState('');
+  const [selectedColleagueId, setSelectedColleagueId] = useState('');
+
   // Filter State
   const [filterType, setFilterType] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -104,6 +110,7 @@ export default function Clients() {
     notes: '',
     profession: '',
     referredBy: '',
+    referredByColleagueId: '',
     dashboardPinned: false,
     dashboardArchived: false,
   });
@@ -167,6 +174,10 @@ export default function Clients() {
     if (client) {
       setEditingClient(client);
       setFormData(client);
+      setSelectedColleagueId(client.referredByColleagueId || '');
+      setShowNewColleagueForm(false);
+      setNewColleagueName('');
+      setNewColleagueOffice('');
     } else {
       setEditingClient(null);
       setFormData({
@@ -181,9 +192,14 @@ export default function Clients() {
         notes: '',
         profession: '',
         referredBy: '',
+        referredByColleagueId: '',
         dashboardPinned: false,
         dashboardArchived: false,
       });
+      setSelectedColleagueId('');
+      setShowNewColleagueForm(false);
+      setNewColleagueName('');
+      setNewColleagueOffice('');
     }
     setIsFormModalOpen(true);
   };
@@ -195,18 +211,78 @@ export default function Clients() {
       showToast(result.message || 'Error de validación', 'error');
       return;
     }
-    
-    if (editingClient) {
-      updateClient(formData as Client);
+
+    const clientData: Client = editingClient
+      ? { ...(formData as Client) }
+      : { ...(formData as Client), id: generateId('c'), createdAt: new Date().toISOString().split('T')[0] };
+
+    // Handle colleague referral logic
+    let colleagueToUpdate: { id: string; clientId: string } | null = null;
+    let newColleagueId: string | null = null;
+
+    if (clientData.origin === 'Referido') {
+      if (showNewColleagueForm && newColleagueName.trim()) {
+        const col: ReferredColleague = {
+          id: generateId('col'),
+          nombreApellido: newColleagueName.trim(),
+          oficina: newColleagueOffice.trim(),
+          respondio: false,
+          yaRefirio: true,
+          referredClientIds: [clientData.id],
+          propertyIds: []
+        };
+        addReferredColleague(col);
+        newColleagueId = col.id;
+        clientData.referredByColleagueId = col.id;
+        addActivityLog({
+          type: 'colleague',
+          action: 'created',
+          title: `Colega creado desde cliente: ${col.nombreApellido}`,
+          entityId: col.id
+        });
+        addActivityLog({
+          type: 'client',
+          action: 'updated',
+          title: `Cliente vinculado con colega: ${clientData.name}`,
+          description: `Referido por ${col.nombreApellido}`,
+          entityId: clientData.id
+        });
+      } else if (selectedColleagueId) {
+        clientData.referredByColleagueId = selectedColleagueId;
+        colleagueToUpdate = { id: selectedColleagueId, clientId: clientData.id };
+        addActivityLog({
+          type: 'client',
+          action: 'updated',
+          title: `Cliente vinculado con colega: ${clientData.name}`,
+          entityId: clientData.id
+        });
+      }
     } else {
-      const newClient: Client = {
-        ...(formData as Client),
-        id: generateId('c'),
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      addClient(newClient);
+      clientData.referredByColleagueId = '';
     }
+
+    if (editingClient) {
+      updateClient(clientData);
+    } else {
+      addClient(clientData);
+    }
+
+    if (colleagueToUpdate) {
+      const col = referredColleagues.find(c => c.id === colleagueToUpdate!.id);
+      if (col) {
+        const updatedIds = [...(col.referredClientIds || [])];
+        if (!updatedIds.includes(colleagueToUpdate.clientId)) {
+          updatedIds.push(colleagueToUpdate.clientId);
+        }
+        updateReferredColleague({ ...col, referredClientIds: updatedIds });
+      }
+    }
+
     setIsFormModalOpen(false);
+    setShowNewColleagueForm(false);
+    setNewColleagueName('');
+    setNewColleagueOffice('');
+    setSelectedColleagueId('');
   };
 
   const getTypeBadgeVariant = (type: ClientType): any => {
@@ -805,10 +881,14 @@ export default function Clients() {
                   <span className="text-gray-500">Origen</span>
                   <span className="font-medium">{selectedClient.origin}</span>
                 </div>
-                {selectedClient.origin === 'Referido' && selectedClient.referredBy && (
+                {selectedClient.origin === 'Referido' && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">Referido por</span>
-                    <span className="font-medium">{selectedClient.referredBy}</span>
+                    <span className="font-medium">
+                      {selectedClient.referredByColleagueId
+                        ? referredColleagues.find(c => c.id === selectedClient.referredByColleagueId)?.nombreApellido || 'Colega desconocido'
+                        : selectedClient.referredBy || '—'}
+                    </span>
                   </div>
                 )}
               </div>
@@ -866,7 +946,7 @@ export default function Clients() {
               </div>
             </Card>
 
-            <RelationsPanel groups={getClientRelations(selectedClient.id, { properties, sales, rentals, tasks, events, documents })} />
+            <RelationsPanel groups={getClientRelations(selectedClient.id, { properties, sales, rentals, tasks, events, documents, referredColleagues })} />
           </div>
         </div>
         {isFormModalOpen && renderFormModal()}
@@ -1065,14 +1145,51 @@ export default function Clients() {
                 </select>
               </div>
               {(formData.origin === 'Referido') && (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Referido por</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                    value={formData.referredBy || ''}
-                    onChange={e => setFormData({...formData, referredBy: e.target.value})}
-                  />
+                <div className="md:col-span-2 space-y-3">
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Referido por colega</label>
+                  {!showNewColleagueForm ? (
+                    <>
+                      <SearchableSelect
+                        placeholder="Seleccionar colega..."
+                        value={selectedColleagueId}
+                        onChange={val => setSelectedColleagueId(val)}
+                        options={referredColleagues.map(c => ({ value: c.id, label: c.nombreApellido, subtitle: c.oficina }))}
+                        emptyLabel="Ninguno"
+                        allowEmpty
+                      />
+                      <button
+                        type="button"
+                        className="text-xs font-bold text-blue-600 hover:text-blue-800"
+                        onClick={() => setShowNewColleagueForm(true)}
+                      >
+                        + Crear nuevo colega
+                      </button>
+                    </>
+                  ) : (
+                    <div className="p-3 border border-blue-100 rounded-xl bg-blue-50/50 space-y-3">
+                      <p className="text-xs font-bold text-blue-700">Nuevo Colega</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          placeholder="Nombre y apellido *"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                          value={newColleagueName}
+                          onChange={e => setNewColleagueName(e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Oficina"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                          value={newColleagueOffice}
+                          onChange={e => setNewColleagueOffice(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={() => { if (!newColleagueName.trim()) { showToast('El nombre es obligatorio', 'error'); return; } setShowNewColleagueForm(false); }}>Listo</button>
+                        <button type="button" className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-700" onClick={() => { setShowNewColleagueForm(false); setNewColleagueName(''); setNewColleagueOffice(''); }}>Cancelar</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               <div>
