@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { X, ChevronRight, Link2, Activity, User, Home, Briefcase, ShoppingCart, Key, CheckSquare, Calendar, FileText, Store, ClipboardList } from 'lucide-react';
 import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import { useAppContext } from '../context/AppContext';
-import { getClientRelations, getPropertyRelations, getColleagueRelations, type RelationEntityType, type RelationGroup, type RelationItem } from '../lib/relations';
+import { getClientRelations, getPropertyRelations, getColleagueRelations, getBuyerRelations, type RelationEntityType, type RelationGroup, type RelationItem } from '../lib/relations';
 import { cn, formatDate } from '../lib/utils';
 import { Link } from 'react-router-dom';
 
@@ -106,6 +106,8 @@ export default function EntityRelationsDrawer() {
         return getPropertyRelations(entityId, appData);
       case 'colleague':
         return getColleagueRelations(entityId, appData);
+      case 'buyer':
+        return getBuyerRelations(entityId, appData);
       default:
         return [];
     }

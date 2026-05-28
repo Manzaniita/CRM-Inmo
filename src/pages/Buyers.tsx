@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
-  Plus, Search, ShoppingCart, X, Trash2, Edit3
+  Plus, Search, ShoppingCart, X, Trash2, Edit3, Link2
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
@@ -20,6 +21,7 @@ const STATUS_VARIANT: Record<BuyerStatus, string> = {
 
 export default function BuyersPage() {
   const { buyers, addBuyer, updateBuyer, deleteBuyer, showToast } = useAppContext();
+  const { openRelations } = useRelationsDrawer();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -164,6 +166,9 @@ export default function BuyersPage() {
               <div className="mt-4 pt-3 border-t border-gray-100 flex gap-2">
                 <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" onClick={() => openForm(buyer)} title="Editar">
                   <Edit3 size={16} />
+                </button>
+                <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" onClick={(e) => { e.stopPropagation(); openRelations('buyer', buyer.id); }} title="Ver vínculos">
+                  <Link2 size={16} />
                 </button>
                 <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" onClick={() => handleDelete(buyer.id)} title="Eliminar">
                   <Trash2 size={16} />

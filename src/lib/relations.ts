@@ -528,6 +528,58 @@ export function getColleagueRelations(
 }
 
 /* ------------------------------------------------------------------ */
+/*  BUYER RELATIONS                                                    */
+/* ------------------------------------------------------------------ */
+
+export function getBuyerRelations(
+  buyerId: string,
+  data: AppData
+): RelationGroup[] {
+  const groups: RelationGroup[] = [];
+  const buyer = data.buyers.find(b => b.id === buyerId);
+  if (!buyer) return groups;
+
+  // 1. Datos principales
+  groups.push({
+    id: 'datos_principales',
+    title: 'Datos principales',
+    count: 1,
+    items: [{
+      id: buyer.id,
+      type: 'buyer',
+      title: buyer.nombre,
+      subtitle: [buyer.telefono, buyer.email].filter(Boolean).join(' • '),
+      status: buyer.estado,
+      metadata: {
+        presupuesto: buyer.presupuestoMin && buyer.presupuestoMax
+          ? `${buyer.presupuestoMin} - ${buyer.presupuestoMax} ${buyer.moneda}`
+          : undefined,
+        zona: buyer.zonaBuscada,
+        tipo: buyer.tipoPropiedad
+      }
+    }]
+  });
+
+  // 2. Últimos movimientos
+  const logs = data.activityLogs.filter(l =>
+    l.entityId === buyerId ||
+    normalizeText(l.title).includes(normalizeText(buyer.nombre)) ||
+    normalizeText(l.description || '').includes(normalizeText(buyer.nombre))
+  ).slice(0, 15);
+  const logGroup = buildGroup('Últimos movimientos', logs.map(l => ({
+    id: l.id,
+    type: 'buyer',
+    title: l.title,
+    subtitle: l.description || l.action,
+    date: l.createdAt,
+    metadata: { action: l.action, tipo: l.type }
+  })));
+  if (logGroup) groups.push(logGroup);
+
+  return groups;
+}
+
+/* ------------------------------------------------------------------ */
 /*  UTILS                                                              */
 /* ------------------------------------------------------------------ */
 

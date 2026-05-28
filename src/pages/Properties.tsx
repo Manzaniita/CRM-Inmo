@@ -264,6 +264,19 @@ export default function Properties() {
     }
   };
 
+  const getPropertyStatusLabel = (status: string): string => {
+    const labels: Record<string, string> = {
+      disponible: 'Disponible',
+      reservada: 'Reservada',
+      vendida: 'Vendida',
+      alquilada: 'Alquilada',
+      pausada: 'Pausada',
+      vencida: 'Vencida',
+      en_seguimiento: 'En seguimiento'
+    };
+    return labels[status] || status;
+  };
+
   if (selectedProp) {
     const propSales = sales.filter(s => s.propiedadId === id);
     const propRentals = rentals.filter(r => r.propiedadId === id);
@@ -294,7 +307,7 @@ export default function Properties() {
                 </div>
               )}
               <div className="absolute top-4 left-4 flex gap-2">
-                <Badge variant={getStatusVariant(selectedProp.status)} size="md">{selectedProp.status}</Badge>
+                <Badge variant={getStatusVariant(selectedProp.status)} size="md">{getPropertyStatusLabel(selectedProp.status)}</Badge>
                 <Badge variant="blue" size="md">{selectedProp.operation}</Badge>
               </div>
             </div>
@@ -976,19 +989,28 @@ export default function Properties() {
               <option value="ambas">Ambas</option>
             </select>
             <div className="flex gap-1 flex-wrap">
-              {['', 'disponible', 'reservada', 'vendida', 'alquilada', 'pausada', 'vencida', 'en_seguimiento'].map(st => (
+              {[
+                { value: '', label: 'Todas' },
+                { value: 'disponible', label: 'Disponible' },
+                { value: 'reservada', label: 'Reservada' },
+                { value: 'vendida', label: 'Vendida' },
+                { value: 'alquilada', label: 'Alquilada' },
+                { value: 'pausada', label: 'Pausada' },
+                { value: 'vencida', label: 'Vencida' },
+                { value: 'en_seguimiento', label: 'En seguimiento' }
+              ].map(st => (
                 <button
-                  key={st || 'all'}
+                  key={st.value || 'all'}
                   type="button"
-                  onClick={() => setFilterStatus(st)}
+                  onClick={() => setFilterStatus(st.value)}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
-                    filterStatus === st
+                    filterStatus === st.value
                       ? "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-gray-500 border-gray-200 hover:border-blue-300"
                   )}
                 >
-                  {st ? st.charAt(0).toUpperCase() + st.slice(1) : 'Todas'}
+                  {st.label}
                 </button>
               ))}
             </div>
@@ -1027,7 +1049,7 @@ export default function Properties() {
                     </div>
                   )}
                   <div className="absolute top-2 left-2 shadow-sm">
-                    <Badge variant={getStatusVariant(prop.status)}>{prop.status}</Badge>
+                    <Badge variant={getStatusVariant(prop.status)}>{getPropertyStatusLabel(prop.status)}</Badge>
                   </div>
                   {/* 3-dots menu + 360 button */}
                   <div className="absolute top-2 right-2 flex gap-1">
@@ -1046,7 +1068,11 @@ export default function Properties() {
                       onClick={e => {
                         e.stopPropagation();
                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        setMenuPos({ top: rect.bottom + 4, left: Math.min(rect.left - 120, window.innerWidth - 180) });
+                        const menuHeight = 280; // aprox height for 7 items + header
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        const top = spaceBelow >= menuHeight ? rect.bottom + 4 : Math.max(4, rect.top - menuHeight - 4);
+                        const left = Math.min(rect.left - 120, window.innerWidth - 180);
+                        setMenuPos({ top, left });
                         setOpenMenuPropertyId(openMenuPropertyId === prop.id ? null : prop.id);
                       }}
                     >
@@ -1063,10 +1089,10 @@ export default function Properties() {
                           }}
                         />
                         <div
-                          className="fixed z-[160] w-44 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden"
+                          className="fixed z-[160] w-44 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden max-h-64 overflow-y-auto"
                           style={{ top: menuPos.top, left: menuPos.left }}
                         >
-                          <div className="px-3 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                          <div className="px-3 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 sticky top-0 bg-white">
                             Cambiar estado
                           </div>
                           {(['disponible','reservada','vendida','alquilada','pausada','vencida','en_seguimiento'] as PropertyStatus[]).map(st => (
@@ -1083,16 +1109,16 @@ export default function Properties() {
                                   addActivityLog({
                                     type: 'property',
                                     action: 'status_changed',
-                                    title: `Estado cambiado: ${prop.title} pasó a ${st.charAt(0).toUpperCase() + st.slice(1)}`,
+                                    title: `Estado cambiado: ${prop.title} pasó a ${getPropertyStatusLabel(st)}`,
                                     entityId: prop.id
                                   });
-                                  showToast(`Estado cambiado a ${st}`, 'success');
+                                  showToast(`Estado cambiado a ${getPropertyStatusLabel(st)}`, 'success');
                                 }
                                 setOpenMenuPropertyId(null);
                                 setMenuPos(null);
                               }}
                             >
-                              {st.charAt(0).toUpperCase() + st.slice(1)}
+                              {getPropertyStatusLabel(st)}
                             </button>
                           ))}
                         </div>
@@ -1131,19 +1157,8 @@ export default function Properties() {
                     Dueño: {clients.find(c => c.id === prop.ownerId)?.name || 'Sin dueño asignado'}
                   </p>
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50 text-gray-400">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5">
-                        <BedDouble size={14} />
-                        <span className="text-xs font-bold text-gray-700">{prop.bedrooms}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Bath size={14} />
-                        <span className="text-xs font-bold text-gray-700">{prop.bathrooms}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Square size={14} />
-                        <span className="text-xs font-bold text-gray-700">{prop.surface} m²</span>
-                      </div>
+                    <div className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                      {getPropertyStatusLabel(prop.status)}
                     </div>
                     <div className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", remaining.expired ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>
                       {remaining.text}
