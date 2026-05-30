@@ -13,7 +13,8 @@ import {
   Users,
   Plus,
   X,
-  Loader2
+  Loader2,
+  Key
 } from 'lucide-react';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
@@ -93,6 +94,30 @@ export default function Configuration() {
       await signOut();
       showToast('Usuario creado con éxito. Por seguridad del sistema, por favor re-ingresa a tu cuenta de Administrador.', 'info');
       navigate('/login');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (window.confirm('¿Estás seguro de eliminar este usuario? Esto solo lo borrará de la lista de agentes. Para impedir el acceso, debes eliminarlo manualmente desde Supabase Auth (o vía Edge Function).')) {
+      const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
+      if (error) {
+        showToast('Error al eliminar usuario', 'error');
+      } else {
+        setUsersList(prev => prev.filter(u => u.user_id !== userId));
+        showToast('Usuario eliminado de la base de datos', 'success');
+      }
+    }
+  };
+
+  const handleForceReset = async (userId: string) => {
+    if (window.confirm('¿Forzar reseteo de clave para este usuario en su próximo ingreso?')) {
+      const { error } = await supabase.from('profiles').update({ must_change_password: true }).eq('user_id', userId);
+      if (error) {
+        showToast('Error al forzar reset', 'error');
+      } else {
+        setUsersList(prev => prev.map(u => u.user_id === userId ? { ...u, must_change_password: true } : u));
+        showToast('Reset forzado activado', 'success');
+      }
     }
   };
 
@@ -402,38 +427,57 @@ export default function Configuration() {
                     <Loader2 className="animate-spin text-slate-400" size={32} />
                   </div>
                 ) : (
-                  <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-800/40 backdrop-blur-xl shadow-sm">
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
+                      <thead className="bg-slate-100/50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/5">
                         <tr>
                           <th className="px-4 py-3 font-semibold">Nombre</th>
                           <th className="px-4 py-3 font-semibold">Email</th>
                           <th className="px-4 py-3 font-semibold">Rol</th>
-                          <th className="px-4 py-3 font-semibold text-center">Contraseña Mágica</th>
+                          <th className="px-4 py-3 font-semibold text-center">Seguridad</th>
+                          <th className="px-4 py-3 font-semibold text-right">Acciones</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
+                      <tbody className="divide-y divide-slate-200/60 dark:divide-white/5">
                         {usersList.map((u) => (
-                          <tr key={u.user_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                            <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{u.name}</td>
-                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{u.email}</td>
-                            <td className="px-4 py-3">
+                          <tr key={u.user_id} className="hover:bg-white/60 dark:hover:bg-white/5 transition-colors">
+                            <td className="px-4 py-4 font-medium text-slate-900 dark:text-slate-100">{u.name}</td>
+                            <td className="px-4 py-4 text-slate-600 dark:text-slate-400">{u.email}</td>
+                            <td className="px-4 py-4">
                               <Badge variant={u.role === 'superadmin' ? 'purple' : 'blue'}>
-                                {u.role === 'superadmin' ? 'Superadmin' : 'Agente'}
+                                {u.role === 'superadmin' ? 'Superadmin' : 'Agent'}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-4 py-4 text-center">
                               {u.must_change_password ? (
-                                <Badge variant="warning" size="sm">Pendiente Reset</Badge>
+                                <Badge variant="warning" size="sm">Reset Pendiente</Badge>
                               ) : (
                                 <Badge variant="success" size="sm">Actualizada</Badge>
                               )}
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleForceReset(u.user_id)}
+                                  title="Forzar reseteo de clave"
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                                >
+                                  <Key size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(u.user_id)}
+                                  title="Eliminar usuario"
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
                         {usersList.length === 0 && (
                           <tr>
-                            <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                            <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
                               No se encontraron usuarios.
                             </td>
                           </tr>

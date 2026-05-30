@@ -373,6 +373,7 @@ export default function App() {
                 <Routes location={location}>
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/reset-password" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
                   <Route path="/clientes" element={<PageTransition><Clients /></PageTransition>} />
                   <Route path="/clientes/:id" element={<PageTransition><Clients /></PageTransition>} />
