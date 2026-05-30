@@ -29,7 +29,7 @@ import { cn } from '../lib/utils';
 import { isOverdue, isToday, isWithinNextDays, daysUntil } from '../lib/dates';
 
 export default function Dashboard() {
-  const { clients, properties, events, tasks, sales, rentals, documents, activityLogs, completeTask } = useAppContext();
+  const { clients, properties, events, tasks, sales, rentals, documents, activityLogs, completeTask, profile } = useAppContext();
   const navigate = useNavigate();
 
   const today = new Date().toISOString().split('T')[0];
@@ -83,7 +83,7 @@ export default function Dashboard() {
     <div className="space-y-8 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bienvenido, Martin</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Bienvenido{profile.name ? ', ' + profile.name : '/a'}</h1>
           <p className="text-gray-500">Este es el resumen de tu actividad inmobiliaria para hoy.</p>
         </div>
         <div className="flex items-center gap-3">

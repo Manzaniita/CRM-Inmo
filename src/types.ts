@@ -1,5 +1,5 @@
 /**
- * Types for ImmoFlow CRM
+ * Types for EstateCRM
  */
 
 export type ClientType = 'comprador' | 'vendedor' | 'inquilino' | 'propietario' | 'inversor' | 'interesado';
@@ -36,7 +36,7 @@ export interface Client {
   dashboardArchived?: boolean;
 }
 
-export type PropertyType = 'casa' | 'departamento' | 'local' | 'terreno' | 'oficina' | 'galpón' | 'cochera';
+export type PropertyType = 'casa' | 'departamento' | 'local' | 'terreno' | 'oficina' | 'galpón' | 'cochera' | 'ph' | 'campos';
 export type PropertyOperation = 'venta' | 'alquiler' | 'ambas';
 export type PropertyStatus = 'disponible' | 'reservada' | 'vendida' | 'alquilada' | 'pausada' | 'vencida' | 'en_seguimiento';
 
@@ -144,7 +144,6 @@ export interface Sale {
   porcentajeBruto?: number;
   porcentajeNeto?: number;
   porcentajeReferido?: number;
-  fechaTomada?: string;
   valorOfertado?: number;
   contraoferta1?: number;
   contraoferta2?: number;
@@ -156,6 +155,11 @@ export interface Sale {
   grossCommissionUsd?: number;
   infoExtra?: string;
   presupuesto?: number;
+  // Comprador/Vendedor extendido
+  compradorManual?: string;
+  vendedorManual?: string;
+  compradorInmobiliaria?: string;
+  vendedorInmobiliaria?: string;
   // Propiedad manual (sin vincular)
   externalPropertyAddress?: string;
   externalPropertyLink?: string;

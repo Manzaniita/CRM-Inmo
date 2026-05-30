@@ -32,8 +32,9 @@ export function validateProperty(property: Partial<Property>): ValidationResult 
 }
 
 export function validateSale(sale: Partial<Sale>): ValidationResult {
-  if (!sale.clientCompradorId) {
-    return { valid: false, message: 'El comprador es obligatorio.' };
+  const hasComprador = !!(sale.clientCompradorId || (sale.compradorManual && sale.compradorManual.trim()));
+  if (!hasComprador) {
+    return { valid: false, message: 'El comprador es obligatorio (seleccione un cliente o ingrese el nombre manualmente).' };
   }
   const hasManualProperty = !!(sale.externalPropertyAddress || sale.externalPropertyLink || sale.externalPropertyCode);
   if (!sale.propiedadId && !hasManualProperty) {

@@ -22,7 +22,20 @@ interface ToastState {
   type: ToastType;
 }
 
+export interface Profile {
+  name: string;
+  email: string;
+  phone: string;
+  license: string;
+  templateProperty: string;
+  templateClient: string;
+  templateBuyer: string;
+}
+
 interface AppContextType {
+  profile: Profile;
+  updateProfile: (profile: Profile) => void;
+  clearMockData: () => void;
   clients: Client[];
   properties: Property[];
   events: CalendarEvent[];
@@ -74,17 +87,18 @@ interface AppContextType {
 }
 
 const STORAGE_KEYS = {
-  CLIENTS: 'immoflow_clients',
-  PROPERTIES: 'immoflow_properties',
-  TASKS: 'immoflow_tasks',
-  EVENTS: 'immoflow_events',
-  SALES: 'immoflow_sales',
-  RENTALS: 'immoflow_rentals',
-  DOCUMENTS: 'immoflow_documents',
-  WAITING_ROOM: 'immoflow_waiting_room',
-  BUYERS: 'immoflow_buyers',
-  REFERRED_COLLEAGUES: 'immoflow_referred_colleagues',
-  ACTIVITY_LOGS: 'immoflow_activity_logs'
+  CLIENTS: 'estatecrm_clients',
+  PROPERTIES: 'estatecrm_properties',
+  TASKS: 'estatecrm_tasks',
+  EVENTS: 'estatecrm_events',
+  SALES: 'estatecrm_sales',
+  RENTALS: 'estatecrm_rentals',
+  DOCUMENTS: 'estatecrm_documents',
+  WAITING_ROOM: 'estatecrm_waiting_room',
+  BUYERS: 'estatecrm_buyers',
+  REFERRED_COLLEAGUES: 'estatecrm_referred_colleagues',
+  ACTIVITY_LOGS: 'estatecrm_activity_logs',
+  PROFILE: 'estatecrm_profile'
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -116,6 +130,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [buyers, setBuyers] = useState<Buyer[]>(() => loadFromStorage(STORAGE_KEYS.BUYERS, []));
   const [referredColleagues, setReferredColleagues] = useState<ReferredColleague[]>(() => loadFromStorage(STORAGE_KEYS.REFERRED_COLLEAGUES, []));
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => loadFromStorage(STORAGE_KEYS.ACTIVITY_LOGS, []));
+  const [profile, setProfile] = useState<Profile>(() => loadFromStorage<Profile>(STORAGE_KEYS.PROFILE, {
+    name: 'Martín Agente',
+    email: 'agente@estatecrm.app',
+    phone: '+54 9 11 1234 5678',
+    license: 'CUCICBA 12345',
+    templateProperty: '¡Hola! Te comparto la información de esta propiedad que puede interesarte:\n\n🏠 *{title}*\n📍 Ubicación: {address}, {zone}\n💰 Precio: {price}\n🔗 {link}\n\nQuedo a tu disposición por cualquier consulta.',
+    templateClient: 'Hola {name}, ¿cómo estás?\n\nTe escribe {agentName}. Quedo a tu disposición por cualquier consulta.',
+    templateBuyer: 'Hola {name}, ¿cómo estás?\n\nTe escribe {agentName}. Quedo a tu disposición por cualquier consulta.'
+  }));
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showToast = useCallback((message: string, type: ToastType) => setToast({ message, type }), []);
@@ -142,6 +165,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { saveToStorage(STORAGE_KEYS.BUYERS, buyers); }, [buyers]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.REFERRED_COLLEAGUES, referredColleagues); }, [referredColleagues]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.ACTIVITY_LOGS, activityLogs); }, [activityLogs]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.PROFILE, profile); }, [profile]);
 
   // --- Entity relation helpers (private) ---
   const updatePropertyStatusIfNeeded = useCallback((propertyId: string, newStatus: Property['status'], forbiddenCurrent?: Property['status']) => {
@@ -417,10 +441,86 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showToast('Colega eliminado', 'info');
   };
 
+  const updateProfile = (newProfile: Profile) => {
+    setProfile(newProfile);
+    showToast('Perfil guardado correctamente', 'success');
+  };
+
   // --- Utilities ---
   const resetData = () => {
     Object.values(STORAGE_KEYS).forEach(key => removeFromStorage(key));
     window.location.reload();
+  };
+
+  const clearMockData = () => {
+    // Identify mock IDs from the initial mock data imports
+    const mockClientIds = new Set(MOCK_CLIENTS.map(c => c.id));
+    const mockPropertyIds = new Set(MOCK_PROPERTIES.map(p => p.id));
+    const mockSaleIds = new Set(MOCK_SALES.map(s => s.id));
+    const mockRentalIds = new Set(MOCK_RENTALS.map(r => r.id));
+    const mockDocumentIds = new Set(MOCK_DOCUMENTS.map(d => d.id));
+    const mockEventIds = new Set(MOCK_EVENTS.map(e => e.id));
+    const mockTaskIds = new Set(MOCK_TASKS.map(t => t.id));
+
+    // Remove mock records
+    const newClients = clients.filter(c => !mockClientIds.has(c.id));
+    const newProperties = properties.filter(p => !mockPropertyIds.has(p.id));
+    const newSales = sales.filter(s => !mockSaleIds.has(s.id));
+    const newRentals = rentals.filter(r => !mockRentalIds.has(r.id));
+    const newDocuments = documents.filter(d => !mockDocumentIds.has(d.id));
+    const newEvents = events.filter(e => !mockEventIds.has(e.id));
+    const newTasks = tasks.filter(t => !mockTaskIds.has(t.id));
+
+    // Build valid ID sets for referential integrity cleanup
+    const validClientIds = new Set(newClients.map(c => c.id));
+    const validPropertyIds = new Set(newProperties.map(p => p.id));
+    const validSaleIds = new Set(newSales.map(s => s.id));
+    const validRentalIds = new Set(newRentals.map(r => r.id));
+
+    // Garbage-collect orphaned records that reference removed mocks
+    const gcSales = newSales.filter(s =>
+      validClientIds.has(s.clientCompradorId) &&
+      validPropertyIds.has(s.propiedadId) &&
+      validClientIds.has(s.propietarioId) &&
+      validClientIds.has(s.vendedorId)
+    );
+
+    const gcRentals = newRentals.filter(r =>
+      validClientIds.has(r.inquilinoId) &&
+      validPropertyIds.has(r.propiedadId) &&
+      validClientIds.has(r.propietarioId) &&
+      validClientIds.has(r.locadorId)
+    );
+
+    const gcDocuments = newDocuments.filter(d => {
+      if (d.clientId && !validClientIds.has(d.clientId)) return false;
+      if (d.propertyId && !validPropertyIds.has(d.propertyId)) return false;
+      if (d.saleId && !validSaleIds.has(d.saleId)) return false;
+      if (d.rentalId && !validRentalIds.has(d.rentalId)) return false;
+      return true;
+    });
+
+    const gcTasks = newTasks.filter(t => {
+      if (t.clientId && !validClientIds.has(t.clientId)) return false;
+      if (t.propertyId && !validPropertyIds.has(t.propertyId)) return false;
+      return true;
+    });
+
+    const gcEvents = newEvents.filter(e => {
+      if (e.clientId && !validClientIds.has(e.clientId)) return false;
+      if (e.propertyId && !validPropertyIds.has(e.propertyId)) return false;
+      return true;
+    });
+
+    setClients(newClients);
+    setProperties(newProperties);
+    setSales(gcSales);
+    setRentals(gcRentals);
+    setDocuments(gcDocuments);
+    setEvents(gcEvents);
+    setTasks(gcTasks);
+
+    showToast('Datos de muestra eliminados correctamente', 'success');
   };
 
   const exportData = () => {
@@ -442,7 +542,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `immoflow-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `estatecrm-backup-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -495,6 +595,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       buyers,
       referredColleagues,
       activityLogs,
+      profile,
+      updateProfile,
       showToast,
       addClient,
       updateClient,
@@ -530,6 +632,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       resetData,
       exportData,
       importData,
+      clearMockData,
       addActivityLog
     }}>
       {children}

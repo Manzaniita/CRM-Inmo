@@ -18,7 +18,7 @@ import {
   ArrowUpDown,
   AlertTriangle
 } from 'lucide-react';
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { CalendarEvent, EventType, EventStatus } from '../types';
 import Badge from '../components/Badge';
@@ -31,6 +31,7 @@ import { generateId } from '../lib/id';
 export default function Agenda() {
   const { events, clients, properties, addEvent, updateEvent, completeEvent, cancelEvent, deleteEvent, showToast } = useAppContext();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<'list' | 'week'>('list');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
@@ -40,6 +41,40 @@ export default function Agenda() {
 
   // Today dynamic
   const today = new Date().toISOString().split('T')[0];
+
+  // Mini-calendar state
+  const [calendarDate, setCalendarDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const calYear = calendarDate.getFullYear();
+  const calMonth = calendarDate.getMonth();
+  const monthLabel = calendarDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  // Day of week of the 1st (0=Sun..6=Sat), convert to Mon-first offset
+  const firstDow = new Date(calYear, calMonth, 1).getDay();
+  const startOffset = (firstDow === 0 ? 6 : firstDow - 1);
+
+  const goToPrevMonth = () => setCalendarDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  const goToNextMonth = () => setCalendarDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  const resetToToday = () => {
+    const d = new Date();
+    d.setDate(1);
+    setCalendarDate(new Date(d.getFullYear(), d.getMonth(), 1));
+    setSelectedDay(null);
+  };
+
+  const eventDaysInMonth = new Set(
+    events
+      .filter(e => {
+        const d = new Date(e.date + 'T00:00:00');
+        return d.getFullYear() === calYear && d.getMonth() === calMonth;
+      })
+      .map(e => e.date)
+  );
 
   const [formData, setFormData] = useState<Partial<CalendarEvent>>({
     title: '',
@@ -66,6 +101,24 @@ export default function Agenda() {
     }
   }, [location.state]);
 
+  // Handle query param eventId for deep linking
+  React.useEffect(() => {
+    const eventId = searchParams.get('eventId');
+    if (eventId) {
+      const event = events.find(e => e.id === eventId);
+      if (event) {
+        setSelectedDay(event.date);
+        setCalendarDate(new Date(Number(event.date.split('-')[0]), Number(event.date.split('-')[1]) - 1, 1));
+        // Scroll to event after render
+        setTimeout(() => {
+          const el = document.getElementById(`event-row-${eventId}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, events]);
+
   const now = new Date();
   const todayStr = today;
 
@@ -78,7 +131,8 @@ export default function Agenda() {
   const filteredEvents = events.filter(e => {
     const matchesSearch = normalizeSearchText(e.title).includes(normalizeSearchText(searchTerm));
     const matchesType = filterType === 'all' || e.type === filterType;
-    return matchesSearch && matchesType;
+    const matchesDay = !selectedDay || e.date === selectedDay;
+    return matchesSearch && matchesType && matchesDay;
   }).sort((a, b) => {
     switch (sortBy) {
       case 'date-desc':
@@ -321,26 +375,60 @@ export default function Agenda() {
         <div className="lg:col-span-1 space-y-6">
           <Card className="p-0 overflow-hidden">
             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-              <button className="p-1 hover:bg-gray-200 rounded-lg text-gray-500"><ChevronLeft size={16} /></button>
-              <span className="font-bold text-sm text-gray-900">Mayo 2024</span>
-              <button className="p-1 hover:bg-gray-200 rounded-lg text-gray-500"><ChevronRight size={16} /></button>
+              <button onClick={goToPrevMonth} className="p-1 hover:bg-gray-200 rounded-lg text-gray-500"><ChevronLeft size={16} /></button>
+              <span className="font-bold text-sm text-gray-900 capitalize">{monthLabel}</span>
+              <button onClick={goToNextMonth} className="p-1 hover:bg-gray-200 rounded-lg text-gray-500"><ChevronRight size={16} /></button>
             </div>
-            <div className="p-4 grid grid-cols-7 gap-1 text-center">
+            <div className="px-3 pt-2 pb-1">
+              <button
+                onClick={resetToToday}
+                className="w-full text-xs font-bold py-1.5 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                Hoy
+              </button>
+            </div>
+            <div className="p-3 grid grid-cols-7 gap-1 text-center">
               {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
                 <span key={`${d}-${i}`} className="text-[10px] font-black text-gray-400 uppercase">{d}</span>
               ))}
-              {Array.from({ length: 31 }).map((_, i) => (
-                <button
-                  key={i}
-                  className={cn(
-                    "h-8 flex items-center justify-center text-xs rounded-lg transition-colors font-semibold",
-                    i + 1 === 12 ? "bg-blue-600 text-white" : "hover:bg-gray-100 text-gray-700"
-                  )}
-                >
-                  {i + 1}
-                </button>
+              {Array.from({ length: startOffset }).map((_, i) => (
+                <span key={`empty-${i}`} />
               ))}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = dateStr === today;
+                const isSelected = dateStr === selectedDay;
+                const hasEvents = eventDaysInMonth.has(dateStr);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedDay(prev => prev === dateStr ? null : dateStr)}
+                    className={cn(
+                      'h-8 flex flex-col items-center justify-center text-xs rounded-lg transition-all font-semibold relative',
+                      isSelected ? 'bg-blue-600 text-white shadow-sm' :
+                      isToday ? 'bg-blue-100 text-blue-700 font-black' :
+                      'hover:bg-gray-100 text-gray-700'
+                    )}
+                  >
+                    {day}
+                    {hasEvents && !isSelected && (
+                      <span className={cn('absolute bottom-1 w-1 h-1 rounded-full', isToday ? 'bg-blue-600' : 'bg-blue-400')} />
+                    )}
+                  </button>
+                );
+              })}
             </div>
+            {selectedDay && (
+              <div className="px-3 pb-3">
+                <button
+                  onClick={() => setSelectedDay(null)}
+                  className="w-full text-[10px] font-bold py-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Limpiar filtro de día
+                </button>
+              </div>
+            )}
           </Card>
 
           <Card title="Filtrar por Tipo">
@@ -396,7 +484,7 @@ export default function Agenda() {
 
               <div className="space-y-3">
                 {filteredEvents.map(event => (
-                  <div key={event.id} className={cn("bg-white p-4 rounded-xl border shadow-sm flex items-start gap-4 hover:border-blue-200 transition-colors group relative", isEventOverdue(event) ? "border-red-300 bg-red-50/40" : "border-gray-200")}>
+                  <div key={event.id} id={`event-row-${event.id}`} className={cn("bg-white p-4 rounded-xl border shadow-sm flex items-start gap-4 hover:border-blue-200 transition-colors group relative", isEventOverdue(event) ? "border-red-300 bg-red-50/40" : "border-gray-200")}>
                     <div className={cn("flex flex-col items-center justify-center w-14 h-14 text-gray-500 rounded-xl border shrink-0", isEventOverdue(event) ? "bg-red-100 text-red-600 border-red-200" : "bg-gray-50 border-gray-100 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100")}>
                       <span className="text-[10px] font-black uppercase">{event.time}</span>
                       <span className="text-xs font-bold leading-none mt-1">{event.date === todayStr ? 'HOY' : event.date.split('-').slice(1).reverse().join('/')}</span>

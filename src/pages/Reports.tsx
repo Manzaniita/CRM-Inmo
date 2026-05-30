@@ -32,20 +32,29 @@ import Badge from '../components/Badge';
 import { cn, formatCurrency } from '../lib/utils';
 
 export default function Reports() {
-  const { clients, sales, rentals, properties, events } = useAppContext();
+  const { clients, sales, properties, events } = useAppContext();
 
   // Calculate Metrics
   const totalSalesEstimated = useMemo(() => 
-    sales.reduce((acc, s) => acc + (s.moneda === 'USD' ? s.comisionEstimada : 0), 0)
+    sales
+      .filter(s => s.moneda === 'USD')
+      .reduce((acc, s) => acc + (s.valorCierre || s.precioAcordado || s.precioPublicado || 0), 0)
   , [sales]);
 
-  const activeRentals = rentals.filter(r => r.estado === 'en curso').length;
   const monthlyVisits = events.filter(e => e.type === 'visita' && e.date.startsWith(new Date().toISOString().slice(0, 7))).length;
   
-  // Real conversion rate (Closed / Total Operations)
-  const totalOps = sales.length + rentals.length;
-  const closedOps = sales.filter(s => s.estado === 'vendida').length + rentals.filter(r => r.estado === 'firmado').length;
-  const conversionRate = totalOps > 0 ? Math.round((closedOps / totalOps) * 100) : 0;
+  // Conversion rate: vendida / (total excluding caída)
+  const activeOps = sales.filter(s => s.estado !== 'caída');
+  const closedOps = sales.filter(s => s.estado === 'vendida');
+  const conversionRate = activeOps.length > 0 ? Math.round((closedOps.length / activeOps.length) * 100) : 0;
+
+  const reservedSales = sales.filter(s => s.estado === 'reserva').length;
+
+  const collectedCommissions = useMemo(() => 
+    sales
+      .filter(s => s.isCollected && s.grossCommissionUsd)
+      .reduce((acc, s) => acc + (s.grossCommissionUsd || 0), 0)
+  , [sales]);
 
   // Chart Data: Clients by Month
   const clientsByMonth = useMemo(() => {
@@ -102,11 +111,12 @@ export default function Reports() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
          <ReportStat label="Ventas Totales Est. (USD)" value={formatCurrency(totalSalesEstimated, 'USD')} trend="+8.5%" trendType="up" />
-         <ReportStat label="Alquileres Vigentes" value={activeRentals.toString()} trend="+1" trendType="up" />
+         <ReportStat label="Ventas Reservadas" value={reservedSales.toString()} trend="+2" trendType="up" />
          <ReportStat label="Visitas del Mes" value={monthlyVisits.toString()} trend="-4%" trendType="down" />
          <ReportStat label="Tasa de Cierre" value={`${conversionRate}%`} trend="+2%" trendType="up" />
+         <ReportStat label="Comisiones Brutas Cobradas (USD)" value={formatCurrency(collectedCommissions, 'USD')} trend="+12%" trendType="up" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

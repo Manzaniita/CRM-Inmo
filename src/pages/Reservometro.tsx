@@ -196,15 +196,29 @@ export default function Reservometro() {
             </button>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto flex-wrap">
-          <SearchableSelect placeholder="Filtrar comprador" value={filterBuyer} onChange={setFilterBuyer} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} allowEmpty emptyLabel="Todos los compradores" />
-          <SearchableSelect placeholder="Filtrar vendedor" value={filterSeller} onChange={setFilterSeller} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} allowEmpty emptyLabel="Todos los vendedores" />
-          <input type="text" placeholder="Agente / Inmo" className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterAgent} onChange={e => setFilterAgent(e.target.value)} />
-          <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-            <option value="all">Estado trámite</option>
-            {STAGES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-            <option value="caída">Caída</option>
-          </select>
+        <div className="flex flex-col gap-3 w-full">
+          <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto flex-wrap">
+            <SearchableSelect placeholder="Filtrar comprador" value={filterBuyer} onChange={setFilterBuyer} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} allowEmpty emptyLabel="Todos los compradores" />
+            <SearchableSelect placeholder="Filtrar vendedor" value={filterSeller} onChange={setFilterSeller} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} allowEmpty emptyLabel="Todos los vendedores" />
+            <input type="text" placeholder="Agente / Inmo" className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterAgent} onChange={e => setFilterAgent(e.target.value)} />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest self-center mr-1">Estado:</span>
+            {(['all', ...STAGES, 'caída'] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(s)}
+                className={cn(
+                  'px-3 py-1 rounded-full text-xs font-bold border transition-all',
+                  filterStatus === s
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                )}
+              >
+                {s === 'all' ? 'Todas' : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -383,10 +397,21 @@ function SaleOperationMenu({ sale, onUpdate, onLog, showToast }: { sale: Sale; o
 }
 
 function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => void }) {
-  const { clients, properties, addSale, updateSale, showToast, addActivityLog } = useAppContext();
+  const { clients, properties, addSale, updateSale, showToast, addActivityLog, addClient } = useAppContext();
 
   const hasManualProperty = !!(sale?.externalPropertyAddress || sale?.externalPropertyLink || sale?.externalPropertyCode);
   const [propertyMode, setPropertyMode] = useState<'existing' | 'manual'>(sale ? (sale.propiedadId ? 'existing' : hasManualProperty ? 'manual' : 'existing') : 'existing');
+
+  // Inline new-client mini-forms
+  const [showNewBuyerForm, setShowNewBuyerForm] = useState(false);
+  const [newBuyerName, setNewBuyerName] = useState('');
+  const [newBuyerPhone, setNewBuyerPhone] = useState('');
+  const [showNewSellerForm, setShowNewSellerForm] = useState(false);
+  const [newSellerName, setNewSellerName] = useState('');
+  const [newSellerPhone, setNewSellerPhone] = useState('');
+
+  // Field-level errors
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const [formData, setFormData] = useState<Partial<Sale>>(() => {
     if (sale) {
@@ -411,12 +436,15 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
       fecha: '',
       vendedor: '',
       comprador: '',
+      compradorManual: '',
+      vendedorManual: '',
+      compradorInmobiliaria: '',
+      vendedorInmobiliaria: '',
       inmoAgente: '',
       puntas: undefined,
       porcentajeBruto: undefined,
       porcentajeNeto: undefined,
       porcentajeReferido: undefined,
-      fechaTomada: '',
       valorOfertado: undefined,
       contraoferta1: undefined,
       contraoferta2: undefined,
@@ -435,19 +463,75 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
     };
   });
 
+  const handleCreateBuyer = () => {
+    if (!newBuyerName.trim()) { showToast('El nombre del comprador es obligatorio', 'error'); return; }
+    const newClient = {
+      id: generateId('c'),
+      name: newBuyerName.trim(),
+      phone: newBuyerPhone.trim(),
+      email: '',
+      type: 'comprador' as const,
+      types: ['comprador' as const],
+      status: 'nuevo' as const,
+      origin: 'Oficina' as const,
+      lastContact: new Date().toISOString().split('T')[0],
+      notes: '',
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    addClient(newClient);
+    setFormData(prev => ({ ...prev, clientCompradorId: newClient.id }));
+    setShowNewBuyerForm(false);
+    setNewBuyerName('');
+    setNewBuyerPhone('');
+    showToast(`Comprador "${newClient.name}" creado y seleccionado`, 'success');
+  };
+
+  const handleCreateSeller = () => {
+    if (!newSellerName.trim()) { showToast('El nombre del vendedor es obligatorio', 'error'); return; }
+    const newClient = {
+      id: generateId('c'),
+      name: newSellerName.trim(),
+      phone: newSellerPhone.trim(),
+      email: '',
+      type: 'vendedor' as const,
+      types: ['vendedor' as const],
+      status: 'nuevo' as const,
+      origin: 'Oficina' as const,
+      lastContact: new Date().toISOString().split('T')[0],
+      notes: '',
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    addClient(newClient);
+    setFormData(prev => ({ ...prev, propietarioId: newClient.id }));
+    setShowNewSellerForm(false);
+    setNewSellerName('');
+    setNewSellerPhone('');
+    showToast(`Vendedor "${newClient.name}" creado y seleccionado`, 'success');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.clientCompradorId || !formData.estado) {
-      return showToast('El comprador y el estado son obligatorios', 'error');
+    const newErrors: Record<string, boolean> = {};
+
+    const hasComprador = !!(formData.clientCompradorId || (formData.compradorManual && formData.compradorManual.trim()));
+    if (!hasComprador) newErrors.comprador = true;
+    if (!formData.estado) newErrors.estado = true;
+    if (propertyMode === 'existing' && !formData.propiedadId) newErrors.propiedad = true;
+    if (propertyMode === 'manual' && !(formData.externalPropertyAddress || formData.externalPropertyLink || formData.externalPropertyCode)) newErrors.propiedadManual = true;
+    if (!formData.precioPublicado && formData.precioPublicado !== 0) newErrors.precio = true;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showToast('Completa los campos obligatorios marcados en rojo', 'error');
+      return;
     }
-    const hasManual = propertyMode === 'manual' && !!(formData.externalPropertyAddress || formData.externalPropertyLink || formData.externalPropertyCode);
-    if (propertyMode === 'existing' && !formData.propiedadId) {
-      return showToast('Debes seleccionar una propiedad existente o cambiar a propiedad manual', 'error');
-    }
-    if (propertyMode === 'manual' && !hasManual) {
-      return showToast('Debes completar al menos un dato de la propiedad manual', 'error');
-    }
+    setErrors({});
+
     const data: Partial<Sale> = { ...formData };
+    // If compradorManual is set, it prevails; clear clientCompradorId
+    if (data.compradorManual?.trim()) {
+      data.clientCompradorId = '';
+    }
     if (propertyMode === 'manual') {
       data.propiedadId = '';
     } else {
@@ -477,6 +561,13 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
     onClose();
   };
 
+  const inputCls = (field: string) =>
+    cn('w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all',
+      errors[field] ? 'border-red-500 bg-red-50/30' : 'border-gray-200');
+
+  // Find selected property details for rich display
+  const selectedProperty = properties.find(p => p.id === formData.propiedadId);
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -487,85 +578,188 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 scrollbar-thin">
           <div className="space-y-8">
+
+            {/* Estado */}
             <div>
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Estado *</label>
+              <label className={cn('block text-xs font-black uppercase tracking-widest mb-2', errors.estado ? 'text-red-500' : 'text-gray-400')}>Estado *</label>
               <div className="flex flex-wrap gap-2">
                 {STAGES.map(s => (
-                  <button key={s} type="button" onClick={() => setFormData({...formData, estado: s})} className={cn("px-3 py-1.5 rounded-full text-xs font-bold transition-all border", formData.estado === s ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200" : "bg-white text-gray-500 border-gray-200 hover:border-blue-300")}>{s}</button>
+                  <button key={s} type="button" onClick={() => { setFormData({...formData, estado: s}); setErrors(prev => ({...prev, estado: false})); }}
+                    className={cn('px-3 py-1.5 rounded-full text-xs font-bold transition-all border',
+                      errors.estado ? 'border-red-300' : '',
+                      formData.estado === s ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'
+                    )}>{s}</button>
                 ))}
               </div>
             </div>
 
+            {/* Comprador */}
+            <div className="space-y-3">
+              <label className={cn('block text-xs font-black uppercase tracking-widest', errors.comprador ? 'text-red-500' : 'text-gray-400')}>Comprador *</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Seleccionar cliente</span>
+                    <button type="button" onClick={() => setShowNewBuyerForm(v => !v)}
+                      className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center font-bold text-xs transition-all" title="Crear nuevo comprador">+</button>
+                  </div>
+                  <SearchableSelect value={formData.clientCompradorId || ''} onChange={val => { setFormData({...formData, clientCompradorId: val, compradorManual: ''}); setErrors(prev => ({...prev, comprador: false})); }}
+                    options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} placeholder="Seleccionar Cliente" allowEmpty />
+                  {showNewBuyerForm && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Nuevo Comprador rápido</p>
+                      <input className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none" placeholder="Nombre *" value={newBuyerName} onChange={e => setNewBuyerName(e.target.value)} />
+                      <input className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none" placeholder="Teléfono" value={newBuyerPhone} onChange={e => setNewBuyerPhone(e.target.value)} />
+                      <div className="flex gap-2">
+                        <button type="button" onClick={handleCreateBuyer} className="flex-1 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">Crear y Seleccionar</button>
+                        <button type="button" onClick={() => setShowNewBuyerForm(false)} className="px-3 py-1.5 text-gray-500 text-xs font-bold rounded-lg hover:bg-gray-100">Cancelar</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">O ingresar nombre manual</p>
+                  <input className={cn(inputCls('comprador'), 'mb-2')} placeholder="Nombre del comprador (texto libre)" value={formData.compradorManual || ''}
+                    onChange={e => { setFormData({...formData, compradorManual: e.target.value, clientCompradorId: e.target.value ? '' : formData.clientCompradorId}); setErrors(prev => ({...prev, comprador: false})); }} />
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Inmobiliaria Comprador</p>
+                  <input className={inputCls('')} placeholder="Nombre de la inmobiliaria" value={formData.compradorInmobiliaria || ''}
+                    onChange={e => setFormData({...formData, compradorInmobiliaria: e.target.value})} />
+                </div>
+              </div>
+              {errors.comprador && <p className="text-xs text-red-500 font-medium">Seleccione un cliente o ingrese el nombre del comprador</p>}
+            </div>
+
+            {/* Propiedad */}
+            <div>
+              <label className={cn('block text-xs font-black uppercase tracking-widest mb-2', errors.propiedad || errors.propiedadManual ? 'text-red-500' : 'text-gray-400')}>Propiedad</label>
+              <div className="flex gap-2 mb-3">
+                <button type="button" onClick={() => { setPropertyMode('existing'); setErrors(prev => ({...prev, propiedadManual: false})); }}
+                  className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all', propertyMode === 'existing' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200')}>Existente</button>
+                <button type="button" onClick={() => { setPropertyMode('manual'); setErrors(prev => ({...prev, propiedad: false})); }}
+                  className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all', propertyMode === 'manual' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200')}>Manual / No creada</button>
+              </div>
+              {propertyMode === 'existing' ? (
+                <div>
+                  <SearchableSelect value={formData.propiedadId || ''}
+                    onChange={val => { setFormData({...formData, propiedadId: val}); setErrors(prev => ({...prev, propiedad: false})); }}
+                    options={properties.map(p => ({
+                      value: p.id,
+                      label: p.title || p.address,
+                      subtitle: [p.address, p.zone, p.city].filter(Boolean).join(', ') + (p.propertyCode || p.code ? ` · Cód: ${p.propertyCode || p.code}` : '')
+                    }))}
+                    placeholder="Seleccionar Propiedad" allowEmpty={false} />
+                  {selectedProperty && (
+                    <div className={cn('mt-2 p-3 rounded-xl border text-xs space-y-1', errors.propiedad ? 'border-red-300 bg-red-50/30' : 'bg-blue-50/50 border-blue-100')}>
+                      <p className="font-bold text-gray-900">{selectedProperty.title}</p>
+                      <p className="text-gray-600">{[selectedProperty.address, selectedProperty.zone, selectedProperty.city].filter(Boolean).join(', ')}</p>
+                      {(selectedProperty.propertyLink || selectedProperty.externalLink) && (
+                        <a href={selectedProperty.propertyLink || selectedProperty.externalLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block">
+                          {selectedProperty.propertyLink || selectedProperty.externalLink}
+                        </a>
+                      )}
+                      {(selectedProperty.propertyCode || selectedProperty.code) && (
+                        <p className="text-gray-400 font-mono">ID/Cód: {selectedProperty.propertyCode || selectedProperty.code}</p>
+                      )}
+                    </div>
+                  )}
+                  {errors.propiedad && <p className="text-xs text-red-500 font-medium mt-1">Seleccione una propiedad existente</p>}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Dirección</label>
+                    <input className={inputCls('propiedadManual')} value={formData.externalPropertyAddress || ''} onChange={e => { setFormData({...formData, externalPropertyAddress: e.target.value}); setErrors(prev => ({...prev, propiedadManual: false})); }} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Link</label>
+                    <input className={inputCls('')} value={formData.externalPropertyLink || ''} onChange={e => setFormData({...formData, externalPropertyLink: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">ID / Código</label>
+                    <input className={inputCls('')} value={formData.externalPropertyCode || ''} onChange={e => setFormData({...formData, externalPropertyCode: e.target.value})} />
+                  </div>
+                  {errors.propiedadManual && <p className="text-xs text-red-500 font-medium md:col-span-3">Completa al menos un dato de la propiedad manual</p>}
+                </div>
+              )}
+            </div>
+
+            {/* Propietario / Vendedor */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <SearchableSelect label="Comprador *" value={formData.clientCompradorId || ''} onChange={val => setFormData({...formData, clientCompradorId: val})} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} placeholder="Seleccionar Cliente" allowEmpty={false} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Propiedad</label>
-                <div className="flex gap-2 mb-3">
-                  <button type="button" onClick={() => setPropertyMode('existing')} className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition-all", propertyMode === 'existing' ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-500 border-gray-200")}>Existente</button>
-                  <button type="button" onClick={() => setPropertyMode('manual')} className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition-all", propertyMode === 'manual' ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-500 border-gray-200")}>Manual / No creada</button>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Propietario / Vendedor</label>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Seleccionar cliente</span>
+                  <button type="button" onClick={() => setShowNewSellerForm(v => !v)}
+                    className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center font-bold text-xs transition-all" title="Crear nuevo vendedor">+</button>
                 </div>
-                {propertyMode === 'existing' ? (
-                  <SearchableSelect value={formData.propiedadId || ''} onChange={val => setFormData({...formData, propiedadId: val})} options={properties.map(p => ({ value: p.id, label: p.address, subtitle: p.code }))} placeholder="Seleccionar Propiedad" allowEmpty={false} />
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Dirección</label>
-                      <input className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.externalPropertyAddress || ''} onChange={e => setFormData({...formData, externalPropertyAddress: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Link</label>
-                      <input className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.externalPropertyLink || ''} onChange={e => setFormData({...formData, externalPropertyLink: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">ID / Código</label>
-                      <input className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.externalPropertyCode || ''} onChange={e => setFormData({...formData, externalPropertyCode: e.target.value})} />
+                <SearchableSelect value={formData.propietarioId || ''} onChange={val => setFormData({...formData, propietarioId: val || undefined})}
+                  options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} placeholder="Seleccionar (opcional)" allowEmpty />
+                {showNewSellerForm && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Nuevo Vendedor rápido</p>
+                    <input className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none" placeholder="Nombre *" value={newSellerName} onChange={e => setNewSellerName(e.target.value)} />
+                    <input className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none" placeholder="Teléfono" value={newSellerPhone} onChange={e => setNewSellerPhone(e.target.value)} />
+                    <div className="flex gap-2">
+                      <button type="button" onClick={handleCreateSeller} className="flex-1 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">Crear y Seleccionar</button>
+                      <button type="button" onClick={() => setShowNewSellerForm(false)} className="px-3 py-1.5 text-gray-500 text-xs font-bold rounded-lg hover:bg-gray-100">Cancelar</button>
                     </div>
                   </div>
                 )}
+                <div className="mt-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">O ingresar nombre manual</p>
+                  <input className={inputCls('')} placeholder="Nombre vendedor (texto libre)" value={formData.vendedorManual || ''}
+                    onChange={e => setFormData({...formData, vendedorManual: e.target.value})} />
+                </div>
               </div>
               <div>
-                <SearchableSelect label="Propietario" value={formData.propietarioId || ''} onChange={val => setFormData({...formData, propietarioId: val || undefined})} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} placeholder="Seleccionar propietario (opcional)" allowEmpty />
-              </div>
-              <div>
-                <SearchableSelect label="Vendedor / Agente" value={formData.vendedorId || ''} onChange={val => setFormData({...formData, vendedorId: val || undefined})} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} placeholder="Seleccionar agente (opcional)" allowEmpty />
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Agente / Vendedor Interno</label>
+                <SearchableSelect value={formData.vendedorId || ''} onChange={val => setFormData({...formData, vendedorId: val || undefined})}
+                  options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} placeholder="Seleccionar agente (opcional)" allowEmpty />
+                <div className="mt-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Inmobiliaria Vendedor</p>
+                  <input className={inputCls('')} placeholder="Nombre de la inmobiliaria" value={formData.vendedorInmobiliaria || ''}
+                    onChange={e => setFormData({...formData, vendedorInmobiliaria: e.target.value})} />
+                </div>
               </div>
             </div>
 
+            {/* Datos básicos */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Nombre de la operación</label>
-                <input className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 font-bold" value={formData.nombre || ''} onChange={e => setFormData({...formData, nombre: e.target.value})} />
+                <input className={inputCls('')} value={formData.nombre || ''} onChange={e => setFormData({...formData, nombre: e.target.value})} />
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Fecha</label>
-                <input type="date" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.fecha || ''} onChange={e => setFormData({...formData, fecha: e.target.value})} />
+                <input type="date" className={inputCls('')} value={formData.fecha || ''} onChange={e => setFormData({...formData, fecha: e.target.value})} />
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Inmo / Agente (texto)</label>
-                <input className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.inmoAgente || ''} onChange={e => setFormData({...formData, inmoAgente: e.target.value})} />
+                <input className={inputCls('')} value={formData.inmoAgente || ''} onChange={e => setFormData({...formData, inmoAgente: e.target.value})} />
               </div>
             </div>
 
+            {/* Precios */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { key: 'precioPublicado', label: 'Precio Publicado' },
-                { key: 'valorOfertado', label: 'Valor Ofertado' },
-                { key: 'contraoferta1', label: 'Contraoferta 1' },
-                { key: 'contraoferta2', label: 'Contraoferta 2' },
-                { key: 'valorCierre', label: 'Valor Cierre' },
-                { key: 'comisionEstimada', label: 'Comisión Estimada' },
-                { key: 'puntas', label: 'Puntas' },
-                { key: 'presupuesto', label: 'Presupuesto' },
+                { key: 'precioPublicado', label: 'Precio Publicado', required: true },
+                { key: 'valorOfertado', label: 'Valor Ofertado', required: false },
+                { key: 'contraoferta1', label: 'Contraoferta 1', required: false },
+                { key: 'contraoferta2', label: 'Contraoferta 2', required: false },
+                { key: 'valorCierre', label: 'Valor Cierre', required: false },
+                { key: 'comisionEstimada', label: 'Comisión Estimada', required: false },
+                { key: 'puntas', label: 'Puntas', required: false },
+                { key: 'presupuesto', label: 'Presupuesto', required: false },
               ].map(field => (
                 <div key={field.key}>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{field.label}</label>
-                  <input type="number" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={(formData as any)[field.key] ?? ''} onChange={e => setFormData({...formData, [field.key]: e.target.value ? Number(e.target.value) : undefined})} />
+                  <label className={cn('block text-[10px] font-black uppercase tracking-widest mb-1', errors[field.key] ? 'text-red-500' : 'text-gray-400')}>{field.label}{field.required ? ' *' : ''}</label>
+                  <input type="number" className={inputCls(field.key)} value={(formData as Record<string, unknown>)[field.key] as number ?? ''}
+                    onChange={e => { setFormData({...formData, [field.key]: e.target.value ? Number(e.target.value) : undefined}); if (field.required) setErrors(prev => ({...prev, [field.key]: false})); }} />
                 </div>
               ))}
             </div>
 
+            {/* Porcentajes y comisiones */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { key: 'porcentajeBruto', label: '% Bruto' },
@@ -575,16 +769,18 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
               ].map(field => (
                 <div key={field.key}>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{field.label}</label>
-                  <input type="number" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={(formData as any)[field.key] ?? ''} onChange={e => setFormData({...formData, [field.key]: e.target.value ? Number(e.target.value) : undefined})} />
+                  <input type="number" className={inputCls('')} value={(formData as Record<string, unknown>)[field.key] as number ?? ''}
+                    onChange={e => setFormData({...formData, [field.key]: e.target.value ? Number(e.target.value) : undefined})} />
                 </div>
               ))}
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Monto Escritura</label>
-                <input type="text" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={(formData as any).montoEscritura ?? ''} onChange={e => setFormData({...formData, montoEscritura: e.target.value})} />
+                <input type="text" className={inputCls('')} value={(formData as Record<string, unknown>).montoEscritura as string ?? ''}
+                  onChange={e => setFormData({...formData, montoEscritura: e.target.value})} />
               </div>
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Estado operación</label>
-                <select className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.operationStatus || 'activa'} onChange={e => setFormData({...formData, operationStatus: e.target.value as any})}>
+                <select className={inputCls('')} value={formData.operationStatus || 'activa'} onChange={e => setFormData({...formData, operationStatus: e.target.value as 'activa' | 'vendida' | 'caída'})}>
                   <option value="activa">Activa</option>
                   <option value="vendida">Vendida</option>
                   <option value="caída">Caída</option>
@@ -593,46 +789,47 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Cobrada</label>
                 <div className="flex items-center h-[42px]">
-                  <button type="button" onClick={() => setFormData({...formData, isCollected: !formData.isCollected})} className={cn("px-3 py-1.5 rounded-full text-xs font-bold border transition-all", formData.isCollected ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-500 border-gray-200")}>
+                  <button type="button" onClick={() => setFormData({...formData, isCollected: !formData.isCollected})}
+                    className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all', formData.isCollected ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-500 border-gray-200')}>
                     {formData.isCollected ? 'Sí' : 'No'}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Fecha Tomada</label>
-                <input type="date" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.fechaTomada || ''} onChange={e => setFormData({...formData, fechaTomada: e.target.value})} />
-              </div>
+            {/* Fechas (sin "Fecha Tomada") */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Fecha Reserva</label>
-                <input type="date" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.fechaReserva || ''} onChange={e => setFormData({...formData, fechaReserva: e.target.value})} />
+                <input type="date" className={inputCls('')} value={formData.fechaReserva || ''} onChange={e => setFormData({...formData, fechaReserva: e.target.value})} />
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Fecha Escritura</label>
-                <input type="date" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.fechaEscritura || ''} onChange={e => setFormData({...formData, fechaEscritura: e.target.value})} />
+                <input type="date" className={inputCls('')} value={formData.fechaEscritura || ''} onChange={e => setFormData({...formData, fechaEscritura: e.target.value})} />
               </div>
             </div>
 
+            {/* Escribanía y Moneda */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Escribanía</label>
-                <input className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.escribania || ''} onChange={e => setFormData({...formData, escribania: e.target.value})} />
+                <input className={inputCls('')} value={formData.escribania || ''} onChange={e => setFormData({...formData, escribania: e.target.value})} />
               </div>
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Moneda *</label>
                 <div className="flex gap-2">
-                  {['USD', 'ARS'].map(m => (
-                    <button key={m} type="button" onClick={() => setFormData({...formData, moneda: m as any})} className={cn("flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all", formData.moneda === m ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500 border-gray-200")}>{m}</button>
+                  {(['USD', 'ARS'] as const).map(m => (
+                    <button key={m} type="button" onClick={() => setFormData({...formData, moneda: m})}
+                      className={cn('flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all', formData.moneda === m ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200')}>{m}</button>
                   ))}
                 </div>
               </div>
             </div>
 
+            {/* Notas */}
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Notas / Info Extra</label>
-              <textarea rows={3} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20" placeholder="Condiciones, observaciones..." value={formData.notas || ''} onChange={e => setFormData({...formData, notas: e.target.value})} />
+              <textarea rows={3} className={inputCls('')} placeholder="Condiciones, observaciones..." value={formData.notas || ''} onChange={e => setFormData({...formData, notas: e.target.value})} />
             </div>
           </div>
 

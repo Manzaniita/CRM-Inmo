@@ -1,4 +1,3 @@
-﻿@"
 node_modules/
 dist/
 build/
@@ -19,9 +18,11 @@ Thumbs.db
 
 .vscode/
 .idea/
-.continue/
 
 .cache/
 .vite/
 coverage/
-"@ | Out-File -Encoding utf8 .gitignore
+
+repomix-output.*
+session-notes.md
+.vercel

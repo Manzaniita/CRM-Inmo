@@ -28,14 +28,15 @@ import {
   Camera,
   Trash2,
   Clock,
-  Link2
+  Link2,
+  MessageCircle
 } from 'lucide-react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
-import { cn, formatCurrency } from '../lib/utils';
+import { cn, formatCurrency, generateWhatsAppLink, formatWhatsAppTemplate, parseRichText } from '../lib/utils';
 import { contractTimeRemaining } from '../lib/dates';
 import { generateId } from '../lib/id';
 import { validateProperty } from '../lib/validators';
@@ -54,7 +55,7 @@ export default function Properties() {
   const [searchParams] = useSearchParams();
   const propertyIdFromQuery = searchParams.get('propertyId');
   const effectivePropertyId = id || propertyIdFromQuery || undefined;
-  const { properties, clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addClient, addActivityLog } = useAppContext();
+  const { properties, clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, profile, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addClient, addActivityLog } = useAppContext();
   const { openRelations } = useRelationsDrawer();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -362,9 +363,10 @@ export default function Properties() {
 
               <div className="mt-8">
                 <h3 className="font-bold text-gray-900 mb-3">Descripción / Notas Internas</h3>
-                <p className="text-gray-600 leading-relaxed italic border-l-4 border-gray-100 pl-4">
-                  "{selectedProp.notes || 'Sin descripción adicional.'}"
-                </p>
+                <div
+                  className="text-gray-600 leading-relaxed italic border-l-4 border-gray-100 pl-4"
+                  dangerouslySetInnerHTML={{ __html: parseRichText(selectedProp.notes || 'Sin descripción adicional.') }}
+                />
               </div>
 
               <div className="mt-8">
@@ -447,6 +449,26 @@ export default function Properties() {
           <div className="space-y-6">
             <Card title="Acciones de Propiedad">
               <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                  onClick={() => {
+                    const propertyLink = selectedProp.externalLink || selectedProp.propertyLink || '';
+                    const msg = formatWhatsAppTemplate(profile.templateProperty, {
+                      title: selectedProp.title,
+                      address: selectedProp.address,
+                      zone: selectedProp.zone,
+                      price: formatCurrency(selectedProp.price, selectedProp.currency),
+                      link: propertyLink,
+                      agentName: profile.name,
+                      name: ''
+                    });
+                    const link = generateWhatsAppLink(profile.phone, msg);
+                    window.open(link, '_blank');
+                  }}
+                >
+                  <MessageCircle size={18} className="mr-2" /> Enviar Ficha por WhatsApp
+                </Button>
                 <Button 
                   variant="primary" 
                   className="w-full"
@@ -549,7 +571,7 @@ export default function Properties() {
             <Button variant="outline" className="w-full" onClick={() => openRelations('property', selectedProp.id)}>
               <Link2 size={16} className="mr-2" /> Ver vínculos (Vista 360°)
             </Button>
-            <RelationsPanel groups={getPropertyRelations(selectedProp.id, { clients, properties, sales, rentals, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs })} />
+            <RelationsPanel groups={getPropertyRelations(selectedProp.id, { clients, properties, sales, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs })} />
           </div>
         </div>
         {isFormModalOpen && renderFormModal()}
@@ -730,9 +752,11 @@ export default function Properties() {
                 >
                   <option value="departamento">Departamento</option>
                   <option value="casa">Casa</option>
+                  <option value="ph">PH</option>
                   <option value="lote">Lote</option>
                   <option value="local">Local</option>
                   <option value="oficina">Oficina</option>
+                  <option value="campos">Campos</option>
                 </select>
               </div>
               <div>
@@ -1054,8 +1078,29 @@ export default function Properties() {
                   <div className="absolute top-2 left-2 shadow-sm">
                     <Badge variant={getStatusVariant(prop.status)}>{getPropertyStatusLabel(prop.status)}</Badge>
                   </div>
-                  {/* 3-dots menu + 360 button */}
+                  {/* 3-dots menu + 360 button + WhatsApp */}
                   <div className="absolute top-2 right-2 flex gap-1">
+                    <button
+                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-green-50 transition-colors"
+                      onClick={e => {
+                        e.stopPropagation();
+                        const propertyLink = prop.externalLink || prop.propertyLink || '';
+                        const msg = formatWhatsAppTemplate(profile.templateProperty, {
+                          title: prop.title,
+                          address: prop.address,
+                          zone: prop.zone,
+                          price: formatCurrency(prop.price, prop.currency),
+                          link: propertyLink,
+                          agentName: profile.name,
+                          name: ''
+                        });
+                        const link = generateWhatsAppLink(profile.phone, msg);
+                        window.open(link, '_blank');
+                      }}
+                      title="Enviar por WhatsApp"
+                    >
+                      <MessageCircle size={16} className="text-green-600" />
+                    </button>
                     <button
                       className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white transition-colors text-[10px] font-bold text-blue-700"
                       onClick={e => {

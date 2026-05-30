@@ -26,11 +26,10 @@ import { Client, ClientType, ClientStatus, ClientOrigin, EntityNote, Document, S
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
-import { cn, formatCurrency, formatDate, normalizeSearchText } from '../lib/utils';
+import { cn, formatCurrency, formatDate, normalizeSearchText, generateWhatsAppLink, formatWhatsAppTemplate, parseRichText } from '../lib/utils';
 import { generateId } from '../lib/id';
 import { validateClient, validateTask } from '../lib/validators';
-import RelationsPanel from '../components/RelationsPanel';
-import { getClientRelations } from '../lib/relations';
+
 import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
@@ -44,7 +43,7 @@ export default function Clients() {
   const [searchParams] = useSearchParams();
   const clientIdFromQuery = searchParams.get('clientId');
   const effectiveClientId = id || clientIdFromQuery || undefined;
-  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addReferredColleague, updateReferredColleague, addActivityLog } = useAppContext();
+  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, profile, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addReferredColleague, updateReferredColleague, addActivityLog } = useAppContext();
   const { openRelations } = useRelationsDrawer();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -303,6 +302,37 @@ export default function Clients() {
     }
   };
 
+  const handleTextareaFormatKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    onChange: (value: string) => void
+  ) => {
+    if (!e.ctrlKey) return;
+    const key = e.key.toLowerCase();
+    let tag = '';
+    if (key === 'b') tag = '**';
+    else if (key === 'u' || key === 's') tag = '__';
+    else return;
+
+    e.preventDefault();
+    const el = e.currentTarget;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const value = el.value;
+
+    const before = value.substring(0, start);
+    const selected = value.substring(start, end);
+    const after = value.substring(end);
+
+    const newValue = before + tag + selected + tag + after;
+    onChange(newValue);
+
+    requestAnimationFrame(() => {
+      el.selectionStart = start + tag.length;
+      el.selectionEnd = end + tag.length;
+      el.focus();
+    });
+  };
+
   const getStatusBadgeVariant = (status: ClientStatus): any => {
     switch (status) {
       case 'nuevo': return 'green';
@@ -428,6 +458,7 @@ export default function Clients() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={taskFormData.notes}
                   onChange={e => setTaskFormData({...taskFormData, notes: e.target.value})}
+                  onKeyDown={e => handleTextareaFormatKeyDown(e, (val) => setTaskFormData({...taskFormData, notes: val}))}
                 />
               </div>
             </div>
@@ -566,6 +597,7 @@ export default function Clients() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.notes}
                   onChange={e => setEventFormData({...eventFormData, notes: e.target.value})}
+                  onKeyDown={e => handleTextareaFormatKeyDown(e, (val) => setEventFormData({...eventFormData, notes: val}))}
                 />
               </div>
             </div>
@@ -622,10 +654,25 @@ export default function Clients() {
                   <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                     <Phone size={18} className="text-blue-600" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-xs text-gray-500 font-medium">Teléfono</p>
                     <p className="text-sm font-bold text-gray-900">{selectedClient.phone}</p>
                   </div>
+                  <button
+                    className="p-2 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors"
+                    onClick={() => {
+                      const msg = formatWhatsAppTemplate(profile.templateClient, {
+                        name: selectedClient.name,
+                        agentName: profile.name,
+                        title: '', address: '', price: '', link: ''
+                      });
+                      const link = generateWhatsAppLink(selectedClient.phone, msg);
+                      window.open(link, '_blank');
+                    }}
+                    title="Contactar por WhatsApp"
+                  >
+                    <MessageCircle size={18} />
+                  </button>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -680,9 +727,10 @@ export default function Clients() {
 
               <div className="mt-8">
                 <h3 className="font-bold text-gray-900 mb-3">Notas Internas</h3>
-                <p className="text-gray-600 leading-relaxed italic border-l-4 border-gray-100 pl-4">
-                  "{selectedClient.notes || 'Sin notas adicionales.'}"
-                </p>
+                <div
+                  className="text-gray-600 leading-relaxed italic border-l-4 border-gray-100 pl-4"
+                  dangerouslySetInnerHTML={{ __html: parseRichText(selectedClient.notes || 'Sin notas adicionales.') }}
+                />
               </div>
 
               <div className="mt-8">
@@ -955,7 +1003,6 @@ export default function Clients() {
             <Button variant="outline" className="w-full" onClick={() => openRelations('client', selectedClient.id)}>
               <Link2 size={16} className="mr-2" /> Ver vínculos (Vista 360°)
             </Button>
-            <RelationsPanel groups={getClientRelations(selectedClient.id, { clients, properties, sales, rentals, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs })} />
           </div>
         </div>
         {isFormModalOpen && renderFormModal()}
@@ -1220,6 +1267,7 @@ export default function Clients() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.notes || ''}
                   onChange={e => setFormData({...formData, notes: e.target.value})}
+                  onKeyDown={e => handleTextareaFormatKeyDown(e, (val) => setFormData({...formData, notes: val}))}
                 />
               </div>
             </div>
@@ -1413,6 +1461,22 @@ export default function Clients() {
                 <p className="text-sm font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{client.name}</p>
                 <p className="text-xs text-gray-500 flex items-center gap-3 mt-0.5">
                   <span className="flex items-center"><Phone size={12} className="mr-1" />{client.phone}</span>
+                  <button
+                    className="flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 rounded px-1 transition-colors"
+                    onClick={e => {
+                      e.stopPropagation();
+                      const msg = formatWhatsAppTemplate(profile.templateClient, {
+                        name: client.name,
+                        agentName: profile.name,
+                        title: '', address: '', price: '', link: ''
+                      });
+                      const link = generateWhatsAppLink(client.phone, msg);
+                      window.open(link, '_blank');
+                    }}
+                    title="Contactar por WhatsApp"
+                  >
+                    <MessageCircle size={12} className="mr-0.5" /> WhatsApp
+                  </button>
                   <span className="flex items-center"><Mail size={12} className="mr-1" />{client.email}</span>
                 </p>
               </div>

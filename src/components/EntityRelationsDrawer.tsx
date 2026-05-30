@@ -14,7 +14,6 @@ const typeIcons: Record<RelationEntityType, React.ElementType> = {
   colleague: Briefcase,
   buyer: ShoppingCart,
   sale: Key,
-  rental: Key,
   task: CheckSquare,
   event: Calendar,
   document: FileText,
@@ -75,7 +74,7 @@ function EmptyGroupState({ title }: { title: string }) {
 
 export default function EntityRelationsDrawer() {
   const { isOpen, entityType, entityId, closeRelations } = useRelationsDrawer();
-  const { clients, properties, sales, rentals, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs, addTask, addActivityLog, showToast } = useAppContext();
+  const { clients, properties, sales, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs, addTask, addActivityLog, showToast } = useAppContext();
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskForm, setTaskForm] = useState({ title: '', description: '', dueDate: new Date().toISOString().split('T')[0], priority: 'media' as 'baja' | 'media' | 'alta' | 'urgente' });
@@ -99,7 +98,6 @@ export default function EntityRelationsDrawer() {
       clients,
       properties,
       sales,
-      rentals,
       tasks,
       events,
       documents,
@@ -122,7 +120,7 @@ export default function EntityRelationsDrawer() {
       default:
         return [];
     }
-  }, [entityType, entityId, clients, properties, sales, rentals, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs]);
+  }, [entityType, entityId, clients, properties, sales, tasks, events, documents, referredColleagues, waitingRoom, buyers, activityLogs]);
 
   const entityName = useMemo(() => {
     if (!entityType || !entityId) return '';

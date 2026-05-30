@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Plus, Search, ShoppingCart, X, Trash2, Edit3, Link2, MoreVertical
+  Plus, Search, ShoppingCart, X, Trash2, Edit3, Link2, MoreVertical, MessageCircle
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -8,7 +8,7 @@ import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
-import { cn, normalizeSearchText, formatCurrency } from '../lib/utils';
+import { cn, normalizeSearchText, formatCurrency, generateWhatsAppLink, formatWhatsAppTemplate } from '../lib/utils';
 import { generateId } from '../lib/id';
 import { validateBuyer } from '../lib/validators';
 import type { Buyer, BuyerStatus } from '../types';
@@ -59,7 +59,7 @@ function BuyerOperationMenu({ buyer, onUpdate, onLog, showToast }: { buyer: Buye
 }
 
 export default function BuyersPage() {
-  const { buyers, addBuyer, updateBuyer, deleteBuyer, showToast, addActivityLog } = useAppContext();
+  const { buyers, addBuyer, updateBuyer, deleteBuyer, profile, showToast, addActivityLog } = useAppContext();
   const { openRelations } = useRelationsDrawer();
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,7 +200,26 @@ export default function BuyersPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-bold text-gray-900">{buyer.nombre}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{buyer.telefono} • {buyer.email}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-2">
+                    <span>{buyer.telefono}</span>
+                    <button
+                      className="inline-flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 rounded px-1 transition-colors"
+                      onClick={e => {
+                        e.stopPropagation();
+                        const msg = formatWhatsAppTemplate(profile.templateBuyer, {
+                          name: buyer.nombre,
+                          agentName: profile.name,
+                          title: '', address: '', price: '', link: ''
+                        });
+                        const link = generateWhatsAppLink(buyer.telefono, msg);
+                        window.open(link, '_blank');
+                      }}
+                      title="Contactar por WhatsApp"
+                    >
+                      <MessageCircle size={12} className="mr-0.5" /> WhatsApp
+                    </button>
+                    <span>• {buyer.email}</span>
+                  </p>
                 </div>
                 <Badge variant={STATUS_VARIANT[buyer.estado] as any}>{buyer.estado}</Badge>
               </div>

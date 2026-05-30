@@ -4,8 +4,6 @@ import {
   Home,
   Calendar,
   CheckSquare,
-  Key,
-  FileText,
   BarChart3,
   Settings,
   Menu,
@@ -21,6 +19,7 @@ import {
 import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { cn } from './lib/utils';
+import { useAppContext } from './context/AppContext';
 
 // Pages
 import GlobalSearch from './components/GlobalSearch';
@@ -29,9 +28,6 @@ import Clients from './pages/Clients';
 import Properties from './pages/Properties';
 import Agenda from './pages/Agenda';
 import Tasks from './pages/Tasks';
-import Sales from './pages/Sales';
-import Rentals from './pages/Rentals';
-import Documents from './pages/Documents';
 import Reports from './pages/Reports';
 import Configuration from './pages/Configuration';
 import WaitingRoom from './pages/WaitingRoom';
@@ -52,6 +48,7 @@ const MENU_ITEMS = [
   { id: 'colegas-referidos', label: 'Colegas Referidos', icon: Briefcase, path: '/colegas-referidos' },
   { id: 'marketplace', label: 'Marketplace', icon: Store, path: '/marketplace' },
   { id: 'reservometro', label: 'Reservómetro', icon: Gauge, path: '/reservometro' },
+  { id: 'reportes', label: 'Reportes', icon: BarChart3, path: '/reportes' },
   { id: 'configuracion', label: 'Configuración', icon: Settings, path: '/configuracion' },
 ];
 
@@ -61,6 +58,35 @@ function NotFound() {
       <h2 className="text-4xl font-black text-gray-200 mb-4">404</h2>
       <p className="text-gray-500 font-medium mb-6">La página que buscas no existe.</p>
       <Link to="/dashboard" className="text-blue-600 font-bold hover:underline">Volver al Dashboard</Link>
+    </div>
+  );
+}
+
+function HeaderProfile() {
+  const { profile } = useAppContext();
+  const initials = profile.name
+    .split(' ')
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  return (
+    <div className="flex items-center space-y-0 space-x-4">
+      <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative" id="notifications">
+        <Bell size={20} />
+        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+      </button>
+      <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
+      <div className="flex items-center cursor-pointer group" id="user-profile">
+        <div className="text-right mr-3 hidden sm:block">
+          <p className="text-sm font-semibold text-gray-900">{profile.name}</p>
+          <p className="text-xs text-gray-500 font-medium">Agente Pro</p>
+        </div>
+        <div className="w-9 h-9 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-bold overflow-hidden ring-2 ring-transparent group-hover:ring-blue-100 transition-all">
+          {initials}
+        </div>
+      </div>
     </div>
   );
 }
@@ -93,7 +119,7 @@ export default function App() {
           </div>
           {sidebarOpen && (
             <span className="ml-3 font-bold text-xl tracking-tight text-gray-900 whitespace-nowrap">
-              Immo<span className="text-blue-600">Flow</span>
+              Estate<span className="text-blue-600">CRM</span>
             </span>
           )}
         </div>
@@ -159,22 +185,7 @@ export default function App() {
             <GlobalSearch />
           </div>
 
-          <div className="flex items-center space-y-0 space-x-4">
-            <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative" id="notifications">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-            <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
-            <div className="flex items-center cursor-pointer group" id="user-profile">
-              <div className="text-right mr-3 hidden sm:block">
-                <p className="text-sm font-semibold text-gray-900">Martin Agente</p>
-                <p className="text-xs text-gray-500 font-medium">Agente Pro</p>
-              </div>
-              <div className="w-9 h-9 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-bold overflow-hidden ring-2 ring-transparent group-hover:ring-blue-100 transition-all">
-                MA
-              </div>
-            </div>
-          </div>
+          <HeaderProfile />
         </header>
 
         {/* Dynamic Content */}
@@ -189,9 +200,6 @@ export default function App() {
               <Route path="/propiedades/:id" element={<Properties />} />
               <Route path="/agenda" element={<Agenda />} />
               <Route path="/tareas" element={<Tasks />} />
-              <Route path="/ventas" element={<Sales />} />
-              <Route path="/alquileres" element={<Rentals />} />
-              <Route path="/documentos" element={<Documents />} />
               <Route path="/reportes" element={<Reports />} />
               <Route path="/configuracion" element={<Configuration />} />
               <Route path="/sala-espera" element={<WaitingRoom />} />

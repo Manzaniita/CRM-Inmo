@@ -6,7 +6,6 @@ import type {
   CalendarEvent,
   Document,
   Sale,
-  Rental,
   ActivityLog,
   WaitingRoomEntry,
   Buyer
@@ -18,7 +17,6 @@ export type RelationEntityType =
   | 'colleague'
   | 'buyer'
   | 'sale'
-  | 'rental'
   | 'task'
   | 'event'
   | 'document'
@@ -47,7 +45,6 @@ interface AppData {
   clients: Client[];
   properties: Property[];
   sales: Sale[];
-  rentals: Rental[];
   tasks: Task[];
   events: CalendarEvent[];
   documents: Document[];
@@ -121,7 +118,7 @@ export function getClientRelations(
       type: 'colleague',
       title: referrer.nombreApellido,
       subtitle: referrer.oficina,
-      route: '/colegas-referidos'
+      route: `/colegas-referidos?colleagueId=${referrer.id}`
     }]);
     if (g) groups.push(g);
   } else {
@@ -196,19 +193,7 @@ export function getClientRelations(
   const salesGroup = buildGroup('Operaciones Reservómetro', saleItems);
   if (salesGroup) groups.push(salesGroup);
 
-  // 5. Alquileres
-  const rented = data.rentals.filter(r => r.inquilinoId === clientId);
-  const rentalGroup = buildGroup('Alquileres', rented.map(r => ({
-    id: r.id,
-    type: 'rental',
-    title: `Alquiler: ${findPropertyTitle(data.properties, r.propiedadId) || r.propiedadId}`,
-    subtitle: formatStatusLabel(r.estado),
-    status: r.estado,
-    route: '/alquileres'
-  })));
-  if (rentalGroup) groups.push(rentalGroup);
-
-  // 6. Tareas
+  // 5. Tareas
   const clientTasks = data.tasks.filter(t => t.clientId === clientId || t.relatedEntities?.some(r => r.type === 'client' && r.id === clientId));
   const taskGroup = buildGroup('Tareas', clientTasks.map(t => ({
     id: t.id,
@@ -220,7 +205,7 @@ export function getClientRelations(
   })));
   if (taskGroup) groups.push(taskGroup);
 
-  // 7. Agenda / Eventos
+  // 6. Agenda / Eventos
   const clientEvents = data.events.filter(e => e.clientId === clientId);
   const eventGroup = buildGroup('Eventos', clientEvents.map(e => ({
     id: e.id,
@@ -228,11 +213,11 @@ export function getClientRelations(
     title: e.title,
     subtitle: `${e.date} ${e.time}`,
     status: e.status,
-    route: '/agenda'
+    route: `/agenda?eventId=${e.id}`
   })));
   if (eventGroup) groups.push(eventGroup);
 
-  // 8. Documentos
+  // 7. Documentos
   const clientDocs = data.documents.filter(d => d.clientId === clientId);
   const docGroup = buildGroup('Documentos', clientDocs.map(d => ({
     id: d.id,
@@ -240,11 +225,11 @@ export function getClientRelations(
     title: d.name,
     subtitle: d.type,
     status: d.status,
-    route: '/documentos'
+    route: `/clientes?clientId=${clientId}`
   })));
   if (docGroup) groups.push(docGroup);
 
-  // 9. Últimos movimientos
+  // 8. Últimos movimientos
   const logs = data.activityLogs.filter(l =>
     l.entityId === clientId ||
     normalizeText(l.title).includes(normalizeText(client.name)) ||
@@ -396,7 +381,7 @@ export function getPropertyRelations(
     title: d.name,
     subtitle: d.type,
     status: d.status,
-    route: '/documentos'
+    route: `/propiedades?propertyId=${propertyId}`
   })));
   if (docGroup) groups.push(docGroup);
 
@@ -442,6 +427,7 @@ export function getColleagueRelations(
       type: 'colleague',
       title: colleague.nombreApellido,
       subtitle: colleague.oficina,
+      route: `/colegas-referidos?colleagueId=${colleague.id}`,
       metadata: {
         respondio: colleague.respondio ? 'Sí' : 'No',
         quienContacto: colleague.quienContacto,
@@ -679,6 +665,7 @@ export function getBuyerRelations(
       title: buyer.nombre,
       subtitle: [buyer.telefono, buyer.email].filter(Boolean).join(' • '),
       status: buyer.estado,
+      route: `/compradores?buyerId=${buyer.id}`,
       metadata: {
         presupuesto: buyer.presupuestoMin && buyer.presupuestoMax
           ? `${buyer.presupuestoMin} - ${buyer.presupuestoMax} ${buyer.moneda}`
