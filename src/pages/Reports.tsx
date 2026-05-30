@@ -101,8 +101,8 @@ export default function Reports() {
     <div className="space-y-8 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reportes</h1>
-          <p className="text-gray-500">Visualiza el rendimiento de tu negocio inmobiliario.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Reportes</h1>
+          <p className="text-slate-500 dark:text-slate-400">Visualiza el rendimiento de tu negocio inmobiliario.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">Personalizar</Button>
@@ -175,8 +175,8 @@ export default function Reports() {
                    </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                   <p className="text-2xl font-black text-gray-900">100%</p>
-                   <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase">Canales</p>
+                   <p className="text-2xl font-black text-slate-900 dark:text-slate-100">100%</p>
+                   <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest uppercase">Canales</p>
                 </div>
              </div>
              <div className="space-y-2 mt-4">
@@ -184,9 +184,9 @@ export default function Reports() {
                    <div key={item.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                         <span className="text-xs font-semibold text-gray-700 capitalize">{item.name}</span>
+                         <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 capitalize">{item.name}</span>
                       </div>
-                      <span className="text-xs font-black text-gray-900">{item.value}%</span>
+                      <span className="text-xs font-black text-slate-900 dark:text-slate-100">{item.value}%</span>
                    </div>
                 ))}
              </div>
@@ -209,11 +209,11 @@ export default function Reports() {
 function ReportStat({ label, value, trend, trendType }: { label: string, value: string, trend: string, trendType: 'up' | 'down' }) {
   return (
     <Card className="p-5 flex flex-col">
-       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-       <h4 className="text-2xl font-black text-gray-900 mb-2">{value}</h4>
+       <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+       <h4 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">{value}</h4>
        <div className={cn("flex items-center text-xs font-bold", trendType === 'up' ? "text-green-600" : "text-red-600")}>
           {trendType === 'up' ? <ArrowUpRight size={14} className="mr-1" /> : <ArrowDownRight size={14} className="mr-1" />}
-          {trend} <span className="text-gray-400 ml-1 font-medium italic">vs mes ant.</span>
+          {trend} <span className="text-slate-400 dark:text-slate-500 ml-1 font-medium italic">vs mes ant.</span>
        </div>
     </Card>
   );
@@ -223,10 +223,10 @@ function ProgressItem({ label, value, color }: { label: string, value: number, c
   return (
     <div className="space-y-1">
        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-          <span className="text-gray-500">{label}</span>
-          <span className="text-gray-900">{value}%</span>
+          <span className="text-slate-500 dark:text-slate-400">{label}</span>
+          <span className="text-slate-900 dark:text-slate-100">{value}%</span>
        </div>
-       <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+       <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
           <div className={cn("h-full rounded-full transition-all duration-1000", color)} style={{ width: `${value}%` }} />
        </div>
     </div>

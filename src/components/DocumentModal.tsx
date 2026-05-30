@@ -232,13 +232,13 @@ export default function DocumentModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-lg font-bold text-gray-900">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
             {mode === 'create' ? 'Nuevo Documento' : isEditing && mode !== 'view' ? 'Editar Documento' : 'Detalle del Documento'}
           </h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
-            <X size={20} className="text-gray-500" />
+          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+            <X size={20} className="text-slate-500 dark:text-slate-400" />
           </button>
         </div>
 
@@ -255,7 +255,7 @@ export default function DocumentModal({
                 <StatusBadgeIcon size={32} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-gray-900 truncate">{document?.name}</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{document?.name}</h3>
                 <div className="flex gap-2 mt-2">
                   <Badge variant="gray">{document?.type}</Badge>
                   <Badge variant={document ? getStatusVariant(document.status) : 'gray'}>{document?.status}</Badge>
@@ -264,58 +264,58 @@ export default function DocumentModal({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-xl">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
-                  <Paperclip size={14} className="text-gray-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Archivo</span>
+                  <Paperclip size={14} className="text-slate-400 dark:text-slate-500" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Archivo</span>
                 </div>
                 {document?.fileName ? (
                   <div>
-                    <p className="text-sm font-bold text-gray-800 truncate">{document.fileName}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{document.fileName}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       {formatFileSize(document.fileSize)} · .{document.fileExtension}
                     </p>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-400 italic">Sin archivo adjunto</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500 italic">Sin archivo adjunto</p>
                 )}
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-xl">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar size={14} className="text-gray-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Fecha de carga</span>
+                  <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Fecha de carga</span>
                 </div>
-                <p className="text-sm font-bold text-gray-800">{document ? formatDate(document.uploadDate) : '-'}</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{document ? formatDate(document.uploadDate) : '-'}</p>
               </div>
 
               {document?.clientId && (
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <User size={14} className="text-gray-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Cliente</span>
+                    <User size={14} className="text-slate-400 dark:text-slate-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Cliente</span>
                   </div>
-                  <p className="text-sm font-bold text-gray-800">{getClientName(document.clientId)}</p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{getClientName(document.clientId)}</p>
                 </div>
               )}
 
               {document?.propertyId && (
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <Home size={14} className="text-gray-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Propiedad</span>
+                    <Home size={14} className="text-slate-400 dark:text-slate-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Propiedad</span>
                   </div>
-                  <p className="text-sm font-bold text-gray-800 truncate">{getPropertyAddress(document.propertyId)}</p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{getPropertyAddress(document.propertyId)}</p>
                 </div>
               )}
 
               {(document?.saleId || document?.rentalId) && (
-                <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <FileSignature size={14} className="text-gray-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Operación</span>
+                    <FileSignature size={14} className="text-slate-400 dark:text-slate-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Operación</span>
                   </div>
-                  <p className="text-sm font-bold text-gray-800">
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
                     {getOperationLabel(document?.saleId, document?.rentalId)}
                   </p>
                 </div>
@@ -325,10 +325,10 @@ export default function DocumentModal({
             {document?.notes && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Tag size={14} className="text-gray-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Notas</span>
+                  <Tag size={14} className="text-slate-400 dark:text-slate-500" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Notas</span>
                 </div>
-                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl">{document.notes}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">{document.notes}</p>
               </div>
             )}
 
@@ -363,23 +363,23 @@ export default function DocumentModal({
         ) : (
           <div className="p-6 space-y-5">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Nombre del documento *</label>
+              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Nombre del documento *</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Ej: DNI Juan Pérez"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Tipo de documento</label>
+                <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Tipo de documento</label>
                 <select
                   value={formData.type}
                   onChange={e => setFormData({ ...formData, type: e.target.value as DocumentType })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {DOCUMENT_TYPES.map(t => (
                     <option key={t} value={t}>{t}</option>
@@ -387,11 +387,11 @@ export default function DocumentModal({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Estado</label>
+                <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Estado</label>
                 <select
                   value={formData.status}
                   onChange={e => setFormData({ ...formData, status: e.target.value as DocumentStatus })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {DOCUMENT_STATUSES.map(s => (
                     <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -402,7 +402,7 @@ export default function DocumentModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Cliente relacionado</label>
+                <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Cliente relacionado</label>
                 <SearchableSelect
                   placeholder="Seleccionar cliente..."
                   value={formData.clientId}
@@ -412,7 +412,7 @@ export default function DocumentModal({
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Propiedad relacionada</label>
+                <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Propiedad relacionada</label>
                 <SearchableSelect
                   placeholder="Seleccionar propiedad..."
                   value={formData.propertyId}
@@ -425,11 +425,11 @@ export default function DocumentModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Venta relacionada</label>
+                <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Venta relacionada</label>
                 <select
                   value={formData.saleId}
                   onChange={e => setFormData({ ...formData, saleId: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Sin venta</option>
                   {sales.map(s => {
@@ -441,11 +441,11 @@ export default function DocumentModal({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Alquiler relacionado</label>
+                <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Alquiler relacionado</label>
                 <select
                   value={formData.rentalId}
                   onChange={e => setFormData({ ...formData, rentalId: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Sin alquiler</option>
                   {rentals.map(r => {
@@ -459,29 +459,29 @@ export default function DocumentModal({
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Archivo (simulado)</label>
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-blue-300 transition-colors">
+              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Archivo (simulado)</label>
+              <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-6 text-center hover:border-blue-300 transition-colors">
                 {selectedFile ? (
                   <div className="flex items-center justify-center gap-3">
                     <Paperclip size={20} className="text-blue-600" />
                     <div className="text-left">
-                      <p className="text-sm font-bold text-gray-800">{selectedFile.name}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedFile.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{formatFileSize(selectedFile.size)}</p>
                     </div>
                     <button
                       onClick={() => setSelectedFile(null)}
-                      className="p-1 ml-2 hover:bg-gray-100 rounded-lg"
+                      className="p-1 ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
                     >
-                      <X size={16} className="text-gray-400" />
+                      <X size={16} className="text-slate-400 dark:text-slate-500" />
                     </button>
                   </div>
                 ) : (
                   <React.Fragment>
-                    <Paperclip size={24} className="mx-auto text-gray-300 mb-2" />
-                    <p className="text-sm text-gray-500 mb-1">
+                    <Paperclip size={24} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
                       <span className="text-blue-600 font-semibold cursor-pointer hover:underline">Seleccionar archivo</span> o arrastrar aquí
                     </p>
-                    <p className="text-xs text-gray-400">Solo metadatos simulados - sin almacenamiento real</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">Solo metadatos simulados - sin almacenamiento real</p>
                     <input
                       type="file"
                       className="hidden"
@@ -505,13 +505,13 @@ export default function DocumentModal({
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Notas</label>
+              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Notas</label>
               <textarea
                 value={formData.notes}
                 onChange={e => setFormData({ ...formData, notes: e.target.value })}
                 placeholder="Notas adicionales sobre el documento..."
                 rows={3}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
               />
             </div>
 
@@ -524,7 +524,7 @@ export default function DocumentModal({
                   Cancelar edición
                 </Button>
               )}
-              <Button variant="primary" onClick={handleSubmit}>
+              <Button variant="primary" onClick={handleSubmit} className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 border-none text-white shadow-lg shadow-blue-500/25">
                 {document ? 'Guardar Cambios' : 'Crear Documento'}
               </Button>
             </div>

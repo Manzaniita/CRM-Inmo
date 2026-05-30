@@ -2,36 +2,69 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  /* Font families */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Clash Display', 'Inter', ui-sans-serif, system-ui, sans-serif;
-
-  /* Light theme (Premium Porcelain) */
-  --color-bg-primary: #F1F5F9;
-  --color-bg-surface: rgba(255, 255, 255, 0.85);
-  --color-bg-surface-solid: #FFFFFF;
-  --color-border-subtle: rgba(226, 232, 240, 0.8);
-  --color-border-glass: rgba(255, 255, 255, 0.5);
+:root {
+  /* Semantic Surface Colors */
+  --color-surface: #FFFFFF;
+  --color-surface-solid: #FFFFFF;
+  --color-background: #F8FAFC;
+  --color-border-ui: #E2E8F0;
   --color-text-primary: #0F172A;
   --color-text-secondary: #64748B;
   --color-text-muted: #94A3B8;
   --color-accent: #2563EB;
   --color-accent-light: #60A5FA;
   --color-accent-glow: rgba(37, 99, 235, 0.25);
+}
 
-  /* Dark theme (Deep Obsidian) overrides via dark: */
-  --color-dark-bg-primary: #020617;
-  --color-dark-bg-surface: rgba(15, 23, 42, 0.70);
-  --color-dark-bg-surface-solid: #0F172A;
-  --color-dark-border-subtle: rgba(255, 255, 255, 0.08);
+.dark {
+  --color-surface: #1E293B;
+  --color-surface-solid: #0F172A;
+  --color-background: #0F172A;
+  --color-border-ui: rgba(255, 255, 255, 0.1);
+  --color-text-primary: #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+  --color-accent: #22D3EE;
+  --color-accent-light: #67E8F9;
+  --color-accent-glow: rgba(34, 211, 238, 0.30);
+}
+
+@theme {
+  /* Font families */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Clash Display', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Semantic colors */
+  --color-surface: var(--color-surface);
+  --color-surface-solid: var(--color-surface-solid);
+  --color-background: var(--color-background);
+  --color-border-ui: var(--color-border-ui);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-accent: var(--color-accent);
+  --color-accent-light: var(--color-accent-light);
+  --color-accent-glow: var(--color-accent-glow);
+
+  /* Legacy compatibility (dark-aware via CSS variables) */
+  --color-bg-primary: var(--color-background);
+  --color-bg-surface: var(--color-surface);
+  --color-bg-surface-solid: var(--color-surface-solid);
+  --color-border-subtle: var(--color-border-ui);
+  --color-border-glass: rgba(255, 255, 255, 0.5);
+
+  /* Dark theme overrides for legacy vars */
+  --color-dark-bg-primary: var(--color-background);
+  --color-dark-bg-surface: var(--color-surface);
+  --color-dark-bg-surface-solid: var(--color-surface-solid);
+  --color-dark-border-subtle: var(--color-border-ui);
   --color-dark-border-glass: rgba(255, 255, 255, 0.06);
-  --color-dark-text-primary: #F1F5F9;
-  --color-dark-text-secondary: #94A3B8;
-  --color-dark-text-muted: #64748B;
-  --color-dark-accent: #22D3EE;
-  --color-dark-accent-light: #67E8F9;
-  --color-dark-accent-glow: rgba(34, 211, 238, 0.30);
+  --color-dark-text-primary: var(--color-text-primary);
+  --color-dark-text-secondary: var(--color-text-secondary);
+  --color-dark-text-muted: var(--color-text-muted);
+  --color-dark-accent: var(--color-accent);
+  --color-dark-accent-light: var(--color-accent-light);
+  --color-dark-accent-glow: var(--color-accent-glow);
 
   /* Shadows */
   --shadow-soft-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
@@ -54,15 +87,10 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-bg-primary);
+  background-color: var(--color-background);
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-.dark body {
-  background-color: var(--color-dark-bg-primary);
-  color: var(--color-dark-text-primary);
 }
 
 /* Smooth theme transitions on color properties */
@@ -74,14 +102,14 @@ figure, figcaption, table, tr, td, th {
 
 /* Glass utility */
 .glass {
-  background: var(--color-bg-surface);
+  background: var(--color-surface);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--color-border-glass);
 }
 
 .dark .glass {
-  background: var(--color-dark-bg-surface);
+  background: var(--color-surface);
   border: 1px solid var(--color-dark-border-glass);
 }
 
@@ -117,7 +145,7 @@ figure, figcaption, table, tr, td, th {
 }
 
 .dark .glow-hover::before {
-  background: linear-gradient(135deg, var(--color-dark-accent-light), var(--color-dark-accent));
+  background: linear-gradient(135deg, var(--color-accent-light), var(--color-accent));
 }
 
 .dark .glow-hover:hover {

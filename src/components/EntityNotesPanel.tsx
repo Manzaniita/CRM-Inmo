@@ -90,7 +90,7 @@ export default function EntityNotesPanel({
             ref={textareaRef}
             rows={2}
             placeholder="Escribir nueva nota..."
-            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+            className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
             value={newNoteContent}
             onChange={(e) => setNewNoteContent(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -108,7 +108,7 @@ export default function EntityNotesPanel({
 
         {/* Notes list */}
         {notes.length === 0 && (
-          <p className="text-xs text-center text-gray-400 py-4 italic">
+          <p className="text-xs text-center text-slate-400 dark:text-slate-500 py-4 italic">
             Sin notas históricas.
           </p>
         )}
@@ -119,14 +119,14 @@ export default function EntityNotesPanel({
             .map((note) => (
               <div
                 key={note.id}
-                className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 group hover:bg-gray-100 transition-colors"
+                className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800 group hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <p
-                    className="text-sm text-gray-800 whitespace-pre-wrap break-words"
+                    className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words"
                     dangerouslySetInnerHTML={{ __html: parseRichText(note.content) }}
                   />
-                  <div className="flex items-center gap-1 mt-1 text-[10px] text-gray-400 font-medium">
+                  <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                     <Clock size={10} />
                     <span>{formatDateTime(note.createdAt)}</span>
                   </div>
@@ -134,7 +134,7 @@ export default function EntityNotesPanel({
                 {onDeleteNote && (
                   <button
                     onClick={() => handleDelete(note.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-400 hover:text-red-500 rounded"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 dark:text-slate-500 hover:text-red-500 rounded"
                     title="Eliminar nota"
                   >
                     <Trash2 size={14} />

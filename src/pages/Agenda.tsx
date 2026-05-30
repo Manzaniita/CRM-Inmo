@@ -232,27 +232,27 @@ export default function Agenda() {
   const renderEventForm = () => (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsFormOpen(false)}></div>
-      <div className="bg-white rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-bold text-xl text-gray-900">{editingEvent ? 'Editar Evento' : 'Nuevo Evento'}</h2>
-          <button onClick={() => setIsFormOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">{editingEvent ? 'Editar Evento' : 'Nuevo Evento'}</h2>
+          <button onClick={() => setIsFormOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Título *</label>
+            <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">Título *</label>
             <input
               required
               type="text"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Tipo *</label>
+              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">Tipo *</label>
               <select
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                 value={formData.type}
                 onChange={e => setFormData({ ...formData, type: e.target.value as EventType })}
               >
@@ -268,9 +268,9 @@ export default function Agenda() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Estado</label>
+              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">Estado</label>
               <select
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                 value={formData.status}
                 onChange={e => setFormData({ ...formData, status: e.target.value as EventStatus })}
               >
@@ -283,21 +283,21 @@ export default function Agenda() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Fecha *</label>
+              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">Fecha *</label>
               <input
                 required
                 type="date"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                 value={formData.date}
                 onChange={e => setFormData({ ...formData, date: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Hora *</label>
+              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">Hora *</label>
               <input
                 required
                 type="time"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                 value={formData.time}
                 onChange={e => setFormData({ ...formData, time: e.target.value })}
               />
@@ -305,7 +305,7 @@ export default function Agenda() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Cliente (Opcional)</label>
+              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">Cliente (Opcional)</label>
               <SearchableSelect
                 placeholder="Seleccionar cliente..."
                 value={formData.clientId || ''}
@@ -315,7 +315,7 @@ export default function Agenda() {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Propiedad (Opcional)</label>
+              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">Propiedad (Opcional)</label>
               <SearchableSelect
                 placeholder="Seleccionar propiedad..."
                 value={formData.propertyId || ''}
@@ -326,17 +326,17 @@ export default function Agenda() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Notas</label>
+            <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">Notas</label>
             <textarea
               rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
             />
           </div>
-          <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
             <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-            <Button type="submit" variant="primary">{editingEvent ? 'Guardar Cambios' : 'Crear Evento'}</Button>
+            <Button type="submit" variant="primary" className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 border-none text-white shadow-lg shadow-blue-500/25">{editingEvent ? 'Guardar Cambios' : 'Crear Evento'}</Button>
           </div>
         </form>
       </div>
@@ -351,16 +351,16 @@ export default function Agenda() {
           <p className="text-slate-500 dark:text-slate-400">Administra tus visitas, reuniones y recordatorios.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex bg-white rounded-lg p-1 border border-gray-200 mr-2">
+          <div className="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 mr-2">
             <button
               onClick={() => setView('list')}
-              className={cn("px-3 py-1.5 text-xs font-bold rounded-md transition-all", view === 'list' ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:bg-gray-50")}
+              className={cn("px-3 py-1.5 text-xs font-bold rounded-md transition-all", view === 'list' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-800/50")}
             >
               Listado
             </button>
             <button
               onClick={() => setView('week')}
-              className={cn("px-3 py-1.5 text-xs font-bold rounded-md transition-all", view === 'week' ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:bg-gray-50")}
+              className={cn("px-3 py-1.5 text-xs font-bold rounded-md transition-all", view === 'week' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-800/50")}
             >
               Semana
             </button>
@@ -389,7 +389,7 @@ export default function Agenda() {
             </div>
             <div className="p-3 grid grid-cols-7 gap-1 text-center">
               {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
-                <span key={`${d}-${i}`} className="text-[10px] font-black text-gray-400 uppercase">{d}</span>
+                <span key={`${d}-${i}`} className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">{d}</span>
               ))}
               {Array.from({ length: startOffset }).map((_, i) => (
                 <span key={`empty-${i}`} />
@@ -423,7 +423,7 @@ export default function Agenda() {
               <div className="px-3 pb-3">
                 <button
                   onClick={() => setSelectedDay(null)}
-                  className="w-full text-[10px] font-bold py-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="w-full text-[10px] font-bold py-1 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-800/50 transition-colors"
                 >
                   Limpiar filtro de día
                 </button>
@@ -439,7 +439,7 @@ export default function Agenda() {
                   onClick={() => setFilterType(type)}
                   className={cn(
                     "w-full flex items-center justify-between p-2 rounded-lg text-sm font-medium transition-colors",
-                    filterType === type ? "bg-blue-50 text-blue-700" : "hover:bg-gray-50 text-gray-700"
+                    filterType === type ? "bg-blue-50 text-blue-700" : "hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300"
                   )}
                 >
                   <span className="capitalize">{type === 'all' ? 'Todos' : type}</span>
@@ -453,22 +453,22 @@ export default function Agenda() {
         <div className="lg:col-span-3 space-y-6">
           {view === 'list' ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex-wrap gap-3">
+              <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex-wrap gap-3">
                 <div className="relative flex-1 max-w-md">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     placeholder="Buscar en la agenda..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <div className="flex gap-2 items-center flex-wrap">
-                  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-100">
-                    <ArrowUpDown size={14} className="text-gray-400" />
+                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-1.5 border border-slate-100 dark:border-slate-800">
+                    <ArrowUpDown size={14} className="text-slate-400 dark:text-slate-500" />
                     <select
-                      className="text-xs font-bold bg-transparent outline-none text-gray-700"
+                      className="text-xs font-bold bg-transparent outline-none text-slate-700 dark:text-slate-300"
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as any)}
                     >
@@ -492,23 +492,23 @@ export default function Agenda() {
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleOpenForm(event)}>
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-gray-900 truncate">{event.title}</h4>
+                          <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate">{event.title}</h4>
                           {isEventOverdue(event) && <AlertTriangle size={14} className="text-red-500 shrink-0" />}
                         </div>
                         <Badge variant={isEventOverdue(event) ? 'red' : getEventStatusVariant(event.status)}>{isEventOverdue(event) ? 'VENCIDO' : event.status}</Badge>
                       </div>
-                      <p className="text-sm text-gray-500 mb-3 line-clamp-1">{event.description || event.notes || 'Sin descripción'}</p>
-                      <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-400">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 line-clamp-1">{event.description || event.notes || 'Sin descripción'}</p>
+                      <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-400 dark:text-slate-500">
                         {event.clientId && (
                           <Link to={`/clientes/${event.clientId}`} className="flex items-center gap-1.5 hover:text-blue-600 transition-colors" onClick={e => e.stopPropagation()}>
-                            <User size={14} className="text-gray-400" />
-                            <span className="text-gray-700">{clients.find(c => c.id === event.clientId)?.name}</span>
+                            <User size={14} className="text-slate-400 dark:text-slate-500" />
+                            <span className="text-slate-700 dark:text-slate-300">{clients.find(c => c.id === event.clientId)?.name}</span>
                           </Link>
                         )}
                         {event.propertyId && (
                           <Link to={`/propiedades/${event.propertyId}`} className="flex items-center gap-1.5 hover:text-purple-600 transition-colors" onClick={e => e.stopPropagation()}>
-                            <Home size={14} className="text-gray-400" />
-                            <span className="text-gray-700 truncate">{properties.find(p => p.id === event.propertyId)?.title}</span>
+                            <Home size={14} className="text-slate-400 dark:text-slate-500" />
+                            <span className="text-slate-700 dark:text-slate-300 truncate">{properties.find(p => p.id === event.propertyId)?.title}</span>
                           </Link>
                         )}
                       </div>
@@ -518,32 +518,32 @@ export default function Agenda() {
                       {isEventOverdue(event) ? (
                         <div className="flex items-center gap-1 mt-auto">
                           <button onClick={(e) => { e.stopPropagation(); handleOpenForm(event); }} title="Reprogramar" className="p-1.5 text-red-500 hover:text-red-700 rounded-lg hover:bg-red-100"><RotateCcw size={16} /></button>
-                          <button onClick={(e) => { e.stopPropagation(); cancelEvent(event.id); }} title="Cancelar" className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"><XCircle size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); cancelEvent(event.id); }} title="Cancelar" className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 rounded-lg hover:bg-red-50"><XCircle size={16} /></button>
                         </div>
                       ) : (
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-auto">
-                          <button onClick={(e) => { e.stopPropagation(); completeEvent(event.id); }} title="Realizado" className="p-1.5 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50"><CheckCircle2 size={16} /></button>
-                          <button onClick={(e) => { e.stopPropagation(); cancelEvent(event.id); }} title="Cancelar" className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"><XCircle size={16} /></button>
-                          <button onClick={(e) => { e.stopPropagation(); if (window.confirm('¿Eliminar este evento?')) deleteEvent(event.id); }} title="Eliminar" className="p-1.5 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100"><Trash2 size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); completeEvent(event.id); }} title="Realizado" className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-green-600 rounded-lg hover:bg-green-50"><CheckCircle2 size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); cancelEvent(event.id); }} title="Cancelar" className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 rounded-lg hover:bg-red-50"><XCircle size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); if (window.confirm('¿Eliminar este evento?')) deleteEvent(event.id); }} title="Eliminar" className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-slate-100 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><Trash2 size={16} /></button>
                         </div>
                       )}
                     </div>
                   </div>
                 ))}
                 {filteredEvents.length === 0 && (
-                  <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
+                  <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                     <CalendarIcon size={48} className="mx-auto text-gray-200 mb-4" />
-                    <p className="text-gray-500">No hay eventos que coincidan con los filtros.</p>
+                    <p className="text-slate-500 dark:text-slate-400">No hay eventos que coincidan con los filtros.</p>
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            <Card className="p-0 overflow-hidden min-h-[600px] flex items-center justify-center bg-gray-50/50">
+            <Card className="p-0 overflow-hidden min-h-[600px] flex items-center justify-center bg-slate-50 dark:bg-slate-800/30">
               <div className="text-center p-12">
                 <CalendarIcon size={48} className="mx-auto text-gray-200 mb-4" />
-                <p className="text-gray-500 font-medium italic">Vista de calendario semanal simulada.</p>
-                <p className="text-xs text-gray-400 mt-2">Pronto integraremos una grilla real de eventos.</p>
+                <p className="text-slate-500 dark:text-slate-400 font-medium italic">Vista de calendario semanal simulada.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">Pronto integraremos una grilla real de eventos.</p>
                 <Button variant="outline" size="sm" className="mt-6" onClick={() => setView('list')}>Volver a lista</Button>
               </div>
             </Card>

@@ -24,14 +24,14 @@ const typeIcons: Record<RelationEntityType, React.ElementType> = {
 function RelationItemCard({ item }: { item: RelationItem }) {
   const Icon = typeIcons[item.type] || Activity;
   return (
-    <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition-all group">
+    <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 hover:shadow-sm transition-all group">
       <div className="flex items-start gap-3 min-w-0">
-        <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
-          <Icon size={14} className="text-gray-400" />
+        <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0">
+          <Icon size={14} className="text-slate-400 dark:text-slate-500" />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">{item.title}</p>
-          {item.subtitle && <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>}
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{item.title}</p>
+          {item.subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{item.subtitle}</p>}
           {item.status && (
             <span className={cn(
               "inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium",
@@ -39,22 +39,22 @@ function RelationItemCard({ item }: { item: RelationItem }) {
               item.status === 'reservada' || item.status === 'en proceso' ? "bg-blue-100 text-blue-700" :
               item.status === 'vendida' || item.status === 'vencida' || item.status === 'caída' ? "bg-red-100 text-red-700" :
               item.status === 'alquilada' ? "bg-orange-100 text-orange-700" :
-              item.status === 'pausada' ? "bg-gray-100 text-gray-600" :
+              item.status === 'pausada' ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400" :
               item.status === 'en_seguimiento' ? "bg-purple-100 text-purple-700" :
-              "bg-gray-100 text-gray-600"
+              "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
             )}>
               {item.status}
             </span>
           )}
           {item.date && (
-            <p className="text-[10px] text-gray-400 mt-1">{formatDate(item.date)}</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{formatDate(item.date)}</p>
           )}
         </div>
       </div>
       {item.route && (
         <Link
           to={item.route}
-          className="p-1.5 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all shrink-0"
+          className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all shrink-0"
           onClick={() => { /* drawer stays open, user can navigate */ }}
         >
           <ChevronRight size={16} />
@@ -66,8 +66,8 @@ function RelationItemCard({ item }: { item: RelationItem }) {
 
 function EmptyGroupState({ title }: { title: string }) {
   return (
-    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
-      <p className="text-xs text-gray-400 italic">Sin {title.toLowerCase()}</p>
+    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+      <p className="text-xs text-slate-400 dark:text-slate-500 italic">Sin {title.toLowerCase()}</p>
     </div>
   );
 }
@@ -154,19 +154,19 @@ export default function EntityRelationsDrawer() {
         onClick={closeRelations}
       />
       {/* Drawer */}
-      <div className="relative w-full sm:w-[420px] md:w-[480px] bg-white shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300">
+      <div className="relative w-full sm:w-[420px] md:w-[480px] bg-white dark:bg-slate-800 shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Link2 size={18} className="text-blue-600" />
               Vista 360°
             </h2>
-            <p className="text-xs text-gray-500 font-medium truncate max-w-[280px]">{entityName}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate max-w-[280px]">{entityName}</p>
           </div>
           <button
             onClick={closeRelations}
-            className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-700 transition-colors"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
           >
             <X size={20} />
           </button>
@@ -177,12 +177,12 @@ export default function EntityRelationsDrawer() {
           {!entityType || !entityId ? (
             <div className="text-center py-10">
               <Activity size={40} className="mx-auto text-gray-200 mb-3" />
-              <p className="text-sm text-gray-500">No se encontró información relacionada.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No se encontró información relacionada.</p>
             </div>
           ) : !hasLinks ? (
             <div className="text-center py-10">
               <Activity size={40} className="mx-auto text-gray-200 mb-3" />
-              <p className="text-sm text-gray-500">No se encontraron vínculos para este objeto.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No se encontraron vínculos para este objeto.</p>
             </div>
           ) : (
             <>
@@ -190,23 +190,23 @@ export default function EntityRelationsDrawer() {
                 <Plus size={14} className="mr-2" /> Crear tarea relacionada
               </Button>
               {showTaskForm && (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Título</label>
-                    <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Título</label>
+                    <input className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Descripción</label>
-                    <textarea rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
+                    <textarea rows={2} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Fecha límite</label>
-                      <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.dueDate} onChange={e => setTaskForm({...taskForm, dueDate: e.target.value})} />
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha límite</label>
+                      <input type="date" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.dueDate} onChange={e => setTaskForm({...taskForm, dueDate: e.target.value})} />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Prioridad</label>
-                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.priority} onChange={e => setTaskForm({...taskForm, priority: e.target.value as any})}>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Prioridad</label>
+                      <select className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={taskForm.priority} onChange={e => setTaskForm({...taskForm, priority: e.target.value as any})}>
                         <option value="baja">Baja</option>
                         <option value="media">Media</option>
                         <option value="alta">Alta</option>
@@ -240,10 +240,10 @@ export default function EntityRelationsDrawer() {
               {groups.map(group => (
                 <div key={group.id} className="space-y-3">
                   <button className="flex items-center justify-between w-full" onClick={() => toggleGroup(group.id)}>
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">{group.title}</h3>
+                    <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{group.title}</h3>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{group.count}</span>
-                      <ChevronDown size={14} className={cn("text-gray-400 transition-transform", collapsedGroups[group.id] ? "-rotate-90" : "")} />
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">{group.count}</span>
+                      <ChevronDown size={14} className={cn("text-slate-400 dark:text-slate-500 transition-transform", collapsedGroups[group.id] ? "-rotate-90" : "")} />
                     </div>
                   </button>
                   {!collapsedGroups[group.id] && (
@@ -255,7 +255,7 @@ export default function EntityRelationsDrawer() {
                           </React.Fragment>
                         ))}
                         {group.items.length > 5 && (
-                          <p className="text-xs text-gray-400 text-center">+ {group.items.length - 5} más</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500 text-center">+ {group.items.length - 5} más</p>
                         )}
                       </div>
                     ) : (

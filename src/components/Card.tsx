@@ -17,7 +17,7 @@ export function Card({ children, className, title, subtitle, footer, glow = true
       className={cn(
         'rounded-2xl overflow-hidden transition-all duration-300',
         'bg-white/80 dark:bg-slate-900/60',
-        'backdrop-blur-xl border border-white/40 dark:border-slate-800',
+        'backdrop-blur-xl border border-white/40 dark:border-white/5',
         'shadow-[0_10px_25px_-3px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_25px_-3px_rgba(0,0,0,0.25)]',
         glow && 'glow-hover',
         className

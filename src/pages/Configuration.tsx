@@ -88,8 +88,8 @@ export default function Configuration() {
   return (
     <div className="space-y-8 pb-20">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-        <p className="text-gray-500">Personaliza tu espacio de trabajo y perfil profesional.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Configuración</h1>
+        <p className="text-slate-500 dark:text-slate-400">Personaliza tu espacio de trabajo y perfil profesional.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -122,46 +122,46 @@ export default function Configuration() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{form.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">{form.email}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{form.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{form.email}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700">Nombre Completo</label>
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nombre Completo</label>
                       <input
                         type="text"
                         value={form.name}
                         onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700">Email Profesional</label>
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Email Profesional</label>
                       <input
                         type="email"
                         value={form.email}
                         onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700">WhatsApp / Teléfono</label>
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">WhatsApp / Teléfono</label>
                       <input
                         type="text"
                         value={form.phone}
                         onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700">Matrícula / Registro</label>
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Matrícula / Registro</label>
                       <input
                         type="text"
                         value={form.license}
                         onChange={e => setForm(f => ({ ...f, license: e.target.value }))}
-                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                       />
                     </div>
                   </div>
@@ -183,41 +183,41 @@ export default function Configuration() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Mensaje para Propiedades</label>
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Mensaje para Propiedades</label>
                     <textarea
                       rows={4}
                       value={form.templateProperty}
                       onChange={e => setForm(f => ({ ...f, templateProperty: e.target.value }))}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-sm resize-none"
+                      className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-sm resize-none"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Mensaje para Clientes</label>
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Mensaje para Clientes</label>
                     <textarea
                       rows={3}
                       value={form.templateClient}
                       onChange={e => setForm(f => ({ ...f, templateClient: e.target.value }))}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-sm resize-none"
+                      className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-sm resize-none"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">Mensaje para Compradores</label>
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Mensaje para Compradores</label>
                     <textarea
                       rows={3}
                       value={form.templateBuyer}
                       onChange={e => setForm(f => ({ ...f, templateBuyer: e.target.value }))}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-sm resize-none"
+                      className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-sm resize-none"
                     />
                   </div>
                 </div>
               </Card>
 
-              <div className="flex items-center justify-between bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <Save size={18} className="text-gray-400" />
-                  <p className="text-xs text-gray-500 font-medium">Los cambios se guardan automáticamente en el navegador.</p>
+                  <Save size={18} className="text-slate-400 dark:text-slate-500" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Los cambios se guardan automáticamente en el navegador.</p>
                 </div>
                 <Button
                   variant="primary"
@@ -236,9 +236,9 @@ export default function Configuration() {
             <Card title="Gestión de Datos" subtitle="Controla la persistencia y copias de seguridad de tu información local.">
               <div className="space-y-6 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex-1 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <h4 className="text-sm font-bold text-gray-900 mb-1">Copia de Seguridad</h4>
-                    <p className="text-xs text-gray-500 mb-4">Exporta todos tus clientes, propiedades, tareas y eventos en un archivo JSON.</p>
+                  <div className="flex-1 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">Copia de Seguridad</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Exporta todos tus clientes, propiedades, tareas y eventos en un archivo JSON.</p>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => exportData()} className="flex-1">
                         <Download size={14} className="mr-2" /> Exportar JSON
@@ -260,7 +260,7 @@ export default function Configuration() {
                             }
                           }}
                         />
-                        <div className="flex items-center justify-center h-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-all">
+                        <div className="flex items-center justify-center h-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white hover:bg-slate-50 dark:bg-slate-800/50 cursor-pointer transition-all">
                           <Upload size={14} className="mr-2" /> Importar
                         </div>
                       </label>
@@ -335,7 +335,7 @@ function ConfigTab({
         'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm',
         active
           ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
-          : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+          : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:text-slate-100'
       )}
     >
       <Icon size={18} />

@@ -295,19 +295,19 @@ export default function Properties() {
       <div className="animate-in slide-in-from-right duration-300">
         <button 
           onClick={() => navigate('/propiedades')}
-          className="flex items-center text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors"
+          className="flex items-center text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100 mb-6 transition-colors"
         >
           <ArrowLeft size={16} className="mr-1" /> Volver al listado
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <div className="relative group rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white">
+            <div className="relative group rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
               {(selectedProp.imageUrl || selectedProp.images?.[0]) ? (
                 <img src={selectedProp.imageUrl || selectedProp.images?.[0]} alt={selectedProp.title} className="w-full h-[400px] object-cover" />
               ) : (
-                <div className="w-full h-[400px] bg-gray-100 flex items-center justify-center">
-                  <Home size={64} className="text-gray-300" />
+                <div className="w-full h-[400px] bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <Home size={64} className="text-slate-300 dark:text-slate-600" />
                 </div>
               )}
               <div className="absolute top-4 left-4 flex gap-2">
@@ -316,12 +316,12 @@ export default function Properties() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{selectedProp.title}</h1>
-                  <p className="flex items-center text-gray-500 mt-2 font-medium">
-                    <MapPin size={18} className="mr-1 text-gray-400" />
+                  <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{selectedProp.title}</h1>
+                  <p className="flex items-center text-slate-500 dark:text-slate-400 mt-2 font-medium">
+                    <MapPin size={18} className="mr-1 text-slate-400 dark:text-slate-500" />
                     {selectedProp.address}, {selectedProp.zone}, {selectedProp.city}
                   </p>
                   {selectedProp.ownerId && (
@@ -334,37 +334,37 @@ export default function Properties() {
                   <p className="text-4xl font-black text-blue-600">
                     {formatCurrency(selectedProp.price, selectedProp.currency)}
                   </p>
-                  <p className="text-sm font-semibold text-gray-400 mt-1 uppercase tracking-wider font-black">Ref: {selectedProp.code}</p>
+                  <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider font-black">Ref: {selectedProp.code}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-4 mt-8 py-6 border-y border-gray-100">
+              <div className="grid grid-cols-4 gap-4 mt-8 py-6 border-y border-slate-100 dark:border-slate-800">
                 <div className="text-center">
-                  <div className="flex items-center justify-center text-gray-400 mb-1"><BedDouble size={20} /></div>
-                  <p className="text-lg font-bold text-gray-900">{selectedProp.bedrooms}</p>
-                  <p className="text-xs text-gray-500 font-medium">Dormitorios</p>
+                  <div className="flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1"><BedDouble size={20} /></div>
+                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{selectedProp.bedrooms}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Dormitorios</p>
                 </div>
                 <div className="text-center">
-                  <div className="flex items-center justify-center text-gray-400 mb-1"><Bath size={20} /></div>
-                  <p className="text-lg font-bold text-gray-900">{selectedProp.bathrooms}</p>
-                  <p className="text-xs text-gray-500 font-medium">Baños</p>
+                  <div className="flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1"><Bath size={20} /></div>
+                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{selectedProp.bathrooms}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Baños</p>
                 </div>
                 <div className="text-center">
-                  <div className="flex items-center justify-center text-gray-400 mb-1"><Maximize2 size={20} /></div>
-                  <p className="text-lg font-bold text-gray-900">{selectedProp.rooms}</p>
-                  <p className="text-xs text-gray-500 font-medium">Ambientes</p>
+                  <div className="flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1"><Maximize2 size={20} /></div>
+                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{selectedProp.rooms}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Ambientes</p>
                 </div>
                 <div className="text-center">
-                  <div className="flex items-center justify-center text-gray-400 mb-1"><Square size={20} /></div>
-                  <p className="text-lg font-bold text-gray-900">{selectedProp.surface} m²</p>
-                  <p className="text-xs text-gray-500 font-medium">Superficie</p>
+                  <div className="flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1"><Square size={20} /></div>
+                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{selectedProp.surface} m²</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Superficie</p>
                 </div>
               </div>
 
               <div className="mt-8">
-                <h3 className="font-bold text-gray-900 mb-3">Descripción / Notas Internas</h3>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-3">Descripción / Notas Internas</h3>
                 <div
-                  className="text-gray-600 leading-relaxed italic border-l-4 border-gray-100 pl-4"
+                  className="text-slate-600 dark:text-slate-400 leading-relaxed italic border-l-4 border-slate-100 dark:border-slate-800 pl-4"
                   dangerouslySetInnerHTML={{ __html: parseRichText(selectedProp.notes || 'Sin descripción adicional.') }}
                 />
               </div>
@@ -395,7 +395,7 @@ export default function Properties() {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 text-lg">Operaciones Relacionadas</h3>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Operaciones Relacionadas</h3>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => { setSaleModalMode('create'); setSelectedSaleForModal(undefined); setIsSaleModalOpen(true); }}>
                     <Plus size={14} className="mr-1" /> Nueva Venta
@@ -406,7 +406,7 @@ export default function Properties() {
                 </div>
               </div>
               {propSales.length === 0 && propRentals.length === 0 ? (
-                <p className="text-sm text-gray-400 italic py-4">Sin operaciones relacionadas.</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4">Sin operaciones relacionadas.</p>
               ) : (
                 <>
                   {propSales.map(sale => (
@@ -416,10 +416,10 @@ export default function Properties() {
                           <div className="flex items-center justify-between">
                             <div>
                               <Badge variant="blue">Venta</Badge>
-                              <span className="ml-2 text-sm font-medium text-gray-700">{sale.estado}</span>
-                              <p className="text-sm text-gray-500 mt-1">Cliente: {clients.find(c => c.id === sale.clientCompradorId)?.name || 'Desconocido'}</p>
+                              <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{sale.estado}</span>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Cliente: {clients.find(c => c.id === sale.clientCompradorId)?.name || 'Desconocido'}</p>
                             </div>
-                            <ChevronRight size={16} className="text-gray-300" />
+                            <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" />
                           </div>
                         </div>
                       </Card>
@@ -432,10 +432,10 @@ export default function Properties() {
                           <div className="flex items-center justify-between">
                             <div>
                               <Badge variant="green">Alquiler</Badge>
-                              <span className="ml-2 text-sm font-medium text-gray-700">{rental.estado}</span>
-                              <p className="text-sm text-gray-500 mt-1">Cliente: {clients.find(c => c.id === rental.inquilinoId)?.name || 'Desconocido'}</p>
+                              <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{rental.estado}</span>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Cliente: {clients.find(c => c.id === rental.inquilinoId)?.name || 'Desconocido'}</p>
                             </div>
-                            <ChevronRight size={16} className="text-gray-300" />
+                            <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" />
                           </div>
                         </div>
                       </Card>
@@ -483,7 +483,7 @@ export default function Properties() {
                 >
                   <PlusCircle size={18} className="mr-2 text-blue-600" /> Crear Tarea
                 </Button>
-                <Button variant="ghost" className="w-full border border-gray-100" onClick={() => handleOpenForm(selectedProp)}>
+                <Button variant="ghost" className="w-full border border-slate-100 dark:border-slate-800" onClick={() => handleOpenForm(selectedProp)}>
                   <PlusCircle size={18} className="mr-2" /> Editar Datos
                 </Button>
                 <div className="grid grid-cols-1 gap-3 pt-2">
@@ -493,7 +493,7 @@ export default function Properties() {
                   <Button variant="outline" size="sm" onClick={() => { setRentalModalMode('create'); setSelectedRentalForModal(undefined); setIsRentalModalOpen(true); }}>
                     <Plus size={14} className="mr-1" /> Nuevo Alquiler
                   </Button>
-                  <Button variant="ghost" size="sm" className="border border-gray-100" onClick={() => selectedProp.externalLink && window.open(selectedProp.externalLink, '_blank')}>
+                  <Button variant="ghost" size="sm" className="border border-slate-100 dark:border-slate-800" onClick={() => selectedProp.externalLink && window.open(selectedProp.externalLink, '_blank')}>
                     <ExternalLink size={16} className="mr-2" /> Ver Publicación
                   </Button>
                 </div>
@@ -503,19 +503,19 @@ export default function Properties() {
             <Card title="Agenda Relacionada">
                <div className="space-y-3">
                 {events.filter(e => e.propertyId === id).slice(0, 3).map(event => (
-                  <div key={event.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate('/agenda')}>
-                    <div className="w-10 h-10 bg-gray-50 rounded-lg flex flex-col items-center justify-center border border-gray-100 shrink-0">
+                  <div key={event.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => navigate('/agenda')}>
+                    <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex flex-col items-center justify-center border border-slate-100 dark:border-slate-800 shrink-0">
                       <span className="text-[8px] font-black uppercase">{event.time}</span>
                       <span className="text-[10px] font-bold">{event.date.split('-')[2]}</span>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-gray-900 truncate">{event.title}</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{event.title}</p>
                       <Badge variant="blue" size="xs">{event.type}</Badge>
                     </div>
                   </div>
                 ))}
                 {events.filter(e => e.propertyId === id).length === 0 && (
-                  <p className="text-xs text-center text-gray-400 py-2 italic">Sin eventos.</p>
+                  <p className="text-xs text-center text-slate-400 dark:text-slate-500 py-2 italic">Sin eventos.</p>
                 )}
               </div>
             </Card>
@@ -524,18 +524,18 @@ export default function Properties() {
               <div className="space-y-3">
                 {documents.filter(d => d.propertyId === id).length > 0 ? (
                   documents.filter(d => d.propertyId === id).slice(0, 4).map(doc => (
-                    <div key={doc.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => { setSelectedDocForModal(doc); setDocModalMode('view'); setIsDocModalOpen(true); }}>
-                      <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
-                        <FileText size={18} className="text-gray-500" />
+                    <div key={doc.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => { setSelectedDocForModal(doc); setDocModalMode('view'); setIsDocModalOpen(true); }}>
+                      <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex items-center justify-center border border-slate-100 dark:border-slate-800">
+                        <FileText size={18} className="text-slate-500 dark:text-slate-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900 truncate">{doc.name}</p>
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{doc.name}</p>
                         <Badge size="sm" variant={doc.status === 'revisado' ? 'green' : doc.status === 'cargado' ? 'blue' : doc.status === 'vencido' ? 'red' : 'orange'}>{doc.status}</Badge>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-center text-gray-400 py-2 italic">Sin documentos relacionados.</p>
+                  <p className="text-xs text-center text-slate-400 dark:text-slate-500 py-2 italic">Sin documentos relacionados.</p>
                 )}
                 {documents.filter(d => d.propertyId === id).length > 4 && (
                   <Button variant="ghost" size="sm" className="w-full" onClick={() => { setSelectedDocForModal(undefined); setDocModalMode('create'); setIsDocModalOpen(true); }}>
@@ -556,14 +556,14 @@ export default function Properties() {
                       {client.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{client.name}</p>
-                      <p className="text-[10px] text-gray-500 font-medium uppercase">{client.status} • {client.type}</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 transition-colors">{client.name}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase">{client.status} • {client.type}</p>
                     </div>
-                    <ChevronRight size={14} className="text-gray-300" />
+                    <ChevronRight size={14} className="text-slate-300 dark:text-slate-600" />
                   </div>
                 ))}
                 {interestedClients.length === 0 && (
-                   <p className="text-xs text-center text-gray-400 italic">No hay clientes que coincidan con el perfil.</p>
+                   <p className="text-xs text-center text-slate-400 dark:text-slate-500 italic">No hay clientes que coincidan con el perfil.</p>
                 )}
               </div>
             </Card>
@@ -653,35 +653,35 @@ export default function Properties() {
         {isQuickUploadOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setIsQuickUploadOpen(false); setQuickUploadTitle(''); setQuickUploadFile(null); }}></div>
-            <div className="bg-white rounded-2xl w-full max-w-md relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="font-bold text-lg text-gray-900">Subir Documento</h2>
-                <button onClick={() => { setIsQuickUploadOpen(false); setQuickUploadTitle(''); setQuickUploadFile(null); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h2 className="font-bold text-lg text-slate-900 dark:text-slate-100">Subir Documento</h2>
+                <button onClick={() => { setIsQuickUploadOpen(false); setQuickUploadTitle(''); setQuickUploadFile(null); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Título del documento *</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Título del documento *</label>
                   <input 
                     type="text" 
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={quickUploadTitle}
                     onChange={e => setQuickUploadTitle(e.target.value)}
                     placeholder="Ej: Escritura, Contrato..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Archivo *</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Archivo *</label>
                   <input 
                     type="file" 
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     onChange={e => setQuickUploadFile(e.target.files?.[0] || null)}
                   />
                   {quickUploadFile && (
-                    <p className="text-xs text-gray-500 mt-1">{quickUploadFile.name} ({(quickUploadFile.size / 1024).toFixed(1)} KB)</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{quickUploadFile.name} ({(quickUploadFile.size / 1024).toFixed(1)} KB)</p>
                   )}
                 </div>
               </div>
-              <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+              <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
                 <Button variant="ghost" onClick={() => { setIsQuickUploadOpen(false); setQuickUploadTitle(''); setQuickUploadFile(null); }}>Cancelar</Button>
                 <Button variant="primary" onClick={() => {
                   if (!quickUploadTitle.trim()) {
@@ -727,26 +727,26 @@ export default function Properties() {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsFormModalOpen(false)}></div>
-        <div className="bg-white rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
-            <h2 className="font-bold text-xl text-gray-900">{editingProperty ? 'Editar Propiedad' : 'Nueva Propiedad'}</h2>
-            <button onClick={() => setIsFormModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-800">
+            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">{editingProperty ? 'Editar Propiedad' : 'Nueva Propiedad'}</h2>
+            <button onClick={() => setIsFormModalOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
           </div>
           <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[70vh]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Nombre</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Nombre</label>
                 <input 
                   type="text" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.title}
                   onChange={e => setFormData({...formData, title: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Tipo *</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tipo *</label>
                 <select 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.type}
                   onChange={e => setFormData({...formData, type: e.target.value as PropertyType})}
                 >
@@ -760,9 +760,9 @@ export default function Properties() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Operación</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Operación</label>
                 <select 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.operation}
                   onChange={e => setFormData({...formData, operation: e.target.value as PropertyOperation})}
                 >
@@ -772,9 +772,9 @@ export default function Properties() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Estado</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
                 <select 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.status}
                   onChange={e => setFormData({...formData, status: e.target.value as PropertyStatus})}
                 >
@@ -788,61 +788,61 @@ export default function Properties() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Precio</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Precio</label>
                 <input 
                   type="number" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.price}
                   onChange={e => setFormData({...formData, price: Number(e.target.value)})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Zona / Dirección</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Zona / Dirección</label>
                 <input 
                   type="text" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.address}
                   onChange={e => setFormData({...formData, address: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Ciudad</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Ciudad</label>
                 <input 
                   type="text" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.city}
                   onChange={e => setFormData({...formData, city: e.target.value})}
                 />
               </div>
               <div className="grid grid-cols-3 gap-2 md:col-span-2">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Dorm.</label>
-                  <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={formData.bedrooms} onChange={e => setFormData({...formData, bedrooms: Number(e.target.value)})} />
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Dorm.</label>
+                  <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={formData.bedrooms} onChange={e => setFormData({...formData, bedrooms: Number(e.target.value)})} />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Baños</label>
-                  <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={formData.bathrooms} onChange={e => setFormData({...formData, bathrooms: Number(e.target.value)})} />
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Baños</label>
+                  <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={formData.bathrooms} onChange={e => setFormData({...formData, bathrooms: Number(e.target.value)})} />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Superficie</label>
-                  <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={formData.surface} onChange={e => setFormData({...formData, surface: Number(e.target.value)})} />
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Superficie</label>
+                  <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={formData.surface} onChange={e => setFormData({...formData, surface: Number(e.target.value)})} />
                 </div>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Imagen principal</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Imagen principal</label>
                 <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+                  <div className="w-20 h-20 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center overflow-hidden">
                     {formData.imageUrl || (formData.images && formData.images[0]) ? (
                       <img src={formData.imageUrl || formData.images?.[0]} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <Camera size={24} className="text-gray-300" />
+                      <Camera size={24} className="text-slate-300 dark:text-slate-600" />
                     )}
                   </div>
                   <div className="flex-1">
                     <input
                       type="file"
                       accept="image/*"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                       onChange={e => {
                         const file = e.target.files?.[0];
                         if (!file) return;
@@ -857,12 +857,12 @@ export default function Properties() {
                         reader.readAsDataURL(file);
                       }}
                     />
-                    <p className="text-[10px] text-gray-400 mt-1">Máximo 2 MB. Se guarda como base64.</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Máximo 2 MB. Se guarda como base64.</p>
                   </div>
                   {(formData.imageUrl || formData.images?.[0]) && (
                     <button
                       type="button"
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                       onClick={() => setFormData({...formData, imageUrl: undefined, images: []})}
                     >
                       <Trash2 size={16} />
@@ -871,45 +871,45 @@ export default function Properties() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Link</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Link</label>
                 <input 
                   type="text" 
                   placeholder="https://..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.propertyLink || ''}
                   onChange={e => setFormData({...formData, propertyLink: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">ID / Código</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">ID / Código</label>
                 <input 
                   type="text" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.propertyCode || ''}
                   onChange={e => setFormData({...formData, propertyCode: e.target.value})}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4 md:col-span-2">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Inicio de contrato</label>
-                  <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.contractStartDate || ''} onChange={e => setFormData({...formData, contractStartDate: e.target.value})} />
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Inicio de contrato</label>
+                  <input type="date" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.contractStartDate || ''} onChange={e => setFormData({...formData, contractStartDate: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Fin de contrato</label>
-                  <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.contractEndDate || ''} onChange={e => setFormData({...formData, contractEndDate: e.target.value})} />
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Fin de contrato</label>
+                  <input type="date" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.contractEndDate || ''} onChange={e => setFormData({...formData, contractEndDate: e.target.value})} />
                 </div>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Notas Internas</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Notas Internas</label>
                 <textarea 
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.notes}
                   onChange={e => setFormData({...formData, notes: e.target.value})}
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Dueño (cliente propietario)</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Dueño (cliente propietario)</label>
                 <SearchableSelect
                   placeholder="Seleccionar dueño..."
                   value={formData.ownerId || ''}
@@ -931,35 +931,35 @@ export default function Properties() {
                       <input
                         type="text"
                         placeholder="Nombre *"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                         value={newOwnerName}
                         onChange={e => setNewOwnerName(e.target.value)}
                       />
                       <input
                         type="text"
                         placeholder="Teléfono"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                         value={newOwnerPhone}
                         onChange={e => setNewOwnerPhone(e.target.value)}
                       />
                       <input
                         type="email"
                         placeholder="Email"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                         value={newOwnerEmail}
                         onChange={e => setNewOwnerEmail(e.target.value)}
                       />
                       <input
                         type="text"
                         placeholder="Notas"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                         value={newOwnerNotes}
                         onChange={e => setNewOwnerNotes(e.target.value)}
                       />
                     </div>
                     <div className="flex gap-2">
                       <button type="button" className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={handleCreateOwnerFromForm}>Agregar dueño</button>
-                      <button type="button" className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-700" onClick={() => setShowNewOwnerForm(false)}>Cancelar</button>
+                      <button type="button" className="px-3 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300" onClick={() => setShowNewOwnerForm(false)}>Cancelar</button>
                     </div>
                   </div>
                 )}
@@ -992,21 +992,21 @@ export default function Properties() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row gap-4 justify-between">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4 justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input 
               type="text" 
               placeholder="Buscar por dirección, zona o título..." 
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <select
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white"
+              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800"
               value={filterOperation}
               onChange={e => setFilterOperation(e.target.value as 'venta' | 'alquiler' | 'ambas' | '')}
             >
@@ -1034,7 +1034,7 @@ export default function Properties() {
                     "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
                     filterStatus === st.value
                       ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-gray-500 border-gray-200 hover:border-blue-300"
+                      : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300"
                   )}
                 >
                   {st.label}
@@ -1042,7 +1042,7 @@ export default function Properties() {
               ))}
             </div>
             <select
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none bg-white"
+              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800"
               value={sortPrice}
               onChange={e => setSortPrice(e.target.value as 'asc' | 'desc' | '')}
             >
@@ -1060,7 +1060,7 @@ export default function Properties() {
             return (
               <div
                 key={prop.id}
-                className="group bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer relative"
+                className="group bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden hover:shadow-lg transition-all cursor-pointer relative"
                 onClick={() => navigate(`/propiedades/${prop.id}`)}
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
@@ -1071,8 +1071,8 @@ export default function Properties() {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                      <Home size={32} className="text-gray-300" />
+                    <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                      <Home size={32} className="text-slate-300 dark:text-slate-600" />
                     </div>
                   )}
                   <div className="absolute top-2 left-2 shadow-sm">
@@ -1102,7 +1102,7 @@ export default function Properties() {
                       <MessageCircle size={16} className="text-green-600" />
                     </button>
                     <button
-                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white transition-colors text-[10px] font-bold text-blue-700"
+                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white dark:bg-slate-800 transition-colors text-[10px] font-bold text-blue-700"
                       onClick={e => {
                         e.stopPropagation();
                         openRelations('property', prop.id);
@@ -1112,7 +1112,7 @@ export default function Properties() {
                       360°
                     </button>
                     <button
-                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white transition-colors"
+                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white dark:bg-slate-800 transition-colors"
                       onClick={e => {
                         e.stopPropagation();
                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -1124,7 +1124,7 @@ export default function Properties() {
                         setOpenMenuPropertyId(openMenuPropertyId === prop.id ? null : prop.id);
                       }}
                     >
-                      <MoreVertical size={16} className="text-gray-600" />
+                      <MoreVertical size={16} className="text-slate-600 dark:text-slate-400" />
                     </button>
                     {openMenuPropertyId === prop.id && menuPos && createPortal(
                       <>
@@ -1137,10 +1137,10 @@ export default function Properties() {
                           }}
                         />
                         <div
-                          className="fixed z-[160] w-44 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden max-h-64 overflow-y-auto"
+                          className="fixed z-[160] w-44 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden max-h-64 overflow-y-auto"
                           style={{ top: menuPos.top, left: menuPos.left }}
                         >
-                          <div className="px-3 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50 sticky top-0 bg-white">
+                          <div className="px-3 py-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-50 sticky top-0 bg-white dark:bg-slate-800">
                             Cambiar estado
                           </div>
                           {(['disponible','reservada','vendida','alquilada','pausada','vencida','en_seguimiento'] as PropertyStatus[]).map(st => (
@@ -1148,7 +1148,7 @@ export default function Properties() {
                               key={st}
                               className={cn(
                                 "w-full text-left px-3 py-2 text-xs font-medium transition-colors",
-                                prop.status === st ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"
+                                prop.status === st ? "bg-blue-50 text-blue-700" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800/50"
                               )}
                               onClick={e => {
                                 e.stopPropagation();
@@ -1180,12 +1180,12 @@ export default function Properties() {
                 </div>
                 <div className="p-4">
                   <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">{prop.type} • {prop.operation}</p>
-                  <h3 className="font-bold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">{prop.title}</h3>
-                  <p className="text-xs text-gray-500 flex items-center mt-1 truncate">
-                    <MapPin size={12} className="mr-1 text-gray-400" /> {prop.zone}, {prop.city}
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate group-hover:text-blue-600 transition-colors">{prop.title}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center mt-1 truncate">
+                    <MapPin size={12} className="mr-1 text-slate-400 dark:text-slate-500" /> {prop.zone}, {prop.city}
                   </p>
                   {(prop.propertyCode || prop.code) && (
-                    <p className="text-[10px] text-gray-400 mt-1 font-medium">Ref: {prop.propertyCode || prop.code}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">Ref: {prop.propertyCode || prop.code}</p>
                   )}
                   {(prop.propertyLink || prop.externalLink) && (
                     <a
@@ -1199,13 +1199,13 @@ export default function Properties() {
                     </a>
                   )}
                   {prop.notes && (
-                    <p className="text-[10px] text-gray-400 mt-1 truncate">{prop.notes}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 truncate">{prop.notes}</p>
                   )}
-                  <p className="text-[10px] text-gray-500 mt-1 font-medium">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
                     Dueño: {clients.find(c => c.id === prop.ownerId)?.name || 'Sin dueño asignado'}
                   </p>
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50 text-gray-400">
-                    <div className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50 text-slate-400 dark:text-slate-500">
+                    <div className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                       {getPropertyStatusLabel(prop.status)}
                     </div>
                     <div className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", remaining.expired ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>
@@ -1221,7 +1221,7 @@ export default function Properties() {
         {filteredProps.length === 0 && (
           <div className="py-20 text-center">
             <Home size={48} className="mx-auto text-gray-200 mb-4" />
-            <p className="text-gray-500 font-medium">
+            <p className="text-slate-500 dark:text-slate-400 font-medium">
               {searchTerm || filterOperation || filterStatus
                 ? 'No se encontraron propiedades con los filtros actuales.'
                 : 'Todavía no hay propiedades cargadas.'}
@@ -1233,29 +1233,29 @@ export default function Properties() {
       {isImportModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }}></div>
-          <div className="bg-white rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
-              <h2 className="font-bold text-xl text-gray-900">Captar desde Link</h2>
-              <button onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+              <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">Captar desde Link</h2>
+              <button onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-xs text-yellow-700 font-medium">
                 La extracción real desde portales requiere backend/API. Esta versión simula la captación para validar el flujo.
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">URL de la publicación</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">URL de la publicación</label>
                 <div className="relative">
-                  <LinkIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <LinkIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <input 
                     type="text" 
                     placeholder="https://www.zonaprop.com.ar/propiedades/..." 
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={captureUrl}
                     onChange={(e) => setCaptureUrl(e.target.value)}
                     disabled={captureStep !== 'idle'}
                   />
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider font-bold">Compatible con Zonaprop, Argenprop y Mercado Libre</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider font-bold">Compatible con Zonaprop, Argenprop y Mercado Libre</p>
               </div>
               {captureStep === 'idle' && (
                 <Button variant="primary" className="w-full" onClick={() => {
@@ -1306,7 +1306,7 @@ export default function Properties() {
                 </Button>
               )}
               {captureStep === 'analyzing' && (
-                <div className="p-6 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
                   <div className="flex items-center gap-3 text-sm font-bold text-blue-700">
                     <Loader2 size={20} className="animate-spin" /> Analizando publicación...
                   </div>
@@ -1318,9 +1318,9 @@ export default function Properties() {
                         ) : captureProgressStep === i ? (
                           <Loader2 size={16} className="animate-spin text-blue-500" />
                         ) : (
-                          <div className="w-4 h-4 rounded-full border-2 border-gray-200" />
+                          <div className="w-4 h-4 rounded-full border-2 border-slate-200 dark:border-slate-700" />
                         )}
-                        <span className={cn("text-sm", captureProgressStep > i ? "text-green-700 font-medium" : captureProgressStep === i ? "text-blue-700 font-bold" : "text-gray-400")}>
+                        <span className={cn("text-sm", captureProgressStep > i ? "text-green-700 font-medium" : captureProgressStep === i ? "text-blue-700 font-bold" : "text-slate-400 dark:text-slate-500")}>
                           {label}
                         </span>
                       </div>
@@ -1329,16 +1329,16 @@ export default function Properties() {
                 </div>
               )}
               {captureStep === 'preview' && capturePreview && (
-                <div className="space-y-4 border border-gray-200 rounded-xl p-4 bg-gray-50/50">
-                  <h3 className="font-bold text-gray-900">Vista Previa de la Propiedad</h3>
+                <div className="space-y-4 border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50 dark:bg-slate-800/50">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100">Vista Previa de la Propiedad</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Título</label>
-                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-bold" value={capturePreview.title || ''} onChange={e => setCapturePreview({...capturePreview, title: e.target.value})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Título</label>
+                      <input className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold" value={capturePreview.title || ''} onChange={e => setCapturePreview({...capturePreview, title: e.target.value})} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Tipo</label>
-                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.type || 'departamento'} onChange={e => setCapturePreview({...capturePreview, type: e.target.value as PropertyType})}>
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Tipo</label>
+                      <select className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.type || 'departamento'} onChange={e => setCapturePreview({...capturePreview, type: e.target.value as PropertyType})}>
                         <option value="departamento">Departamento</option>
                         <option value="casa">Casa</option>
                         <option value="lote">Lote</option>
@@ -1347,60 +1347,60 @@ export default function Properties() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Operación</label>
-                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.operation || 'venta'} onChange={e => setCapturePreview({...capturePreview, operation: e.target.value as PropertyOperation})}>
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Operación</label>
+                      <select className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.operation || 'venta'} onChange={e => setCapturePreview({...capturePreview, operation: e.target.value as PropertyOperation})}>
                         <option value="venta">Venta</option>
                         <option value="alquiler">Alquiler</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Precio</label>
-                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.price || 0} onChange={e => setCapturePreview({...capturePreview, price: Number(e.target.value)})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Precio</label>
+                      <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.price || 0} onChange={e => setCapturePreview({...capturePreview, price: Number(e.target.value)})} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Moneda</label>
-                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.currency || 'USD'} onChange={e => setCapturePreview({...capturePreview, currency: e.target.value as 'USD' | 'ARS'})}>
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Moneda</label>
+                      <select className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.currency || 'USD'} onChange={e => setCapturePreview({...capturePreview, currency: e.target.value as 'USD' | 'ARS'})}>
                         <option value="USD">USD</option>
                         <option value="ARS">ARS</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Zona / Dirección</label>
-                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.address || ''} onChange={e => setCapturePreview({...capturePreview, address: e.target.value})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Zona / Dirección</label>
+                      <input className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.address || ''} onChange={e => setCapturePreview({...capturePreview, address: e.target.value})} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Ciudad</label>
-                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.city || ''} onChange={e => setCapturePreview({...capturePreview, city: e.target.value})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Ciudad</label>
+                      <input className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.city || ''} onChange={e => setCapturePreview({...capturePreview, city: e.target.value})} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Dormitorios</label>
-                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.bedrooms || 1} onChange={e => setCapturePreview({...capturePreview, bedrooms: Number(e.target.value)})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Dormitorios</label>
+                      <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.bedrooms || 1} onChange={e => setCapturePreview({...capturePreview, bedrooms: Number(e.target.value)})} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Baños</label>
-                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.bathrooms || 1} onChange={e => setCapturePreview({...capturePreview, bathrooms: Number(e.target.value)})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Baños</label>
+                      <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.bathrooms || 1} onChange={e => setCapturePreview({...capturePreview, bathrooms: Number(e.target.value)})} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Ambientes</label>
-                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.rooms || 1} onChange={e => setCapturePreview({...capturePreview, rooms: Number(e.target.value)})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Ambientes</label>
+                      <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.rooms || 1} onChange={e => setCapturePreview({...capturePreview, rooms: Number(e.target.value)})} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Superficie (m²)</label>
-                      <input type="number" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.surface || 0} onChange={e => setCapturePreview({...capturePreview, surface: Number(e.target.value)})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Superficie (m²)</label>
+                      <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.surface || 0} onChange={e => setCapturePreview({...capturePreview, surface: Number(e.target.value)})} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Link Externo</label>
-                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.externalLink || ''} onChange={e => setCapturePreview({...capturePreview, externalLink: e.target.value})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Link Externo</label>
+                      <input className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.externalLink || ''} onChange={e => setCapturePreview({...capturePreview, externalLink: e.target.value})} />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Fuente Externa</label>
-                      <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" value={capturePreview.externalSource || ''} onChange={e => setCapturePreview({...capturePreview, externalSource: e.target.value})} />
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Fuente Externa</label>
+                      <input className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.externalSource || ''} onChange={e => setCapturePreview({...capturePreview, externalSource: e.target.value})} />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase">Imágenes (placeholders)</label>
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Imágenes (placeholders)</label>
                       <div className="flex gap-2 mt-1">
                         {(capturePreview.images || []).map((img, i) => (
-                          <img key={i} src={img} alt={`Preview ${i+1}`} className="w-20 h-20 rounded-lg object-cover border border-gray-200" />
+                          <img key={i} src={img} alt={`Preview ${i+1}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 dark:border-slate-700" />
                         ))}
                       </div>
                     </div>
@@ -1408,7 +1408,7 @@ export default function Properties() {
                 </div>
               )}
             </div>
-            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-2 shrink-0">
+            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2 shrink-0">
               <Button variant="ghost" onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }}>Cancelar</Button>
               <Button 
                 variant="primary" 

@@ -144,13 +144,13 @@ export default function Reservometro() {
     <div className="space-y-6 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reservómetro</h1>
-          <p className="text-gray-500">Gestión completa de reservas y operaciones de venta.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Reservómetro</h1>
+          <p className="text-slate-500 dark:text-slate-400">Gestión completa de reservas y operaciones de venta.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex bg-white rounded-lg p-1 border border-gray-200">
-            <button onClick={() => setView('pipeline')} className={cn("p-1.5 rounded-md transition-all", view === 'pipeline' ? "bg-blue-100 text-blue-700" : "text-gray-500 hover:bg-gray-50")}><Grid size={18} /></button>
-            <button onClick={() => setView('list')} className={cn("p-1.5 rounded-md transition-all", view === 'list' ? "bg-blue-100 text-blue-700" : "text-gray-500 hover:bg-gray-50")}><ListIcon size={18} /></button>
+          <div className="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+            <button onClick={() => setView('pipeline')} className={cn("p-1.5 rounded-md transition-all", view === 'pipeline' ? "bg-blue-100 text-blue-700" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-800/50")}><Grid size={18} /></button>
+            <button onClick={() => setView('list')} className={cn("p-1.5 rounded-md transition-all", view === 'list' ? "bg-blue-100 text-blue-700" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-800/50")}><ListIcon size={18} /></button>
           </div>
           <Button variant="primary" onClick={() => { setEditingSale(null); setIsFormOpen(true); }}>
             <Plus size={18} className="mr-2" /> Nueva Operación
@@ -166,32 +166,32 @@ export default function Reservometro() {
         <StatCard label="Com. brutas cobradas (USD)" value={formatCurrency(stats.grossCommissionsUsd, 'USD')} icon={DollarSign} color="green" />
       </div>
 
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-4">
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
           <div className="relative flex-1 max-w-md w-full">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder="Buscar por comprador, propiedad o ID..." className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <input type="text" placeholder="Buscar por comprador, propiedad o ID..." className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
           <div className="flex gap-2 w-full md:w-auto flex-wrap">
-            <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterOperationStatus} onChange={e => setFilterOperationStatus(e.target.value)}>
+            <select className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none" value={filterOperationStatus} onChange={e => setFilterOperationStatus(e.target.value)}>
               <option value="all">Todas las operaciones</option>
               <option value="activa">Activas</option>
               <option value="vendida">Vendidas</option>
               <option value="caída">Caídas</option>
             </select>
-            <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterPropertyType} onChange={e => setFilterPropertyType(e.target.value)}>
+            <select className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none" value={filterPropertyType} onChange={e => setFilterPropertyType(e.target.value)}>
               <option value="all">Tipo propiedad</option>
               <option value="vinculada">Vinculada</option>
               <option value="manual">Manual</option>
             </select>
-            <select className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={sortKey} onChange={e => setSortKey(e.target.value)}>
+            <select className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none" value={sortKey} onChange={e => setSortKey(e.target.value)}>
               <option value="fecha">Fecha (más próxima)</option>
               <option value="fecha-desc">Fecha (más lejana)</option>
               <option value="estado">Estado</option>
               <option value="comision">Comisión</option>
               <option value="precio">Precio</option>
             </select>
-            <button onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')} className="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors" title={sortDirection === 'asc' ? 'Ascendente' : 'Descendente'}>
+            <button onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')} className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors" title={sortDirection === 'asc' ? 'Ascendente' : 'Descendente'}>
               <ArrowUpDown size={16} className={cn("transition-transform", sortDirection === 'asc' ? 'rotate-180' : '')} />
             </button>
           </div>
@@ -200,10 +200,10 @@ export default function Reservometro() {
           <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto flex-wrap">
             <SearchableSelect placeholder="Filtrar comprador" value={filterBuyer} onChange={setFilterBuyer} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} allowEmpty emptyLabel="Todos los compradores" />
             <SearchableSelect placeholder="Filtrar vendedor" value={filterSeller} onChange={setFilterSeller} options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} allowEmpty emptyLabel="Todos los vendedores" />
-            <input type="text" placeholder="Agente / Inmo" className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none" value={filterAgent} onChange={e => setFilterAgent(e.target.value)} />
+            <input type="text" placeholder="Agente / Inmo" className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none" value={filterAgent} onChange={e => setFilterAgent(e.target.value)} />
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest self-center mr-1">Estado:</span>
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest self-center mr-1">Estado:</span>
             {(['all', ...STAGES, 'caída'] as const).map(s => (
               <button
                 key={s}
@@ -212,7 +212,7 @@ export default function Reservometro() {
                   'px-3 py-1 rounded-full text-xs font-bold border transition-all',
                   filterStatus === s
                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                    : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600'
                 )}
               >
                 {s === 'all' ? 'Todas' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -229,8 +229,8 @@ export default function Reservometro() {
             return (
               <div key={stage} className="flex-shrink-0 w-72 space-y-4">
                 <div className="flex items-center justify-between px-2">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">{stage}</h3>
-                  <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{stageSales.length}</span>
+                  <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{stage}</h3>
+                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">{stageSales.length}</span>
                 </div>
                 <div className="space-y-3">
                   {stageSales.map(sale => {
@@ -244,25 +244,25 @@ export default function Reservometro() {
                               <Badge size="xs" variant={getStatusVariant(sale.estado) as any}>{sale.estado}</Badge>
                               <Badge size="xs" variant={(sale.operationStatus || 'activa') === 'activa' ? 'blue' : (sale.operationStatus || 'activa') === 'vendida' ? 'green' : 'red'}>{sale.operationStatus || 'activa'}</Badge>
                             </div>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase">#{sale.id}</p>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">#{sale.id}</p>
                           </div>
-                          <h4 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{sale.nombre || property?.title || sale.externalPropertyAddress || 'Propiedad no vinculada'}</h4>
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 transition-colors line-clamp-1">{sale.nombre || property?.title || sale.externalPropertyAddress || 'Propiedad no vinculada'}</h4>
                           <div className="flex items-center gap-2 mt-2">
                             <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-bold text-blue-600 uppercase">{client?.name?.charAt(0) || '?'}</div>
-                            <p className="text-[11px] text-gray-500 font-medium truncate">{client?.name || 'Sin comprador'}</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">{client?.name || 'Sin comprador'}</p>
                           </div>
                           <div className="mt-2 pt-3 border-t border-gray-50 flex items-center justify-between">
-                            <p className="text-sm font-black text-gray-900">{formatCurrency(sale.valorCierre || sale.precioAcordado || sale.precioPublicado, sale.moneda)}</p>
-                            <div className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:text-blue-500 group-hover:bg-blue-50 transition-all"><ChevronRight size={14} /></div>
+                            <p className="text-sm font-black text-slate-900 dark:text-slate-100">{formatCurrency(sale.valorCierre || sale.precioAcordado || sale.precioPublicado, sale.moneda)}</p>
+                            <div className="w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-300 dark:text-slate-600 group-hover:text-blue-500 group-hover:bg-blue-50 transition-all"><ChevronRight size={14} /></div>
                           </div>
-                          <p className="text-[10px] text-gray-400 mt-1 font-medium">{formatDate(getBestDate(sale))}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">{formatDate(getBestDate(sale))}</p>
                         </Card>
                       </div>
                     );
                   })}
                   {stageSales.length === 0 && (
-                    <div className="h-24 border-2 border-dashed border-gray-100 rounded-xl flex items-center justify-center bg-gray-50/50">
-                      <p className="text-[10px] font-black text-gray-300 uppercase italic tracking-widest">Sin operaciones</p>
+                    <div className="h-24 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-slate-800/50">
+                      <p className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase italic tracking-widest">Sin operaciones</p>
                     </div>
                   )}
                 </div>
@@ -271,35 +271,35 @@ export default function Reservometro() {
           })}
         </div>
       ) : (
-        <Card className="p-0 overflow-hidden shadow-sm border-gray-200">
+        <Card className="p-0 overflow-hidden shadow-sm border-slate-200 dark:border-slate-700">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Operación</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Precios</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Comisión</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Monto escritura</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Operación</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Acciones</th>
+                <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Operación</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Precios</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Comisión</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Monto escritura</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Fecha</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Estado</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Operación</th>
+                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredSales.map(sale => {
                   const property = properties.find(p => p.id === sale.propiedadId);
                   const client = clients.find(c => c.id === sale.clientCompradorId);
                   const isHighlighted = highlightedSaleId === sale.id;
                   return (
-                    <tr key={sale.id} id={`sale-row-${sale.id}`} className={cn("hover:bg-gray-50/50 transition-colors group cursor-pointer", isHighlighted && "bg-yellow-50")} onClick={() => { setEditingSale(sale); setIsFormOpen(true); }}>
+                    <tr key={sale.id} id={`sale-row-${sale.id}`} className={cn("hover:bg-blue-500/5 dark:hover:bg-blue-500/5 transition-colors group cursor-pointer", isHighlighted && "bg-yellow-50 dark:bg-yellow-500/10")} onClick={() => { setEditingSale(sale); setIsFormOpen(true); }}>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{sale.nombre || property?.address || sale.externalPropertyAddress || 'Propiedad no vinculada'}</p>
-                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">{client?.name || sale.comprador || 'Sin comprador'} • {property?.title || sale.externalPropertyCode || sale.propiedadId || 'Sin vincular'}</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 transition-colors">{sale.nombre || property?.address || sale.externalPropertyAddress || 'Propiedad no vinculada'}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">{client?.name || sale.comprador || 'Sin comprador'} • {property?.title || sale.externalPropertyCode || sale.propiedadId || 'Sin vincular'}</p>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col text-xs">
-                          <span className="font-bold text-gray-700">Pub: {formatCurrency(sale.precioPublicado, sale.moneda)}</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-300">Pub: {formatCurrency(sale.precioPublicado, sale.moneda)}</span>
                           {sale.valorOfertado !== undefined && <span className="text-blue-600 font-medium">Ofertado: {formatCurrency(sale.valorOfertado, sale.moneda)}</span>}
                           {sale.valorCierre !== undefined && <span className="text-green-600 font-medium">Cierre: {formatCurrency(sale.valorCierre, sale.moneda)}</span>}
                         </div>
@@ -309,10 +309,10 @@ export default function Reservometro() {
                         {sale.grossCommissionUsd !== undefined && <span className="block text-[10px] text-green-600">Bruta USD {sale.grossCommissionUsd}</span>}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-xs text-gray-600">{sale.montoEscritura ?? '-'}</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400">{sale.montoEscritura ?? '-'}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-xs text-gray-500">{formatDate(getBestDate(sale))}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{formatDate(getBestDate(sale))}</span>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={getStatusVariant(sale.estado) as any}>{sale.estado}</Badge>
@@ -323,10 +323,10 @@ export default function Reservometro() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Ver vínculos" onClick={e => { e.stopPropagation(); openRelations('sale', sale.id); }}><Link2 size={16} /></button>
+                          <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Ver vínculos" onClick={e => { e.stopPropagation(); openRelations('sale', sale.id); }}><Link2 size={16} /></button>
                           <SaleOperationMenu sale={sale} onUpdate={updateSale} onLog={addActivityLog} showToast={showToast} />
-                          <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setEditingSale(sale); setIsFormOpen(true); }}><Edit3 size={16} /></button>
-                          <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" onClick={e => { e.stopPropagation(); if (confirm('¿Eliminar esta operación?')) deleteSale(sale.id); }}><Trash2 size={16} /></button>
+                          <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setEditingSale(sale); setIsFormOpen(true); }}><Edit3 size={16} /></button>
+                          <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" onClick={e => { e.stopPropagation(); if (confirm('¿Eliminar esta operación?')) deleteSale(sale.id); }}><Trash2 size={16} /></button>
                         </div>
                       </td>
                     </tr>
@@ -337,7 +337,7 @@ export default function Reservometro() {
             {filteredSales.length === 0 && (
               <div className="py-20 text-center">
                 <Gauge size={40} className="mx-auto text-gray-200 mb-3" />
-                <p className="text-gray-500 font-medium tracking-tight">No se encontraron operaciones.</p>
+                <p className="text-slate-500 dark:text-slate-400 font-medium tracking-tight">No se encontraron operaciones.</p>
               </div>
             )}
           </div>
@@ -380,16 +380,16 @@ function SaleOperationMenu({ sale, onUpdate, onLog, showToast }: { sale: Sale; o
 
   return (
     <div className="relative" ref={menuRef}>
-      <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
+      <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
         <MoreVertical size={16} />
       </button>
       {open && (
-        <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 text-xs font-medium">
-          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700" onClick={() => changeStatus('activa')}>Marcar como Activa</button>
-          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-green-700" onClick={() => changeStatus('vendida')}>Marcar como Vendida</button>
-          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-red-700" onClick={() => changeStatus('caída')}>Marcar como Caída</button>
-          <div className="border-t border-gray-100 my-1" />
-          <button className="w-full text-left px-3 py-2 hover:bg-gray-50 text-blue-700" onClick={toggleCollected}>{sale.isCollected ? 'Desmarcar cobrada' : 'Marcar como cobrada'}</button>
+        <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 py-1 text-xs font-medium">
+          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300" onClick={() => changeStatus('activa')}>Marcar como Activa</button>
+          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-green-700" onClick={() => changeStatus('vendida')}>Marcar como Vendida</button>
+          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-red-700" onClick={() => changeStatus('caída')}>Marcar como Caída</button>
+          <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
+          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-blue-700" onClick={toggleCollected}>{sale.isCollected ? 'Desmarcar cobrada' : 'Marcar como cobrada'}</button>
         </div>
       )}
     </div>
@@ -562,8 +562,8 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
   };
 
   const inputCls = (field: string) =>
-    cn('w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all',
-      errors[field] ? 'border-red-500 bg-red-50/30' : 'border-gray-200');
+    cn('w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all',
+      errors[field] ? 'border-red-500 bg-red-50/30' : 'border-slate-200 dark:border-slate-700');
 
   // Find selected property details for rich display
   const selectedProperty = properties.find(p => p.id === formData.propiedadId);
@@ -571,23 +571,23 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="bg-white rounded-3xl w-full max-w-4xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom duration-300">
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
-          <h2 className="font-black text-xl text-gray-900">{sale ? 'Editar' : 'Nueva'} Operación</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-4xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom duration-300">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
+          <h2 className="font-black text-xl text-slate-900 dark:text-slate-100">{sale ? 'Editar' : 'Nueva'} Operación</h2>
+          <button onClick={onClose} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><X size={24} /></button>
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 scrollbar-thin">
           <div className="space-y-8">
 
             {/* Estado */}
             <div>
-              <label className={cn('block text-xs font-black uppercase tracking-widest mb-2', errors.estado ? 'text-red-500' : 'text-gray-400')}>Estado *</label>
+              <label className={cn('block text-xs font-black uppercase tracking-widest mb-2', errors.estado ? 'text-red-500' : 'text-slate-400 dark:text-slate-500')}>Estado *</label>
               <div className="flex flex-wrap gap-2">
                 {STAGES.map(s => (
                   <button key={s} type="button" onClick={() => { setFormData({...formData, estado: s}); setErrors(prev => ({...prev, estado: false})); }}
                     className={cn('px-3 py-1.5 rounded-full text-xs font-bold transition-all border',
                       errors.estado ? 'border-red-300' : '',
-                      formData.estado === s ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200' : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'
+                      formData.estado === s ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300'
                     )}>{s}</button>
                 ))}
               </div>
@@ -595,11 +595,11 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
 
             {/* Comprador */}
             <div className="space-y-3">
-              <label className={cn('block text-xs font-black uppercase tracking-widest', errors.comprador ? 'text-red-500' : 'text-gray-400')}>Comprador *</label>
+              <label className={cn('block text-xs font-black uppercase tracking-widest', errors.comprador ? 'text-red-500' : 'text-slate-400 dark:text-slate-500')}>Comprador *</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Seleccionar cliente</span>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Seleccionar cliente</span>
                     <button type="button" onClick={() => setShowNewBuyerForm(v => !v)}
                       className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center font-bold text-xs transition-all" title="Crear nuevo comprador">+</button>
                   </div>
@@ -608,20 +608,20 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
                   {showNewBuyerForm && (
                     <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
                       <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Nuevo Comprador rápido</p>
-                      <input className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none" placeholder="Nombre *" value={newBuyerName} onChange={e => setNewBuyerName(e.target.value)} />
-                      <input className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none" placeholder="Teléfono" value={newBuyerPhone} onChange={e => setNewBuyerPhone(e.target.value)} />
+                      <input className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-blue-200 rounded-lg text-sm outline-none" placeholder="Nombre *" value={newBuyerName} onChange={e => setNewBuyerName(e.target.value)} />
+                      <input className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-blue-200 rounded-lg text-sm outline-none" placeholder="Teléfono" value={newBuyerPhone} onChange={e => setNewBuyerPhone(e.target.value)} />
                       <div className="flex gap-2">
                         <button type="button" onClick={handleCreateBuyer} className="flex-1 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">Crear y Seleccionar</button>
-                        <button type="button" onClick={() => setShowNewBuyerForm(false)} className="px-3 py-1.5 text-gray-500 text-xs font-bold rounded-lg hover:bg-gray-100">Cancelar</button>
+                        <button type="button" onClick={() => setShowNewBuyerForm(false)} className="px-3 py-1.5 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">Cancelar</button>
                       </div>
                     </div>
                   )}
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">O ingresar nombre manual</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">O ingresar nombre manual</p>
                   <input className={cn(inputCls('comprador'), 'mb-2')} placeholder="Nombre del comprador (texto libre)" value={formData.compradorManual || ''}
                     onChange={e => { setFormData({...formData, compradorManual: e.target.value, clientCompradorId: e.target.value ? '' : formData.clientCompradorId}); setErrors(prev => ({...prev, comprador: false})); }} />
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Inmobiliaria Comprador</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Inmobiliaria Comprador</p>
                   <input className={inputCls('')} placeholder="Nombre de la inmobiliaria" value={formData.compradorInmobiliaria || ''}
                     onChange={e => setFormData({...formData, compradorInmobiliaria: e.target.value})} />
                 </div>
@@ -631,12 +631,12 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
 
             {/* Propiedad */}
             <div>
-              <label className={cn('block text-xs font-black uppercase tracking-widest mb-2', errors.propiedad || errors.propiedadManual ? 'text-red-500' : 'text-gray-400')}>Propiedad</label>
+              <label className={cn('block text-xs font-black uppercase tracking-widest mb-2', errors.propiedad || errors.propiedadManual ? 'text-red-500' : 'text-slate-400 dark:text-slate-500')}>Propiedad</label>
               <div className="flex gap-2 mb-3">
                 <button type="button" onClick={() => { setPropertyMode('existing'); setErrors(prev => ({...prev, propiedadManual: false})); }}
-                  className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all', propertyMode === 'existing' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200')}>Existente</button>
+                  className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all', propertyMode === 'existing' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700')}>Existente</button>
                 <button type="button" onClick={() => { setPropertyMode('manual'); setErrors(prev => ({...prev, propiedad: false})); }}
-                  className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all', propertyMode === 'manual' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-500 border-gray-200')}>Manual / No creada</button>
+                  className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all', propertyMode === 'manual' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700')}>Manual / No creada</button>
               </div>
               {propertyMode === 'existing' ? (
                 <div>
@@ -650,15 +650,15 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
                     placeholder="Seleccionar Propiedad" allowEmpty={false} />
                   {selectedProperty && (
                     <div className={cn('mt-2 p-3 rounded-xl border text-xs space-y-1', errors.propiedad ? 'border-red-300 bg-red-50/30' : 'bg-blue-50/50 border-blue-100')}>
-                      <p className="font-bold text-gray-900">{selectedProperty.title}</p>
-                      <p className="text-gray-600">{[selectedProperty.address, selectedProperty.zone, selectedProperty.city].filter(Boolean).join(', ')}</p>
+                      <p className="font-bold text-slate-900 dark:text-slate-100">{selectedProperty.title}</p>
+                      <p className="text-slate-600 dark:text-slate-400">{[selectedProperty.address, selectedProperty.zone, selectedProperty.city].filter(Boolean).join(', ')}</p>
                       {(selectedProperty.propertyLink || selectedProperty.externalLink) && (
                         <a href={selectedProperty.propertyLink || selectedProperty.externalLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block">
                           {selectedProperty.propertyLink || selectedProperty.externalLink}
                         </a>
                       )}
                       {(selectedProperty.propertyCode || selectedProperty.code) && (
-                        <p className="text-gray-400 font-mono">ID/Cód: {selectedProperty.propertyCode || selectedProperty.code}</p>
+                        <p className="text-slate-400 dark:text-slate-500 font-mono">ID/Cód: {selectedProperty.propertyCode || selectedProperty.code}</p>
                       )}
                     </div>
                   )}
@@ -667,15 +667,15 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Dirección</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Dirección</label>
                     <input className={inputCls('propiedadManual')} value={formData.externalPropertyAddress || ''} onChange={e => { setFormData({...formData, externalPropertyAddress: e.target.value}); setErrors(prev => ({...prev, propiedadManual: false})); }} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Link</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Link</label>
                     <input className={inputCls('')} value={formData.externalPropertyLink || ''} onChange={e => setFormData({...formData, externalPropertyLink: e.target.value})} />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">ID / Código</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">ID / Código</label>
                     <input className={inputCls('')} value={formData.externalPropertyCode || ''} onChange={e => setFormData({...formData, externalPropertyCode: e.target.value})} />
                   </div>
                   {errors.propiedadManual && <p className="text-xs text-red-500 font-medium md:col-span-3">Completa al menos un dato de la propiedad manual</p>}
@@ -686,9 +686,9 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
             {/* Propietario / Vendedor */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Propietario / Vendedor</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Propietario / Vendedor</label>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Seleccionar cliente</span>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Seleccionar cliente</span>
                   <button type="button" onClick={() => setShowNewSellerForm(v => !v)}
                     className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 flex items-center justify-center font-bold text-xs transition-all" title="Crear nuevo vendedor">+</button>
                 </div>
@@ -697,26 +697,26 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
                 {showNewSellerForm && (
                   <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Nuevo Vendedor rápido</p>
-                    <input className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none" placeholder="Nombre *" value={newSellerName} onChange={e => setNewSellerName(e.target.value)} />
-                    <input className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm outline-none" placeholder="Teléfono" value={newSellerPhone} onChange={e => setNewSellerPhone(e.target.value)} />
+                    <input className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-blue-200 rounded-lg text-sm outline-none" placeholder="Nombre *" value={newSellerName} onChange={e => setNewSellerName(e.target.value)} />
+                    <input className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-blue-200 rounded-lg text-sm outline-none" placeholder="Teléfono" value={newSellerPhone} onChange={e => setNewSellerPhone(e.target.value)} />
                     <div className="flex gap-2">
                       <button type="button" onClick={handleCreateSeller} className="flex-1 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">Crear y Seleccionar</button>
-                      <button type="button" onClick={() => setShowNewSellerForm(false)} className="px-3 py-1.5 text-gray-500 text-xs font-bold rounded-lg hover:bg-gray-100">Cancelar</button>
+                      <button type="button" onClick={() => setShowNewSellerForm(false)} className="px-3 py-1.5 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">Cancelar</button>
                     </div>
                   </div>
                 )}
                 <div className="mt-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">O ingresar nombre manual</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">O ingresar nombre manual</p>
                   <input className={inputCls('')} placeholder="Nombre vendedor (texto libre)" value={formData.vendedorManual || ''}
                     onChange={e => setFormData({...formData, vendedorManual: e.target.value})} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Agente / Vendedor Interno</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Agente / Vendedor Interno</label>
                 <SearchableSelect value={formData.vendedorId || ''} onChange={val => setFormData({...formData, vendedorId: val || undefined})}
                   options={clients.map(c => ({ value: c.id, label: c.name, subtitle: c.phone }))} placeholder="Seleccionar agente (opcional)" allowEmpty />
                 <div className="mt-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Inmobiliaria Vendedor</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Inmobiliaria Vendedor</p>
                   <input className={inputCls('')} placeholder="Nombre de la inmobiliaria" value={formData.vendedorInmobiliaria || ''}
                     onChange={e => setFormData({...formData, vendedorInmobiliaria: e.target.value})} />
                 </div>
@@ -726,15 +726,15 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
             {/* Datos básicos */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Nombre de la operación</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Nombre de la operación</label>
                 <input className={inputCls('')} value={formData.nombre || ''} onChange={e => setFormData({...formData, nombre: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Fecha</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Fecha</label>
                 <input type="date" className={inputCls('')} value={formData.fecha || ''} onChange={e => setFormData({...formData, fecha: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Inmo / Agente (texto)</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Inmo / Agente (texto)</label>
                 <input className={inputCls('')} value={formData.inmoAgente || ''} onChange={e => setFormData({...formData, inmoAgente: e.target.value})} />
               </div>
             </div>
@@ -752,7 +752,7 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
                 { key: 'presupuesto', label: 'Presupuesto', required: false },
               ].map(field => (
                 <div key={field.key}>
-                  <label className={cn('block text-[10px] font-black uppercase tracking-widest mb-1', errors[field.key] ? 'text-red-500' : 'text-gray-400')}>{field.label}{field.required ? ' *' : ''}</label>
+                  <label className={cn('block text-[10px] font-black uppercase tracking-widest mb-1', errors[field.key] ? 'text-red-500' : 'text-slate-400 dark:text-slate-500')}>{field.label}{field.required ? ' *' : ''}</label>
                   <input type="number" className={inputCls(field.key)} value={(formData as Record<string, unknown>)[field.key] as number ?? ''}
                     onChange={e => { setFormData({...formData, [field.key]: e.target.value ? Number(e.target.value) : undefined}); if (field.required) setErrors(prev => ({...prev, [field.key]: false})); }} />
                 </div>
@@ -768,18 +768,18 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
                 { key: 'grossCommissionUsd', label: 'Comisión bruta USD' },
               ].map(field => (
                 <div key={field.key}>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{field.label}</label>
+                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{field.label}</label>
                   <input type="number" className={inputCls('')} value={(formData as Record<string, unknown>)[field.key] as number ?? ''}
                     onChange={e => setFormData({...formData, [field.key]: e.target.value ? Number(e.target.value) : undefined})} />
                 </div>
               ))}
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Monto Escritura</label>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Monto Escritura</label>
                 <input type="text" className={inputCls('')} value={(formData as Record<string, unknown>).montoEscritura as string ?? ''}
                   onChange={e => setFormData({...formData, montoEscritura: e.target.value})} />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Estado operación</label>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Estado operación</label>
                 <select className={inputCls('')} value={formData.operationStatus || 'activa'} onChange={e => setFormData({...formData, operationStatus: e.target.value as 'activa' | 'vendida' | 'caída'})}>
                   <option value="activa">Activa</option>
                   <option value="vendida">Vendida</option>
@@ -787,10 +787,10 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Cobrada</label>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Cobrada</label>
                 <div className="flex items-center h-[42px]">
                   <button type="button" onClick={() => setFormData({...formData, isCollected: !formData.isCollected})}
-                    className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all', formData.isCollected ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-500 border-gray-200')}>
+                    className={cn('px-3 py-1.5 rounded-full text-xs font-bold border transition-all', formData.isCollected ? 'bg-green-600 text-white border-green-600' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700')}>
                     {formData.isCollected ? 'Sí' : 'No'}
                   </button>
                 </div>
@@ -800,11 +800,11 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
             {/* Fechas (sin "Fecha Tomada") */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Fecha Reserva</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Fecha Reserva</label>
                 <input type="date" className={inputCls('')} value={formData.fechaReserva || ''} onChange={e => setFormData({...formData, fechaReserva: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Fecha Escritura</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Fecha Escritura</label>
                 <input type="date" className={inputCls('')} value={formData.fechaEscritura || ''} onChange={e => setFormData({...formData, fechaEscritura: e.target.value})} />
               </div>
             </div>
@@ -812,15 +812,15 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
             {/* Escribanía y Moneda */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Escribanía</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Escribanía</label>
                 <input className={inputCls('')} value={formData.escribania || ''} onChange={e => setFormData({...formData, escribania: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Moneda *</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Moneda *</label>
                 <div className="flex gap-2">
                   {(['USD', 'ARS'] as const).map(m => (
                     <button key={m} type="button" onClick={() => setFormData({...formData, moneda: m})}
-                      className={cn('flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all', formData.moneda === m ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200')}>{m}</button>
+                      className={cn('flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all', formData.moneda === m ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700')}>{m}</button>
                   ))}
                 </div>
               </div>
@@ -828,14 +828,14 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
 
             {/* Notas */}
             <div>
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Notas / Info Extra</label>
+              <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Notas / Info Extra</label>
               <textarea rows={3} className={inputCls('')} placeholder="Condiciones, observaciones..." value={formData.notas || ''} onChange={e => setFormData({...formData, notas: e.target.value})} />
             </div>
           </div>
 
-          <div className="mt-10 flex gap-3 sticky bottom-0 bg-white pt-4 border-t border-gray-50">
+          <div className="mt-10 flex gap-3 sticky bottom-0 bg-white dark:bg-slate-900 pt-4 border-t border-slate-100 dark:border-slate-800">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" variant="primary" className="flex-1">{sale ? 'Guardar Cambios' : 'Registrar Operación'}</Button>
+            <Button type="submit" variant="primary" className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 border-none text-white shadow-lg shadow-blue-500/25">{sale ? 'Guardar Cambios' : 'Registrar Operación'}</Button>
           </div>
         </form>
       </div>

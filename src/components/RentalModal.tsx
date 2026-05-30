@@ -112,16 +112,16 @@ export default function RentalModal({
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-        <div className="bg-white rounded-3xl w-full max-w-3xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-3xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="green">Alquiler</Badge>
                 <Badge variant={getStatusVariant(rental.estado)}>{rental.estado}</Badge>
               </div>
-              <h2 className="font-black text-2xl text-gray-900">{propiedad?.title || 'Propiedad'}</h2>
+              <h2 className="font-black text-2xl text-slate-900 dark:text-slate-100">{propiedad?.title || 'Propiedad'}</h2>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400"><X size={24} /></button>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400 dark:text-slate-500"><X size={24} /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-8 scrollbar-thin">
             <div className="space-y-6">
@@ -136,13 +136,13 @@ export default function RentalModal({
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="p-4 border-gray-100 bg-gray-50/20">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Inquilino</p>
-                  <p className="text-sm font-bold text-gray-900">{inquilino?.name || 'Sin asignar'}</p>
+                <Card className="p-4 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20">
+                  <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Inquilino</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{inquilino?.name || 'Sin asignar'}</p>
                 </Card>
-                <Card className="p-4 border-gray-100 bg-gray-50/20">
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Locador</p>
-                  <p className="text-sm font-bold text-gray-900">{locador?.name || 'Sin asignar'}</p>
+                <Card className="p-4 border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20">
+                  <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Locador</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{locador?.name || 'Sin asignar'}</p>
                 </Card>
                 <Card className="p-4 border-purple-100 bg-purple-50/20">
                   <p className="text-[9px] font-black text-purple-600 uppercase tracking-widest mb-1">Comision</p>
@@ -154,10 +154,10 @@ export default function RentalModal({
                 </Card>
               </div>
               <div className="flex items-center gap-6 p-4 bg-blue-50/30 rounded-2xl border border-blue-100/50">
-                <span className="text-xs font-bold text-gray-500">Inicio: {formatDate(rental.fechaInicio)}</span>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Inicio: {formatDate(rental.fechaInicio)}</span>
                 <span className="text-xs font-bold text-red-600">Fin: {formatDate(rental.fechaFin)}</span>
               </div>
-              <p className="text-gray-600 text-sm italic leading-relaxed bg-gray-50 p-4 rounded-2xl border border-gray-100">
+              <p className="text-slate-600 dark:text-slate-400 text-sm italic leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                 &quot;{rental.notas || 'Sin notas.'}&quot;
               </p>
             </div>
@@ -178,27 +178,27 @@ export default function RentalModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="bg-white rounded-3xl w-full max-w-3xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom duration-300">
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
-          <h2 className="font-black text-xl text-gray-900">{rental ? 'Editar Alquiler' : 'Nuevo Alquiler'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
+      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-3xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom duration-300">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
+          <h2 className="font-black text-xl text-slate-900 dark:text-slate-100">{rental ? 'Editar Alquiler' : 'Nuevo Alquiler'}</h2>
+          <button onClick={onClose} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><X size={24} /></button>
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 scrollbar-thin">
           <div className="space-y-4">
             <div className="md:col-span-2">
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Estado *</label>
+              <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Estado *</label>
               <div className="flex flex-wrap gap-2">
                 {RENTAL_STAGES.map(s => (
                   <button key={s} type="button" onClick={() => setFormData({...formData, estado: s})}
                     className={cn('px-3 py-1.5 rounded-full text-xs font-bold transition-all border',
-                      formData.estado === s ? 'bg-green-600 text-white border-green-600 shadow-md' : 'bg-white text-gray-500 border-gray-200 hover:border-green-300'
+                      formData.estado === s ? 'bg-green-600 text-white border-green-600 shadow-md' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-green-300'
                     )}>{s}</button>
                 ))}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Inquilino *</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Inquilino *</label>
                 <SearchableSelect
                   placeholder="Seleccionar inquilino..."
                   value={formData.inquilinoId}
@@ -208,7 +208,7 @@ export default function RentalModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Propiedad *</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Propiedad *</label>
                 <SearchableSelect
                   placeholder="Seleccionar propiedad..."
                   value={formData.propiedadId}
@@ -218,7 +218,7 @@ export default function RentalModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Locador (opcional)</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Locador (opcional)</label>
                 <SearchableSelect
                   placeholder="Seleccionar locador..."
                   value={formData.locadorId}
@@ -228,55 +228,55 @@ export default function RentalModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Moneda</label>
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Moneda</label>
                 <div className="flex gap-2">
                   {(['USD', 'ARS'] as const).map(m => (
                     <button key={m} type="button" onClick={() => setFormData({...formData, moneda: m})}
                       className={cn('flex-1 py-2.5 rounded-xl text-sm font-bold border',
-                        formData.moneda === m ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200')}>{m}</button>
+                        formData.moneda === m ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700')}>{m}</button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Dia de Pago (1-31)</label>
-                <input type="number" min="1" max="31" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Dia de Pago (1-31)</label>
+                <input type="number" min="1" max="31" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
                   value={formData.diaPago} onChange={e => setFormData({...formData, diaPago: Number(e.target.value)})} />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Monto Mensual</label>
-                <input type="number" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Monto Mensual</label>
+                <input type="number" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
                   value={formData.montoMensual} onChange={e => setFormData({...formData, montoMensual: Number(e.target.value)})} />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Deposito</label>
-                <input type="number" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Deposito</label>
+                <input type="number" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
                   value={formData.deposito} onChange={e => setFormData({...formData, deposito: Number(e.target.value)})} />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Comision</label>
-                <input type="number" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Comision</label>
+                <input type="number" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
                   value={formData.comision} onChange={e => setFormData({...formData, comision: Number(e.target.value)})} />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Fecha Inicio</label>
-                <input type="date" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Fecha Inicio</label>
+                <input type="date" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
                   value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Fecha Fin</label>
-                <input type="date" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Fecha Fin</label>
+                <input type="date" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
                   value={formData.fechaFin} onChange={e => setFormData({...formData, fechaFin: e.target.value})} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Notas</label>
-              <textarea rows={3} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+              <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Notas</label>
+              <textarea rows={3} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
                 placeholder="Condiciones especiales, garantias..." value={formData.notas} onChange={e => setFormData({...formData, notas: e.target.value})} />
             </div>
           </div>
-          <div className="mt-10 flex gap-3 sticky bottom-0 bg-white pt-4 border-t border-gray-50">
+          <div className="mt-10 flex gap-3 sticky bottom-0 bg-white dark:bg-slate-900 pt-4 border-t border-slate-100 dark:border-slate-800">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" variant="primary" className="flex-1">{rental ? 'Guardar Cambios' : 'Registrar Alquiler'}</Button>
+            <Button type="submit" variant="primary" className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 border-none text-white shadow-lg shadow-blue-500/25">{rental ? 'Guardar Cambios' : 'Registrar Alquiler'}</Button>
           </div>
         </form>
       </div>

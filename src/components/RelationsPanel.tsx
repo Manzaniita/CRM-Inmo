@@ -14,27 +14,27 @@ export default function RelationsPanel({ groups, title = 'Vínculos' }: Relation
 
   return (
     <div className="space-y-4">
-      <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+      <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg flex items-center gap-2">
         <Link2 size={18} className="text-blue-500" />
         {title}
       </h3>
       {nonEmptyGroups.map(group => (
         <div key={group.id} className="space-y-2">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{group.title} ({group.count})</p>
+          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{group.title} ({group.count})</p>
           <div className="space-y-2">
             {group.items.map(item => (
-              <div key={item.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition-all group">
+              <div key={item.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 hover:shadow-sm transition-all group">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{item.title}</p>
-                  {item.subtitle && <p className="text-[10px] text-gray-500">{item.subtitle}</p>}
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{item.title}</p>
+                  {item.subtitle && <p className="text-[10px] text-slate-500 dark:text-slate-400">{item.subtitle}</p>}
                   {item.status && (
-                    <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
+                    <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
                       {item.status}
                     </span>
                   )}
                 </div>
                 {item.route && (
-                  <Link to={item.route} className="p-1.5 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all shrink-0">
+                  <Link to={item.route} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all shrink-0">
                     <ChevronRight size={16} />
                   </Link>
                 )}

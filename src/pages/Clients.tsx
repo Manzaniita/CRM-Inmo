@@ -404,36 +404,36 @@ export default function Clients() {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsTaskModalOpen(false)}></div>
-        <div className="bg-white rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
-            <h2 className="font-bold text-xl text-gray-900">Nueva Tarea para {selectedClient?.name}</h2>
-            <button onClick={() => setIsTaskModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-800">
+            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">Nueva Tarea para {selectedClient?.name}</h2>
+            <button onClick={() => setIsTaskModalOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
           </div>
           <div className="p-6 overflow-y-auto max-h-[70vh]">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Título *</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Título *</label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={taskFormData.title}
                   onChange={e => setTaskFormData({...taskFormData, title: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Descripción</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
                 <textarea
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={taskFormData.description}
                   onChange={e => setTaskFormData({...taskFormData, description: e.target.value})}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Prioridad</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Prioridad</label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={taskFormData.priority}
                     onChange={e => setTaskFormData({...taskFormData, priority: e.target.value as TaskPriority})}
                   >
@@ -444,9 +444,9 @@ export default function Clients() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Estado</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={taskFormData.status}
                     onChange={e => setTaskFormData({...taskFormData, status: e.target.value as TaskStatus})}
                   >
@@ -459,10 +459,10 @@ export default function Clients() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Fecha Límite</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha Límite</label>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={taskFormData.dueDate}
                   onChange={e => setTaskFormData({...taskFormData, dueDate: e.target.value})}
                 />
@@ -478,10 +478,10 @@ export default function Clients() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Notas</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Notas</label>
                 <textarea
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={taskFormData.notes}
                   onChange={e => setTaskFormData({...taskFormData, notes: e.target.value})}
                   onKeyDown={e => handleTextareaFormatKeyDown(e, (val) => setTaskFormData({...taskFormData, notes: val}))}
@@ -530,35 +530,35 @@ export default function Clients() {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsEventModalOpen(false)}></div>
-        <div className="bg-white rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
-            <h2 className="font-bold text-xl text-gray-900">Nueva Cita con {selectedClient?.name}</h2>
-            <button onClick={() => setIsEventModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-800">
+            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">Nueva Cita con {selectedClient?.name}</h2>
+            <button onClick={() => setIsEventModalOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
           </div>
           <div className="p-6 overflow-y-auto max-h-[70vh]">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Título *</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Título *</label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.title}
                   onChange={e => setEventFormData({...eventFormData, title: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Descripción</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
                 <textarea
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.description}
                   onChange={e => setEventFormData({...eventFormData, description: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Tipo</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tipo</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.type}
                   onChange={e => setEventFormData({...eventFormData, type: e.target.value as EventType})}
                 >
@@ -575,28 +575,28 @@ export default function Clients() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Fecha</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
                   <input
                     type="date"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={eventFormData.date}
                     onChange={e => setEventFormData({...eventFormData, date: e.target.value})}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Hora</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Hora</label>
                   <input
                     type="time"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={eventFormData.time}
                     onChange={e => setEventFormData({...eventFormData, time: e.target.value})}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Estado</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.status}
                   onChange={e => setEventFormData({...eventFormData, status: e.target.value as EventStatus})}
                 >
@@ -617,10 +617,10 @@ export default function Clients() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Notas</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Notas</label>
                 <textarea
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.notes}
                   onChange={e => setEventFormData({...eventFormData, notes: e.target.value})}
                   onKeyDown={e => handleTextareaFormatKeyDown(e, (val) => setEventFormData({...eventFormData, notes: val}))}
@@ -1099,43 +1099,43 @@ export default function Clients() {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsFormModalOpen(false)}></div>
-        <div className="bg-white rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
-            <h2 className="font-bold text-xl text-gray-900">{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
-            <button onClick={() => setIsFormModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-800">
+            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
+            <button onClick={() => setIsFormModalOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
           </div>
           <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[70vh]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Nombre *</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
                 <input 
                   required
                   type="text" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Teléfono</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
                 <input 
                   type="text" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.phone}
                   onChange={e => setFormData({...formData, phone: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Email</label>
                 <input 
                   type="email" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.email}
                   onChange={e => setFormData({...formData, email: e.target.value})}
                 />
               </div>
                             <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-2">Tipo * (seleccioná uno o más)</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Tipo * (seleccioná uno o más)</label>
                 <div className="flex flex-wrap gap-2">
                   {(['comprador','vendedor','inquilino','propietario','inversor','interesado'] as ClientType[]).map(t => {
                     const selected = (formData.types && formData.types.length > 0) ? formData.types.includes(t) : formData.type === t;
@@ -1147,7 +1147,7 @@ export default function Clients() {
                           "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
                           selected
                             ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
+                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300"
                         )}
                         onClick={() => {
                           const currentTypes = (formData.types && formData.types.length > 0) ? [...formData.types] : (formData.type ? [formData.type] : []);
@@ -1167,18 +1167,18 @@ export default function Clients() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Profesión</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Profesión</label>
                 <input 
                   type="text" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.profession || ''}
                   onChange={e => setFormData({...formData, profession: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Estado</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
                 <select 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.status}
                   onChange={e => setFormData({...formData, status: e.target.value as ClientStatus})}
                 >
@@ -1192,9 +1192,9 @@ export default function Clients() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Origen</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Origen</label>
                 <select 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.origin}
                   onChange={e => setFormData({...formData, origin: e.target.value as ClientOrigin})}
                 >
@@ -1211,7 +1211,7 @@ export default function Clients() {
               </div>
               {(formData.origin === 'Referido') && (
                 <div className="md:col-span-2 space-y-3">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Referido por colega</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Referido por colega</label>
                   {!showNewColleagueForm ? (
                     <>
                       <SearchableSelect
@@ -1237,40 +1237,40 @@ export default function Clients() {
                         <input
                           type="text"
                           placeholder="Nombre y apellido *"
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                           value={newColleagueName}
                           onChange={e => setNewColleagueName(e.target.value)}
                         />
                         <input
                           type="text"
                           placeholder="Oficina"
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                           value={newColleagueOffice}
                           onChange={e => setNewColleagueOffice(e.target.value)}
                         />
                       </div>
                       <div className="flex gap-2">
                         <button type="button" className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={() => { if (!newColleagueName.trim()) { showToast('El nombre es obligatorio', 'error'); return; } setShowNewColleagueForm(false); }}>Listo</button>
-                        <button type="button" className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-700" onClick={() => { setShowNewColleagueForm(false); setNewColleagueName(''); setNewColleagueOffice(''); }}>Cancelar</button>
+                        <button type="button" className="px-3 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300" onClick={() => { setShowNewColleagueForm(false); setNewColleagueName(''); setNewColleagueOffice(''); }}>Cancelar</button>
                       </div>
                     </div>
                   )}
                 </div>
               )}
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Último Contacto</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Último Contacto</label>
                 <input 
                   type="date" 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.lastContact || ''}
                   onChange={e => setFormData({...formData, lastContact: e.target.value})}
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-gray-700 mb-1">Notas</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Notas</label>
                 <textarea 
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.notes || ''}
                   onChange={e => setFormData({...formData, notes: e.target.value})}
                   onKeyDown={e => handleTextareaFormatKeyDown(e, (val) => setFormData({...formData, notes: val}))}
@@ -1299,14 +1299,14 @@ export default function Clients() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row gap-4 justify-between">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4 justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input 
               type="text" 
               placeholder="Buscar por nombre, teléfono o email..." 
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -1327,12 +1327,12 @@ export default function Clients() {
         </div>
 
         {showFilters && (
-          <div className="p-4 bg-gray-50 border-b border-gray-100">
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tipo</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterType}
                   onChange={e => setFilterType(e.target.value)}
                 >
@@ -1346,9 +1346,9 @@ export default function Clients() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Estado</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterStatus}
                   onChange={e => setFilterStatus(e.target.value)}
                 >
@@ -1363,9 +1363,9 @@ export default function Clients() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Origen</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Origen</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterOrigin}
                   onChange={e => setFilterOrigin(e.target.value)}
                 >
@@ -1382,19 +1382,19 @@ export default function Clients() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Zona de Interés</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Zona de Interés</label>
                 <input
                   type="text"
                   placeholder="Filtrar por zona..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterZone}
                   onChange={e => setFilterZone(e.target.value)}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Operaciones</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Operaciones</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterHasOperation === null ? '' : filterHasOperation ? 'si' : 'no'}
                   onChange={e => {
                     const val = e.target.value;
@@ -1407,9 +1407,9 @@ export default function Clients() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Tareas Pendientes</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tareas Pendientes</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterHasPendingTasks === null ? '' : filterHasPendingTasks ? 'si' : 'no'}
                   onChange={e => {
                     const val = e.target.value;
@@ -1422,9 +1422,9 @@ export default function Clients() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Orden</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Orden</label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={sortName}
                   onChange={e => setSortName(e.target.value as 'asc' | 'desc')}
                 >
@@ -1457,15 +1457,15 @@ export default function Clients() {
           {filteredClients.map((client) => (
             <div 
               key={client.id} 
-              className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer group"
+              className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:bg-slate-800/50 transition-colors cursor-pointer group"
               onClick={() => navigate(`/clientes/${client.id}`)}
             >
               <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 text-sm font-bold flex-shrink-0">
                 {client.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{client.name}</p>
-                <p className="text-xs text-gray-500 flex items-center gap-3 mt-0.5">
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 transition-colors">{client.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-3 mt-0.5">
                   <span className="flex items-center"><Phone size={12} className="mr-1" />{client.phone}</span>
                   <button
                     className="flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 rounded px-1 transition-colors"
@@ -1499,7 +1499,7 @@ export default function Clients() {
                 )}
               </div>
               <button
-                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mr-1"
+                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mr-1"
                 onClick={e => {
                   e.stopPropagation();
                   openRelations('client', client.id);
@@ -1508,7 +1508,7 @@ export default function Clients() {
               >
                 <Link2 size={14} />
               </button>
-              <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
+              <ChevronRight size={16} className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:text-slate-400 transition-colors" />
             </div>
           ))}
         </div>
@@ -1516,7 +1516,7 @@ export default function Clients() {
         {filteredClients.length === 0 && (
           <div className="py-20 text-center">
             <Users size={48} className="mx-auto text-gray-200 mb-4" />
-            <p className="text-gray-500 font-medium">
+            <p className="text-slate-500 dark:text-slate-400 font-medium">
               {searchTerm || filterType || filterStatus || filterOrigin || filterZone || filterHasOperation !== null || filterHasPendingTasks !== null
                 ? 'No se encontraron clientes con los filtros actuales.'
                 : 'No hay clientes cargados.'}

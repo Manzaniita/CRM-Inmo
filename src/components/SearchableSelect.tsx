@@ -74,12 +74,12 @@ export default function SearchableSelect({
   return (
     <div ref={containerRef} className="relative">
       {label && (
-        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+        <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
           {label}
         </label>
       )}
       <div
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm cursor-pointer outline-none focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm cursor-pointer outline-none focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white dark:bg-slate-800 dark:focus-within:bg-slate-800 transition-colors"
         onClick={() => {
           setIsOpen(!isOpen);
           if (!isOpen) setTimeout(() => inputRef.current?.focus(), 50);
@@ -87,22 +87,22 @@ export default function SearchableSelect({
       >
         <div className="flex-1 min-w-0">
           {selectedOption ? (
-            <span className="font-medium text-gray-900 truncate block">{selectedOption.label}</span>
+            <span className="font-medium text-slate-900 dark:text-slate-100 truncate block">{selectedOption.label}</span>
           ) : (
-            <span className="text-gray-400">{placeholder}</span>
+            <span className="text-slate-400 dark:text-slate-500">{placeholder}</span>
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0 ml-2">
           {allowEmpty && value && (
             <button
               onClick={handleClear}
-              className="p-0.5 hover:bg-gray-200 rounded-full text-gray-400"
+              className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400 dark:text-slate-500"
               tabIndex={-1}
             >
               <X size={14} />
             </button>
           )}
-          <ChevronDown size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown size={16} className={`text-slate-400 dark:text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </div>
       </div>
 
@@ -110,7 +110,7 @@ export default function SearchableSelect({
         <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg overflow-hidden">
           <div className="p-2 border-b border-slate-100 dark:border-slate-800">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 ref={inputRef}
                 type="text"
