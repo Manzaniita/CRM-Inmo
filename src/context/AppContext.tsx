@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
+import { supabase } from '../lib/supabase';
 import {
   Client, Property, PropertyStatus, CalendarEvent, Task, Sale, Rental, Document,
   WaitingRoomEntry, Buyer, ReferredColleague, ActivityLog
@@ -48,38 +49,45 @@ interface AppContextType {
   referredColleagues: ReferredColleague[];
   activityLogs: ActivityLog[];
 
+  // Auth / Cloud
+  user: any;
+  session: any;
+  isCloudReady: boolean;
+  syncLocalToCloud: () => Promise<void>;
+  signOut: () => Promise<void>;
+
   showToast: (message: string, type: ToastType) => void;
-  addClient: (client: Client) => void;
-  updateClient: (client: Client) => void;
-  addProperty: (property: Property) => void;
-  updateProperty: (property: Property) => void;
-  addTask: (task: Task) => void;
-  updateTask: (task: Task) => void;
-  completeTask: (taskId: string) => void;
-  deleteTask: (taskId: string) => void;
-  addEvent: (event: CalendarEvent) => void;
-  updateEvent: (event: CalendarEvent) => void;
-  completeEvent: (eventId: string) => void;
-  cancelEvent: (eventId: string) => void;
-  deleteEvent: (eventId: string) => void;
-  addSale: (sale: Sale) => void;
-  updateSale: (sale: Sale) => void;
-  deleteSale: (saleId: string) => void;
-  addRental: (rental: Rental) => void;
-  updateRental: (rental: Rental) => void;
-  deleteRental: (rentalId: string) => void;
-  addDocument: (doc: Document) => void;
-  updateDocument: (doc: Document) => void;
-  deleteDocument: (docId: string) => void;
+  addClient: (client: Client) => Promise<void>;
+  updateClient: (client: Client) => Promise<void>;
+  addProperty: (property: Property) => Promise<void>;
+  updateProperty: (property: Property) => Promise<void>;
+  addTask: (task: Task) => Promise<void>;
+  updateTask: (task: Task) => Promise<void>;
+  completeTask: (taskId: string) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
+  addEvent: (event: CalendarEvent) => Promise<void>;
+  updateEvent: (event: CalendarEvent) => Promise<void>;
+  completeEvent: (eventId: string) => Promise<void>;
+  cancelEvent: (eventId: string) => Promise<void>;
+  deleteEvent: (eventId: string) => Promise<void>;
+  addSale: (sale: Sale) => Promise<void>;
+  updateSale: (sale: Sale) => Promise<void>;
+  deleteSale: (saleId: string) => Promise<void>;
+  addRental: (rental: Rental) => Promise<void>;
+  updateRental: (rental: Rental) => Promise<void>;
+  deleteRental: (rentalId: string) => Promise<void>;
+  addDocument: (doc: Document) => Promise<void>;
+  updateDocument: (doc: Document) => Promise<void>;
+  deleteDocument: (docId: string) => Promise<void>;
   addWaitingRoomEntry: (entry: WaitingRoomEntry) => void;
   updateWaitingRoomEntry: (entry: WaitingRoomEntry) => void;
   deleteWaitingRoomEntry: (entryId: string) => void;
   addBuyer: (buyer: Buyer) => void;
   updateBuyer: (buyer: Buyer) => void;
   deleteBuyer: (buyerId: string) => void;
-  addReferredColleague: (colleague: ReferredColleague) => void;
-  updateReferredColleague: (colleague: ReferredColleague) => void;
-  deleteReferredColleague: (colleagueId: string) => void;
+  addReferredColleague: (colleague: ReferredColleague) => Promise<void>;
+  updateReferredColleague: (colleague: ReferredColleague) => Promise<void>;
+  deleteReferredColleague: (colleagueId: string) => Promise<void>;
   resetData: () => void;
   exportData: () => void;
   importData: (jsonData: string) => boolean;
@@ -101,10 +109,46 @@ const STORAGE_KEYS = {
   PROFILE: 'estatecrm_profile'
 };
 
+// ---- Mock ID filter ----
+const MOCK_IDS = new Set([
+  ...MOCK_CLIENTS.map(c => c.id),
+  ...MOCK_PROPERTIES.map(p => p.id),
+  ...MOCK_EVENTS.map(e => e.id),
+  ...MOCK_TASKS.map(t => t.id),
+  ...MOCK_SALES.map(s => s.id),
+  ...MOCK_RENTALS.map(r => r.id),
+  ...MOCK_DOCUMENTS.map(d => d.id),
+]);
+
+function isMockId(id: string): boolean {
+  return MOCK_IDS.has(id);
+}
+
+// ---- Supabase helpers ----
+function cleanForSupabase<T extends Record<string, any>>(obj: T, userId: string): Record<string, any> {
+  const cleaned: Record<string, any> = { userId };
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
+
+function handleSupabaseError(error: any, label: string, showToastFn: (m: string, t: ToastType) => void) {
+  console.error(`[EstateCRM Supabase] ${label}:`, error);
+  showToastFn(`Error de sincronización: ${label}`, 'error');
+}
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  // Initialize state from localStorage or MOCK_DATA
+  // ---- Auth state ----
+  const [session, setSession] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [isCloudReady, setIsCloudReady] = useState(false);
+
+  // ---- Entity state (initialized from localStorage or mock) ----
   const [clients, setClients] = useState<Client[]>(() => loadFromStorage(STORAGE_KEYS.CLIENTS, MOCK_CLIENTS));
   const [properties, setProperties] = useState<Property[]>(() => loadFromStorage(STORAGE_KEYS.PROPERTIES, MOCK_PROPERTIES));
   const [events, setEvents] = useState<CalendarEvent[]>(() => loadFromStorage(STORAGE_KEYS.EVENTS, MOCK_EVENTS));
@@ -142,6 +186,127 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const showToast = useCallback((message: string, type: ToastType) => setToast({ message, type }), []);
+
+  // ---- Auth listener ----
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    setIsCloudReady(false);
+    showToast('Sesión cerrada', 'info');
+  }, [showToast]);
+
+  // ---- Load from Supabase when authenticated ----
+  const loadAllFromSupabase = useCallback(async () => {
+    if (!user) return;
+    try {
+      const [clientsRes, propertiesRes, eventsRes, tasksRes, salesRes, colleaguesRes, logsRes, profileRes] = await Promise.all([
+        supabase.from('clients').select('*').eq('userId', user.id),
+        supabase.from('properties').select('*').eq('userId', user.id),
+        supabase.from('events').select('*').eq('userId', user.id),
+        supabase.from('tasks').select('*').eq('userId', user.id),
+        supabase.from('sales').select('*').eq('userId', user.id),
+        supabase.from('referred_colleagues').select('*').eq('userId', user.id),
+        supabase.from('activity_logs').select('*').eq('userId', user.id).order('createdAt', { ascending: false }).limit(200),
+        supabase.from('profiles').select('*').eq('userId', user.id).single()
+      ]);
+
+      if (clientsRes.data) setClients(clientsRes.data as Client[]);
+      if (propertiesRes.data) setProperties(propertiesRes.data as Property[]);
+      if (eventsRes.data) setEvents(eventsRes.data as CalendarEvent[]);
+      if (tasksRes.data) setTasks((tasksRes.data as Task[]).map(t => ({ ...t, relatedEntities: t.relatedEntities ?? [] })));
+      if (salesRes.data) {
+        setSales((salesRes.data as Sale[]).map(s => ({
+          ...s,
+          operationStatus: s.operationStatus || 'activa',
+          isCollected: s.isCollected ?? false,
+          montoEscritura: typeof s.montoEscritura === 'number' ? String(s.montoEscritura) : s.montoEscritura
+        })));
+      }
+      if (colleaguesRes.data) setReferredColleagues((colleaguesRes.data as ReferredColleague[]).map(c => ({ ...c, referredClientIds: c.referredClientIds ?? [] })));
+      if (logsRes.data) setActivityLogs(logsRes.data as ActivityLog[]);
+      if (profileRes.data) {
+        const p = profileRes.data as any;
+        setProfile({
+          name: p.name ?? profile.name,
+          email: p.email ?? profile.email,
+          phone: p.phone ?? profile.phone,
+          license: p.license ?? profile.license,
+          templateProperty: p.templateProperty ?? profile.templateProperty,
+          templateClient: p.templateClient ?? profile.templateClient,
+          templateBuyer: p.templateBuyer ?? profile.templateBuyer,
+        });
+      }
+      setIsCloudReady(true);
+    } catch (e) {
+      console.error('[EstateCRM] Error loading from Supabase:', e);
+      setIsCloudReady(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadAllFromSupabase();
+    } else {
+      setIsCloudReady(false);
+    }
+  }, [user, loadAllFromSupabase]);
+
+  // ---- Sync local to cloud ----
+  const syncLocalToCloud = useCallback(async () => {
+    if (!user) {
+      showToast('Debes iniciar sesión para sincronizar', 'warning');
+      return;
+    }
+    const syncedFlag = 'estatecrm_cloud_synced';
+    if (localStorage.getItem(syncedFlag)) return;
+
+    const localClients = loadFromStorage<Client[]>(STORAGE_KEYS.CLIENTS, []).filter(c => !isMockId(c.id));
+    const localProperties = loadFromStorage<Property[]>(STORAGE_KEYS.PROPERTIES, []).filter(p => !isMockId(p.id));
+    const localEvents = loadFromStorage<CalendarEvent[]>(STORAGE_KEYS.EVENTS, []).filter(e => !isMockId(e.id));
+    const localTasks = loadFromStorage<Task[]>(STORAGE_KEYS.TASKS, []).filter(t => !isMockId(t.id));
+    const localSales = loadFromStorage<Sale[]>(STORAGE_KEYS.SALES, []).filter(s => !isMockId(s.id));
+    const localColleagues = loadFromStorage<ReferredColleague[]>(STORAGE_KEYS.REFERRED_COLLEAGUES, []).filter(c => !isMockId(c.id));
+    const localLogs = loadFromStorage<ActivityLog[]>(STORAGE_KEYS.ACTIVITY_LOGS, []).filter(l => !isMockId(l.id));
+
+    try {
+      if (localClients.length) await supabase.from('clients').upsert(localClients.map(c => cleanForSupabase(c, user.id)));
+      if (localProperties.length) await supabase.from('properties').upsert(localProperties.map(p => cleanForSupabase(p, user.id)));
+      if (localEvents.length) await supabase.from('events').upsert(localEvents.map(e => cleanForSupabase(e, user.id)));
+      if (localTasks.length) await supabase.from('tasks').upsert(localTasks.map(t => cleanForSupabase(t, user.id)));
+      if (localSales.length) await supabase.from('sales').upsert(localSales.map(s => cleanForSupabase(s, user.id)));
+      if (localColleagues.length) await supabase.from('referred_colleagues').upsert(localColleagues.map(c => cleanForSupabase(c, user.id)));
+      if (localLogs.length) await supabase.from('activity_logs').upsert(localLogs.map(l => cleanForSupabase(l, user.id)));
+
+      localStorage.setItem(syncedFlag, 'true');
+      showToast('Datos migrados a la nube correctamente', 'success');
+      await loadAllFromSupabase();
+    } catch (e) {
+      console.error('[EstateCRM] Sync error:', e);
+      showToast('Error al migrar datos a la nube', 'error');
+    }
+  }, [user, showToast, loadAllFromSupabase]);
+
+  // Auto-trigger sync on first auth
+  useEffect(() => {
+    if (user && !isCloudReady) {
+      const t = setTimeout(() => syncLocalToCloud(), 500);
+      return () => clearTimeout(t);
+    }
+  }, [user, isCloudReady, syncLocalToCloud]);
+
 
   // --- Super-Migración: Recuperar datos de immoflow_ a estatecrm_ ---
   useEffect(() => {
@@ -300,9 +465,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createdAt: new Date().toISOString()
     };
     setActivityLogs(prev => [newLog, ...prev].slice(0, 200));
-  }, []);
+    if (user) {
+      supabase.from('activity_logs').insert(cleanForSupabase(newLog, user.id)).then(({ error }) => {
+        if (error) console.error('[EstateCRM] Activity log insert error:', error);
+      });
+    }
+  }, [user]);
 
-  // Persistence Effects
+  // Persistence Effects (localStorage cache always works as fallback)
   useEffect(() => { saveToStorage(STORAGE_KEYS.CLIENTS, clients); }, [clients]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.PROPERTIES, properties); }, [properties]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.EVENTS, events); }, [events]);
@@ -422,127 +592,192 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [properties, tasks, addActivityLog]);
 
+
   // --- Clients ---
-  const addClient = (client: Client) => {
+  const addClient = async (client: Client) => {
+    if (user) {
+      const { error } = await supabase.from('clients').insert(cleanForSupabase(client, user.id));
+      if (error) handleSupabaseError(error, 'addClient', showToast);
+    }
     setClients(prev => [client, ...prev]);
     addActivityLog({ type: 'client', action: 'created', title: `Cliente creado: ${client.name}`, entityId: client.id });
     showToast('Cliente creado con éxito', 'success');
   };
-  const updateClient = (client: Client) => {
+  const updateClient = async (client: Client) => {
+    if (user) {
+      const { error } = await supabase.from('clients').update(cleanForSupabase(client, user.id)).eq('id', client.id).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'updateClient', showToast);
+    }
     setClients(prev => prev.map(c => c.id === client.id ? client : c));
     addActivityLog({ type: 'client', action: 'updated', title: `Cliente actualizado: ${client.name}`, entityId: client.id });
     showToast('Cliente actualizado', 'success');
   };
 
   // --- Properties ---
-  const addProperty = (property: Property) => {
+  const addProperty = async (property: Property) => {
+    if (user) {
+      const { error } = await supabase.from('properties').insert(cleanForSupabase(property, user.id));
+      if (error) handleSupabaseError(error, 'addProperty', showToast);
+    }
     setProperties(prev => [property, ...prev]);
     addActivityLog({ type: 'property', action: 'created', title: `Propiedad creada: ${property.title}`, entityId: property.id });
     showToast('Propiedad añadida', 'success');
   };
-  const updateProperty = (property: Property) => {
+  const updateProperty = async (property: Property) => {
+    if (user) {
+      const { error } = await supabase.from('properties').update(cleanForSupabase(property, user.id)).eq('id', property.id).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'updateProperty', showToast);
+    }
     setProperties(prev => prev.map(p => p.id === property.id ? property : p));
     addActivityLog({ type: 'property', action: 'updated', title: `Propiedad actualizada: ${property.title}`, entityId: property.id });
     showToast('Propiedad actualizada', 'success');
   };
 
   // --- Tasks ---
-  const addTask = (task: Task) => {
+  const addTask = async (task: Task) => {
+    if (user) {
+      const { error } = await supabase.from('tasks').insert(cleanForSupabase(task, user.id));
+      if (error) handleSupabaseError(error, 'addTask', showToast);
+    }
     setTasks(prev => [task, ...prev]);
     addActivityLog({ type: 'task', action: 'created', title: `Tarea creada: ${task.title}`, entityId: task.id });
     showToast('Tarea creada', 'success');
   };
-  const updateTask = (task: Task) => {
+  const updateTask = async (task: Task) => {
+    if (user) {
+      const { error } = await supabase.from('tasks').update(cleanForSupabase(task, user.id)).eq('id', task.id).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'updateTask', showToast);
+    }
     setTasks(prev => prev.map(t => t.id === task.id ? task : t));
     addActivityLog({ type: 'task', action: 'updated', title: `Tarea actualizada: ${task.title}`, entityId: task.id });
     showToast('Tarea actualizada', 'success');
   };
-  const completeTask = (taskId: string) => {
+  const completeTask = async (taskId: string) => {
+    if (user) {
+      const { error } = await supabase.from('tasks').update({ status: 'completada' }).eq('id', taskId).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'completeTask', showToast);
+    }
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completada' } : t));
     showToast('Tarea completada ✔️', 'success');
   };
-  const deleteTask = (taskId: string) => {
+  const deleteTask = async (taskId: string) => {
+    if (user) {
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'deleteTask', showToast);
+    }
     setTasks(prev => prev.filter(t => t.id !== taskId));
     showToast('Tarea eliminada', 'info');
   };
 
   // --- Events ---
-  const addEvent = (event: CalendarEvent) => {
+  const addEvent = async (event: CalendarEvent) => {
+    if (user) {
+      const { error } = await supabase.from('events').insert(cleanForSupabase(event, user.id));
+      if (error) handleSupabaseError(error, 'addEvent', showToast);
+    }
     setEvents(prev => [event, ...prev]);
     addActivityLog({ type: 'event', action: 'created', title: `Evento creado: ${event.title}`, entityId: event.id });
     showToast('Evento agendado', 'success');
   };
-  const updateEvent = (event: CalendarEvent) => {
+  const updateEvent = async (event: CalendarEvent) => {
+    if (user) {
+      const { error } = await supabase.from('events').update(cleanForSupabase(event, user.id)).eq('id', event.id).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'updateEvent', showToast);
+    }
     setEvents(prev => prev.map(e => e.id === event.id ? event : e));
     addActivityLog({ type: 'event', action: 'updated', title: `Evento actualizado: ${event.title}`, entityId: event.id });
     showToast('Evento actualizado', 'success');
   };
-  const completeEvent = (eventId: string) => {
+  const completeEvent = async (eventId: string) => {
+    if (user) {
+      const { error } = await supabase.from('events').update({ status: 'realizado' }).eq('id', eventId).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'completeEvent', showToast);
+    }
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: 'realizado' } : e));
     showToast('Evento marcado como realizado', 'success');
   };
-  const cancelEvent = (eventId: string) => {
+  const cancelEvent = async (eventId: string) => {
+    if (user) {
+      const { error } = await supabase.from('events').update({ status: 'cancelado' }).eq('id', eventId).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'cancelEvent', showToast);
+    }
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: 'cancelado' } : e));
     showToast('Evento cancelado', 'warning');
   };
-  const deleteEvent = (eventId: string) => {
+  const deleteEvent = async (eventId: string) => {
+    if (user) {
+      const { error } = await supabase.from('events').delete().eq('id', eventId).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'deleteEvent', showToast);
+    }
     setEvents(prev => prev.filter(e => e.id !== eventId));
     showToast('Evento eliminado', 'info');
   };
 
   // --- Sales ---
-  const addSale = (sale: Sale) => {
+  const addSale = async (sale: Sale) => {
+    if (user) {
+      const { error } = await supabase.from('sales').insert(cleanForSupabase(sale, user.id));
+      if (error) handleSupabaseError(error, 'addSale', showToast);
+    }
     setSales(prev => [sale, ...prev]);
     handleSaleStatusChange(sale);
     addActivityLog({ type: 'sale', action: 'created', title: `Venta registrada: ${sale.nombre || sale.id}`, entityId: sale.id });
     showToast('Operación de venta registrada', 'success');
   };
-  const updateSale = (sale: Sale) => {
+  const updateSale = async (sale: Sale) => {
+    if (user) {
+      const { error } = await supabase.from('sales').update(cleanForSupabase(sale, user.id)).eq('id', sale.id).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'updateSale', showToast);
+    }
     setSales(prev => prev.map(s => s.id === sale.id ? sale : s));
     handleSaleStatusChange(sale);
     addActivityLog({ type: 'sale', action: 'updated', title: `Venta actualizada: ${sale.nombre || sale.id}`, entityId: sale.id });
     showToast('Venta actualizada', 'success');
   };
-  const deleteSale = (saleId: string) => {
+  const deleteSale = async (saleId: string) => {
+    if (user) {
+      const { error } = await supabase.from('sales').delete().eq('id', saleId).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'deleteSale', showToast);
+    }
     setSales(prev => prev.filter(s => s.id !== saleId));
     showToast('Venta eliminada', 'info');
   };
 
-  // --- Rentals ---
-  const addRental = (rental: Rental) => {
+  // --- Rentals (localStorage only, not in cloud schema) ---
+  const addRental = async (rental: Rental) => {
     setRentals(prev => [rental, ...prev]);
     handleRentalStatusChange(rental);
     addActivityLog({ type: 'rental', action: 'created', title: `Alquiler registrado: ${rental.id}`, entityId: rental.id });
     showToast('Operación de alquiler registrada', 'success');
   };
-  const updateRental = (rental: Rental) => {
+  const updateRental = async (rental: Rental) => {
     setRentals(prev => prev.map(r => r.id === rental.id ? rental : r));
     handleRentalStatusChange(rental);
     addActivityLog({ type: 'rental', action: 'updated', title: `Alquiler actualizado: ${rental.id}`, entityId: rental.id });
     showToast('Alquiler actualizado', 'success');
   };
-  const deleteRental = (rentalId: string) => {
+  const deleteRental = async (rentalId: string) => {
     setRentals(prev => prev.filter(r => r.id !== rentalId));
     showToast('Alquiler eliminado', 'info');
   };
 
-  // --- Documents ---
-  const addDocument = (doc: Document) => {
+  // --- Documents (localStorage only) ---
+  const addDocument = async (doc: Document) => {
     setDocuments(prev => [doc, ...prev]);
     addActivityLog({ type: 'document', action: 'created', title: `Documento añadido: ${doc.name}`, entityId: doc.id });
     showToast('Documento añadido', 'success');
   };
-  const updateDocument = (doc: Document) => {
+  const updateDocument = async (doc: Document) => {
     setDocuments(prev => prev.map(d => d.id === doc.id ? doc : d));
     addActivityLog({ type: 'document', action: 'updated', title: `Documento actualizado: ${doc.name}`, entityId: doc.id });
     showToast('Documento actualizado', 'success');
   };
-  const deleteDocument = (docId: string) => {
+  const deleteDocument = async (docId: string) => {
     setDocuments(prev => prev.filter(d => d.id !== docId));
     showToast('Documento eliminado', 'info');
   };
 
-  // --- Waiting Room ---
+  // --- Waiting Room (localStorage only) ---
   const addWaitingRoomEntry = (entry: WaitingRoomEntry) => {
     setWaitingRoom(prev => [entry, ...prev]);
     addActivityLog({ type: 'waiting_room', action: 'created', title: `Sala de espera: ${entry.nombre}`, entityId: entry.id });
@@ -558,7 +793,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showToast('Entrada eliminada', 'info');
   };
 
-  // --- Buyers ---
+  // --- Buyers (localStorage only) ---
   const addBuyer = (buyer: Buyer) => {
     setBuyers(prev => [buyer, ...prev]);
     addActivityLog({ type: 'buyer', action: 'created', title: `Comprador añadido: ${buyer.nombre}`, entityId: buyer.id });
@@ -575,29 +810,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   // --- Referred Colleagues ---
-  const addReferredColleague = (colleague: ReferredColleague) => {
+  const addReferredColleague = async (colleague: ReferredColleague) => {
+    if (user) {
+      const { error } = await supabase.from('referred_colleagues').insert(cleanForSupabase(colleague, user.id));
+      if (error) handleSupabaseError(error, 'addReferredColleague', showToast);
+    }
     setReferredColleagues(prev => [colleague, ...prev]);
     addActivityLog({ type: 'colleague', action: 'created', title: `Colega añadido: ${colleague.nombreApellido}`, entityId: colleague.id });
     showToast('Colega referido añadido', 'success');
   };
-  const updateReferredColleague = (colleague: ReferredColleague) => {
+  const updateReferredColleague = async (colleague: ReferredColleague) => {
+    if (user) {
+      const { error } = await supabase.from('referred_colleagues').update(cleanForSupabase(colleague, user.id)).eq('id', colleague.id).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'updateReferredColleague', showToast);
+    }
     setReferredColleagues(prev => prev.map(c => c.id === colleague.id ? colleague : c));
     addActivityLog({ type: 'colleague', action: 'updated', title: `Colega actualizado: ${colleague.nombreApellido}`, entityId: colleague.id });
     showToast('Colega actualizado', 'success');
   };
-  const deleteReferredColleague = (colleagueId: string) => {
+  const deleteReferredColleague = async (colleagueId: string) => {
+    if (user) {
+      const { error } = await supabase.from('referred_colleagues').delete().eq('id', colleagueId).eq('userId', user.id);
+      if (error) handleSupabaseError(error, 'deleteReferredColleague', showToast);
+    }
     setReferredColleagues(prev => prev.filter(c => c.id !== colleagueId));
     showToast('Colega eliminado', 'info');
   };
 
-  const updateProfile = (newProfile: Profile) => {
+  const updateProfile = async (newProfile: Profile) => {
+    if (user) {
+      const { error } = await supabase.from('profiles').upsert({
+        userId: user.id,
+        name: newProfile.name,
+        email: newProfile.email,
+        phone: newProfile.phone,
+        license: newProfile.license,
+        templateProperty: newProfile.templateProperty,
+        templateClient: newProfile.templateClient,
+        templateBuyer: newProfile.templateBuyer,
+      });
+      if (error) handleSupabaseError(error, 'updateProfile', showToast);
+    }
     setProfile(newProfile);
     showToast('Perfil guardado correctamente', 'success');
   };
 
+
   // --- Utilities ---
   const resetData = () => {
     Object.values(STORAGE_KEYS).forEach(key => removeFromStorage(key));
+    localStorage.removeItem('estatecrm_cloud_synced');
+    localStorage.removeItem('estatecrm_super_migration_v1_done');
     window.location.reload();
   };
 
@@ -745,6 +1008,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       referredColleagues,
       activityLogs,
       profile,
+      user,
+      session,
+      isCloudReady,
+      syncLocalToCloud,
+      signOut,
       updateProfile,
       showToast,
       addClient,

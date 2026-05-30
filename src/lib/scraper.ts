@@ -433,7 +433,7 @@ function applyPlainTextHeuristics(text: string, result: ScrapedData): void {
   if (!result.surface) {
     result.surface = extractNumber(t, [
       /(\d[\d.,]*)\s*m[²2]\b/i,
-      /(\d[\d.,]*)\s*metros?\s*cua/d/i,
+      /(\d[\d.,]*)\s*metros?\s*cuadrados?/i,
       /(\d[\d.,]*)\s*sqm/i,
     ]);
   }
@@ -663,7 +663,7 @@ export function scrapeProperty(html: string, sourceUrl: string): ScrapedData {
     if (!result.surface) {
       result.surface = extractNumber(fullText, [
         /(\d[\d.,]*)\s*m[²2]\b/i,
-        /(\d[\d.,]*)\s*metros?\s*cua/d/i,
+        /(\d[\d.,]*)\s*metros?\s*cuadrados?/i,
         /(\d[\d.,]*)\s*sqm/i,
       ]);
     }
