@@ -79,7 +79,7 @@ export default function SearchableSelect({
         </label>
       )}
       <div
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm cursor-pointer outline-none focus-within:ring-2 focus-within:ring-blue-500/20"
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm cursor-pointer outline-none focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors"
         onClick={() => {
           setIsOpen(!isOpen);
           if (!isOpen) setTimeout(() => inputRef.current?.focus(), 50);
@@ -107,17 +107,17 @@ export default function SearchableSelect({
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-          <div className="p-2 border-b border-gray-100">
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg overflow-hidden">
+          <div className="p-2 border-b border-slate-100 dark:border-slate-800">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 ref={inputRef}
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar..."
-                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 dark:text-slate-100"
                 onClick={e => e.stopPropagation()}
               />
             </div>
@@ -126,7 +126,7 @@ export default function SearchableSelect({
             {allowEmpty && (
               <button
                 type="button"
-                className="w-full px-4 py-2.5 text-left text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                className="w-full px-4 py-2.5 text-left text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 onClick={() => handleSelect(emptyValue)}
               >
                 {emptyLabel}
@@ -136,19 +136,19 @@ export default function SearchableSelect({
               <button
                 key={opt.value}
                 type="button"
-                className={`w-full px-4 py-2.5 text-left hover:bg-blue-50 transition-colors ${
-                  opt.value === value ? 'bg-blue-50 text-blue-700' : 'text-gray-900'
+                className={`w-full px-4 py-2.5 text-left hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors ${
+                  opt.value === value ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
                 }`}
                 onClick={() => handleSelect(opt.value)}
               >
                 <span className="text-sm font-medium block truncate">{opt.label}</span>
                 {opt.subtitle && (
-                  <span className="text-xs text-gray-400 block truncate">{opt.subtitle}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500 block truncate">{opt.subtitle}</span>
                 )}
               </button>
             ))}
             {filteredOptions.length === 0 && (
-              <div className="px-4 py-8 text-center text-sm text-gray-400">
+              <div className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
                 Sin resultados
               </div>
             )}

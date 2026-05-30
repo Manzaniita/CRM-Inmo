@@ -646,13 +646,13 @@ export default function Clients() {
         {/* Header Navigation */}
         <div className="flex items-center justify-between mb-6">
           <motion.button
-            whileHover={{ x: -4 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ x: -3 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-accent dark:hover:text-dark-accent hover:bg-accent/5 dark:hover:bg-dark-accent/10 transition-colors"
+            title="Volver al Panel Principal"
+            className="group flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-accent dark:hover:text-dark-accent hover:bg-accent/10 dark:hover:bg-dark-accent/10 transition-colors"
           >
-            <ArrowLeft size={18} strokeWidth={1.5} className="transition-transform group-hover:-translate-x-1" />
-            Volver al Panel Principal
+            <ArrowLeft size={18} strokeWidth={1.5} className="transition-transform group-hover:-translate-x-0.5" />
           </motion.button>
           <Button variant="outline" size="sm" onClick={() => handleOpenForm(selectedClient)}>
             <Plus size={16} className="mr-1" strokeWidth={1.5} /> Editar
@@ -1291,8 +1291,8 @@ export default function Clients() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-          <p className="text-gray-500">Gestión de la cartera de clientes.</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Clientes</h1>
+          <p className="text-slate-500">Gestión de la cartera de clientes.</p>
         </div>
         <Button variant="primary" onClick={() => handleOpenForm()}>
           <UserPlus size={20} className="mr-2" /> Nuevo Cliente

@@ -347,8 +347,8 @@ export default function Agenda() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Agenda</h1>
-          <p className="text-gray-500">Administra tus visitas, reuniones y recordatorios.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Agenda</h1>
+          <p className="text-slate-500 dark:text-slate-400">Administra tus visitas, reuniones y recordatorios.</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex bg-white rounded-lg p-1 border border-gray-200 mr-2">
@@ -374,15 +374,15 @@ export default function Agenda() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <Card className="p-0 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-              <button onClick={goToPrevMonth} className="p-1 hover:bg-gray-200 rounded-lg text-gray-500"><ChevronLeft size={16} /></button>
-              <span className="font-bold text-sm text-gray-900 capitalize">{monthLabel}</span>
-              <button onClick={goToNextMonth} className="p-1 hover:bg-gray-200 rounded-lg text-gray-500"><ChevronRight size={16} /></button>
+            <div className="p-4 border-b border-slate-100/50 dark:border-white/5 flex items-center justify-between">
+              <button onClick={goToPrevMonth} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"><ChevronLeft size={16} /></button>
+              <span className="font-bold text-sm text-slate-900 dark:text-slate-100 capitalize">{monthLabel}</span>
+              <button onClick={goToNextMonth} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"><ChevronRight size={16} /></button>
             </div>
             <div className="px-3 pt-2 pb-1">
               <button
                 onClick={resetToToday}
-                className="w-full text-xs font-bold py-1.5 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+                className="w-full text-xs font-bold py-1.5 rounded-lg border border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
               >
                 Hoy
               </button>
@@ -407,8 +407,8 @@ export default function Agenda() {
                     className={cn(
                       'h-8 flex flex-col items-center justify-center text-xs rounded-lg transition-all font-semibold relative',
                       isSelected ? 'bg-blue-600 text-white shadow-sm' :
-                      isToday ? 'bg-blue-100 text-blue-700 font-black' :
-                      'hover:bg-gray-100 text-gray-700'
+                      isToday ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 font-black' :
+                      'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
                     )}
                   >
                     {day}
@@ -484,8 +484,8 @@ export default function Agenda() {
 
               <div className="space-y-3">
                 {filteredEvents.map(event => (
-                  <div key={event.id} id={`event-row-${event.id}`} className={cn("bg-white p-4 rounded-xl border shadow-sm flex items-start gap-4 hover:border-blue-200 transition-colors group relative", isEventOverdue(event) ? "border-red-300 bg-red-50/40" : "border-gray-200")}>
-                    <div className={cn("flex flex-col items-center justify-center w-14 h-14 text-gray-500 rounded-xl border shrink-0", isEventOverdue(event) ? "bg-red-100 text-red-600 border-red-200" : "bg-gray-50 border-gray-100 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100")}>
+                  <div key={event.id} id={`event-row-${event.id}`} className={cn("bg-white dark:bg-slate-900/50 p-4 rounded-xl border shadow-sm flex items-start gap-4 hover:border-blue-200 dark:hover:border-blue-500/30 transition-colors group relative", isEventOverdue(event) ? "border-l-2 border-l-rose-400 dark:border-l-rose-500 border-slate-200 dark:border-slate-700 shadow-[0_2px_8px_rgba(244,63,94,0.08)]" : "border-slate-200 dark:border-slate-700")}>
+                    <div className={cn("flex flex-col items-center justify-center w-14 h-14 text-slate-500 dark:text-slate-400 rounded-xl border shrink-0", isEventOverdue(event) ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20" : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:border-blue-100 dark:group-hover:border-blue-500/20")}>
                       <span className="text-[10px] font-black uppercase">{event.time}</span>
                       <span className="text-xs font-bold leading-none mt-1">{event.date === todayStr ? 'HOY' : event.date.split('-').slice(1).reverse().join('/')}</span>
                     </div>

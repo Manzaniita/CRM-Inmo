@@ -10,24 +10,24 @@ interface BadgeProps {
 
 export default function Badge({ children, variant = 'gray', size = 'sm', className }: BadgeProps) {
   const variants = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-100',
-    green: 'bg-green-50 text-green-700 border-green-100',
-    orange: 'bg-orange-50 text-orange-700 border-orange-100',
-    red: 'bg-red-50 text-red-700 border-red-100',
-    gray: 'bg-gray-50 text-gray-700 border-gray-100',
-    purple: 'bg-purple-50 text-purple-700 border-purple-100',
-    yellow: 'bg-yellow-50 text-yellow-700 border-yellow-100',
+    blue: 'bg-blue-500/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400 border border-blue-500/10 dark:border-blue-400/10',
+    green: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400 border border-emerald-500/10 dark:border-emerald-400/10',
+    orange: 'bg-amber-500/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-400 border border-amber-500/10 dark:border-amber-400/10',
+    red: 'bg-rose-500/10 text-rose-600 dark:bg-rose-400/10 dark:text-rose-400 border border-rose-500/10 dark:border-rose-400/10',
+    gray: 'bg-slate-500/10 text-slate-600 dark:bg-slate-400/10 dark:text-slate-400 border border-slate-500/10 dark:border-slate-400/10',
+    purple: 'bg-violet-500/10 text-violet-600 dark:bg-violet-400/10 dark:text-violet-400 border border-violet-500/10 dark:border-violet-400/10',
+    yellow: 'bg-yellow-500/10 text-yellow-600 dark:bg-yellow-400/10 dark:text-yellow-400 border border-yellow-500/10 dark:border-yellow-400/10',
   };
 
   const sizes = {
-    xs: 'px-1.5 py-0.5 text-[8px]',
-    sm: 'px-2 py-0.5 text-[10px]',
+    xs: 'px-1.5 py-0.5 text-[10px]',
+    sm: 'px-2 py-0.5 text-[11px]',
     md: 'px-2.5 py-1 text-xs',
   };
 
   return (
     <span className={cn(
-      'inline-flex items-center rounded-full font-semibold border uppercase tracking-wider',
+      'inline-flex items-center rounded-full font-medium tracking-wide',
       variants[variant],
       sizes[size],
       className

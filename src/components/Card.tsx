@@ -16,22 +16,22 @@ export function Card({ children, className, title, subtitle, footer, glow = true
       {...props}
       className={cn(
         'rounded-2xl overflow-hidden transition-all duration-300',
-        'bg-white/70 dark:bg-slate-800/70',
-        'backdrop-blur-xl border border-white/40 dark:border-white/10',
-        'shadow-soft-md dark:shadow-none',
+        'bg-white/80 dark:bg-slate-900/60',
+        'backdrop-blur-xl border border-white/40 dark:border-slate-800',
+        'shadow-[0_10px_25px_-3px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_25px_-3px_rgba(0,0,0,0.25)]',
         glow && 'glow-hover',
         className
       )}
     >
       {(title || subtitle) && (
-        <div className="px-6 py-4 border-b border-slate-100/50 dark:border-white/5">
+        <div className="px-6 py-4 border-b border-slate-100/50 dark:border-slate-800/50">
           {title && <h3 className="font-semibold text-slate-900 dark:text-slate-100">{title}</h3>}
           {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>}
         </div>
       )}
       <div className="px-6 py-4">{children}</div>
       {footer && (
-        <div className="px-6 py-4 bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-100/50 dark:border-white/5">
+        <div className="px-6 py-4 bg-slate-50/50 dark:bg-slate-950/30 border-t border-slate-100/50 dark:border-slate-800/50">
           {footer}
         </div>
       )}

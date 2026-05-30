@@ -979,8 +979,8 @@ export default function Properties() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Propiedades</h1>
-          <p className="text-gray-500">Cartera de propiedades de referencia y captación.</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Propiedades</h1>
+          <p className="text-slate-500">Cartera de propiedades de referencia y captación.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
@@ -1053,7 +1053,7 @@ export default function Properties() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 p-6">
           {filteredProps.map((prop) => {
             const remaining = contractTimeRemaining(prop.contractEndDate);
             const imgSrc = prop.imageUrl || (prop.images && prop.images[0]) || '';
@@ -1174,8 +1174,8 @@ export default function Properties() {
                       document.body
                     )}
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                    <p className="text-white font-black text-lg">{formatCurrency(prop.price, prop.currency)}</p>
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                    <p className="text-white font-black text-lg drop-shadow-sm">{formatCurrency(prop.price, prop.currency)}</p>
                   </div>
                 </div>
                 <div className="p-4">
