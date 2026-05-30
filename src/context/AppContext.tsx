@@ -143,6 +143,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback((message: string, type: ToastType) => setToast({ message, type }), []);
 
+  // --- Migrate old immoflow_ keys to estatecrm_ ---
+  useEffect(() => {
+    const migrateOldData = () => {
+      const oldPrefix = 'immoflow_';
+      const newPrefix = 'estatecrm_';
+      let migrated = false;
+
+      const oldKeys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(oldPrefix)) {
+          oldKeys.push(key);
+        }
+      }
+
+      for (const oldKey of oldKeys) {
+        const newKey = newPrefix + oldKey.slice(oldPrefix.length);
+        const oldValue = localStorage.getItem(oldKey);
+        const newValue = localStorage.getItem(newKey);
+
+        if (oldValue !== null && (newValue === null || newValue === '')) {
+          localStorage.setItem(newKey, oldValue);
+          migrated = true;
+        }
+
+        localStorage.removeItem(oldKey);
+      }
+
+      return migrated;
+    };
+
+    const didMigrate = migrateOldData();
+    if (didMigrate) {
+      window.location.reload();
+    }
+  }, []);
+
   // Activity Log helper
   const addActivityLog = useCallback((log: Omit<ActivityLog, 'id' | 'createdAt'>) => {
     const newLog: ActivityLog = {
