@@ -128,8 +128,8 @@ function isMockId(id: string): boolean {
 }
 
 // ---- Supabase helpers ----
-function cleanForSupabase<T extends Record<string, any>>(obj: T, userId: string): Record<string, any> {
-  const cleaned: Record<string, any> = { user_id: userId };
+function cleanForSupabase(obj: object, userId: string): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = { user_id: userId };
   for (const [key, value] of Object.entries(obj)) {
     if (value !== undefined) {
       cleaned[key] = value;
@@ -138,9 +138,10 @@ function cleanForSupabase<T extends Record<string, any>>(obj: T, userId: string)
   return cleaned;
 }
 
-function handleSupabaseError(error: any, label: string, showToastFn: (m: string, t: ToastType) => void) {
+function handleSupabaseError(error: { message?: string }, label: string, showToastFn: (m: string, t: ToastType) => void) {
   console.error(`[EstateCRM Supabase] ${label}:`, error);
-  showToastFn(`Error de sincronización: ${label}`, 'error');
+  const msg = error?.message || 'Error desconocido';
+  showToastFn(`${label}: ${msg}`, 'error');
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -607,12 +608,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // --- Clients ---
   const addClient = async (client: Client) => {
+    let inserted: Client = client;
     if (user) {
-      const { error } = await supabase.from('clients').insert(cleanForSupabase(client, user.id));
-      if (error) handleSupabaseError(error, 'addClient', showToast);
+      const { data, error } = await supabase.from('clients').insert(cleanForSupabase(client, user.id)).select();
+      if (error) {
+        handleSupabaseError(error, 'addClient', showToast);
+        return;
+      }
+      if (data && data.length > 0) {
+        inserted = data[0] as Client;
+      }
     }
-    setClients(prev => [client, ...prev]);
-    addActivityLog({ type: 'client', action: 'created', title: `Cliente creado: ${client.name}`, entityId: client.id });
+    setClients(prev => [inserted, ...prev]);
+    addActivityLog({ type: 'client', action: 'created', title: `Cliente creado: ${inserted.name}`, entityId: inserted.id });
     showToast('Cliente creado con éxito', 'success');
   };
   const updateClient = async (client: Client) => {
@@ -627,12 +635,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // --- Properties ---
   const addProperty = async (property: Property) => {
+    let inserted: Property = property;
     if (user) {
-      const { error } = await supabase.from('properties').insert(cleanForSupabase(property, user.id));
-      if (error) handleSupabaseError(error, 'addProperty', showToast);
+      const { data, error } = await supabase.from('properties').insert(cleanForSupabase(property, user.id)).select();
+      if (error) {
+        handleSupabaseError(error, 'addProperty', showToast);
+        return;
+      }
+      if (data && data.length > 0) {
+        inserted = data[0] as Property;
+      }
     }
-    setProperties(prev => [property, ...prev]);
-    addActivityLog({ type: 'property', action: 'created', title: `Propiedad creada: ${property.title}`, entityId: property.id });
+    setProperties(prev => [inserted, ...prev]);
+    addActivityLog({ type: 'property', action: 'created', title: `Propiedad creada: ${inserted.title}`, entityId: inserted.id });
     showToast('Propiedad añadida', 'success');
   };
   const updateProperty = async (property: Property) => {
@@ -647,12 +662,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // --- Tasks ---
   const addTask = async (task: Task) => {
+    let inserted: Task = task;
     if (user) {
-      const { error } = await supabase.from('tasks').insert(cleanForSupabase(task, user.id));
-      if (error) handleSupabaseError(error, 'addTask', showToast);
+      const { data, error } = await supabase.from('tasks').insert(cleanForSupabase(task, user.id)).select();
+      if (error) {
+        handleSupabaseError(error, 'addTask', showToast);
+        return;
+      }
+      if (data && data.length > 0) {
+        inserted = data[0] as Task;
+      }
     }
-    setTasks(prev => [task, ...prev]);
-    addActivityLog({ type: 'task', action: 'created', title: `Tarea creada: ${task.title}`, entityId: task.id });
+    setTasks(prev => [inserted, ...prev]);
+    addActivityLog({ type: 'task', action: 'created', title: `Tarea creada: ${inserted.title}`, entityId: inserted.id });
     showToast('Tarea creada', 'success');
   };
   const updateTask = async (task: Task) => {
@@ -683,12 +705,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // --- Events ---
   const addEvent = async (event: CalendarEvent) => {
+    let inserted: CalendarEvent = event;
     if (user) {
-      const { error } = await supabase.from('events').insert(cleanForSupabase(event, user.id));
-      if (error) handleSupabaseError(error, 'addEvent', showToast);
+      const { data, error } = await supabase.from('events').insert(cleanForSupabase(event, user.id)).select();
+      if (error) {
+        handleSupabaseError(error, 'addEvent', showToast);
+        return;
+      }
+      if (data && data.length > 0) {
+        inserted = data[0] as CalendarEvent;
+      }
     }
-    setEvents(prev => [event, ...prev]);
-    addActivityLog({ type: 'event', action: 'created', title: `Evento creado: ${event.title}`, entityId: event.id });
+    setEvents(prev => [inserted, ...prev]);
+    addActivityLog({ type: 'event', action: 'created', title: `Evento creado: ${inserted.title}`, entityId: inserted.id });
     showToast('Evento agendado', 'success');
   };
   const updateEvent = async (event: CalendarEvent) => {
@@ -727,13 +756,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // --- Sales ---
   const addSale = async (sale: Sale) => {
+    let inserted: Sale = sale;
     if (user) {
-      const { error } = await supabase.from('sales').insert(cleanForSupabase(sale, user.id));
-      if (error) handleSupabaseError(error, 'addSale', showToast);
+      const { data, error } = await supabase.from('sales').insert(cleanForSupabase(sale, user.id)).select();
+      if (error) {
+        handleSupabaseError(error, 'addSale', showToast);
+        return;
+      }
+      if (data && data.length > 0) {
+        inserted = data[0] as Sale;
+      }
     }
-    setSales(prev => [sale, ...prev]);
-    handleSaleStatusChange(sale);
-    addActivityLog({ type: 'sale', action: 'created', title: `Venta registrada: ${sale.nombre || sale.id}`, entityId: sale.id });
+    setSales(prev => [inserted, ...prev]);
+    handleSaleStatusChange(inserted);
+    addActivityLog({ type: 'sale', action: 'created', title: `Venta registrada: ${inserted.nombre || inserted.id}`, entityId: inserted.id });
     showToast('Operación de venta registrada', 'success');
   };
   const updateSale = async (sale: Sale) => {
