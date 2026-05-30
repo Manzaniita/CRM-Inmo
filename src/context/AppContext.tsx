@@ -131,7 +131,7 @@ function isMockId(id: string): boolean {
 function cleanForSupabase(obj: object, userId: string): Record<string, unknown> {
   const cleaned: Record<string, unknown> = { user_id: userId };
   for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
+    if (value !== undefined && key !== 'createdAt') {
       cleaned[key] = value;
     }
   }
@@ -223,7 +223,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         supabase.from('tasks').select('*').eq('user_id', user.id),
         supabase.from('sales').select('*').eq('user_id', user.id),
         supabase.from('referred_colleagues').select('*').eq('user_id', user.id),
-        supabase.from('activity_logs').select('*').eq('user_id', user.id).order('createdAt', { ascending: false }).limit(200),
+        supabase.from('activity_logs').select('*').eq('user_id', user.id).limit(200),
         supabase.from('profiles').select('*').eq('user_id', user.id).limit(1)
       ]);
 
@@ -240,21 +240,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })));
       }
       if (colleaguesRes.data) setReferredColleagues((colleaguesRes.data as ReferredColleague[]).map(c => ({ ...c, referredClientIds: c.referredClientIds ?? [] })));
-      if (logsRes.data) setActivityLogs(logsRes.data as ActivityLog[]);
+      if (logsRes.data) setActivityLogs((logsRes.data as ActivityLog[]).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       if (profileRes.data && profileRes.data.length > 0) {
-        const p = profileRes.data[0] as any;
-        setProfile({
-          user_id: p.user_id ?? user.id,
-          name: p.name ?? profile.name,
-          email: p.email ?? profile.email,
-          phone: p.phone ?? profile.phone,
-          license: p.license ?? profile.license,
-          templateProperty: p.templateProperty ?? profile.templateProperty,
-          templateClient: p.templateClient ?? profile.templateClient,
-          templateBuyer: p.templateBuyer ?? profile.templateBuyer,
-          role: p.role ?? 'agent',
-          must_change_password: p.must_change_password ?? false,
-        });
+        const p = profileRes.data[0] as Record<string, unknown>;
+        const newProfile = {
+          user_id: (p.user_id as string) ?? user.id,
+          name: (p.name as string) ?? profile.name,
+          email: (p.email as string) ?? profile.email,
+          phone: (p.phone as string) ?? profile.phone,
+          license: (p.license as string) ?? profile.license,
+          templateProperty: (p.templateProperty as string) ?? profile.templateProperty,
+          templateClient: (p.templateClient as string) ?? profile.templateClient,
+          templateBuyer: (p.templateBuyer as string) ?? profile.templateBuyer,
+          role: (p.role as 'agent' | 'superadmin') ?? 'agent',
+          must_change_password: (p.must_change_password as boolean) ?? false,
+        };
+        setProfile(newProfile);
+        saveToStorage(STORAGE_KEYS.PROFILE, newProfile);
+      } else {
+        console.warn('[EstateCRM] Perfil no encontrado en Supabase. Limpiando caché local.');
+        removeFromStorage(STORAGE_KEYS.PROFILE);
       }
       setIsCloudReady(true);
     } catch (e) {
