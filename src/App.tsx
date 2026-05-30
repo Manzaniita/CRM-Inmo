@@ -41,6 +41,7 @@ import Marketplace from './pages/Marketplace';
 import Reservometro from './pages/Reservometro';
 import EntityRelationsDrawer from './components/EntityRelationsDrawer';
 import LoginPage from './pages/LoginPage';
+import ResetPassword from './pages/ResetPassword';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/dashboard' },
@@ -198,7 +199,7 @@ export default function App() {
     return false;
   });
   const location = useLocation();
-  const { user, session } = useAppContext();
+  const { user, session, profile, isCloudReady } = useAppContext();
   const [authChecking, setAuthChecking] = useState(true);
 
   useEffect(() => {
@@ -229,6 +230,21 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  // Esperar a cargar los datos de la nube antes de decidir la ruta
+  if (!isCloudReady) {
+    return <SplashScreen />;
+  }
+
+  // Si debe cambiar la contraseña, bloquear todo lo demás
+  if (profile?.must_change_password) {
+    return (
+      <Routes>
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="*" element={<Navigate to="/reset-password" replace />} />
       </Routes>
     );
   }
@@ -356,6 +372,7 @@ export default function App() {
               <div key={location.pathname}>
                 <Routes location={location}>
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/login" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
                   <Route path="/clientes" element={<PageTransition><Clients /></PageTransition>} />
                   <Route path="/clientes/:id" element={<PageTransition><Clients /></PageTransition>} />

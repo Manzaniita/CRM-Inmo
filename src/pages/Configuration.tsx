@@ -9,24 +9,92 @@ import {
   AlertTriangle,
   Trash2,
   Database,
-  MessageSquare
+  MessageSquare,
+  Users,
+  Plus,
+  X,
+  Loader2
 } from 'lucide-react';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
 import Badge from '../components/Badge';
 import { cn } from '../lib/utils';
 import { useAppContext, Profile } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 
-type ConfigTabId = 'perfil' | 'plantillas' | 'datos';
+type ConfigTabId = 'perfil' | 'plantillas' | 'datos' | 'usuarios';
 
 export default function Configuration() {
-  const { profile, updateProfile, resetData, exportData, importData, showToast, clearMockData } = useAppContext();
+  const { profile, updateProfile, resetData, exportData, importData, showToast, clearMockData, signOut } = useAppContext();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<ConfigTabId>('perfil');
   const [saveStatus, setSaveStatus] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmClearMock, setConfirmClearMock] = useState(false);
 
   const [form, setForm] = useState<Profile>(profile);
+
+  // Superadmin state
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [newUser, setNewUser] = useState({ email: '', password: '', name: '', role: 'agent' });
+  const [creatingUser, setCreatingUser] = useState(false);
+
+  React.useEffect(() => {
+    if (activeTab === 'usuarios' && profile.role === 'superadmin') {
+      fetchUsers();
+    }
+  }, [activeTab, profile.role]);
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    const { data, error } = await supabase.from('profiles').select('*').order('name');
+    if (!error && data) {
+      setUsersList(data);
+    }
+    setLoadingUsers(false);
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUser.email || !newUser.password || !newUser.name) {
+      showToast('Completá todos los campos', 'warning');
+      return;
+    }
+    setCreatingUser(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: newUser.email,
+      password: newUser.password,
+    });
+
+    if (error) {
+      showToast(error.message, 'error');
+      setCreatingUser(false);
+      return;
+    }
+
+    if (data.user) {
+      // Upsert profile
+      await supabase.from('profiles').upsert({
+        user_id: data.user.id,
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+        must_change_password: true,
+      });
+
+      setShowUserModal(false);
+      setCreatingUser(false);
+      setNewUser({ email: '', password: '', name: '', role: 'agent' });
+      
+      // Auto-login happens here, so we force sign out and redirect
+      await signOut();
+      showToast('Usuario creado con éxito. Por seguridad del sistema, por favor re-ingresa a tu cuenta de Administrador.', 'info');
+      navigate('/login');
+    }
+  };
 
   const handleSave = () => {
     updateProfile(form);
@@ -107,6 +175,14 @@ export default function Configuration() {
             active={activeTab === 'datos'}
             onClick={() => setActiveTab('datos')}
           />
+          {profile.role === 'superadmin' && (
+            <ConfigTab
+              icon={Users}
+              label="Gestión de Usuarios"
+              active={activeTab === 'usuarios'}
+              onClick={() => setActiveTab('usuarios')}
+            />
+          )}
         </div>
 
         {/* Content Area */}
@@ -311,8 +387,128 @@ export default function Configuration() {
               </div>
             </Card>
           )}
+
+          {activeTab === 'usuarios' && profile.role === 'superadmin' && (
+            <Card title="Gestión de Usuarios" subtitle="Administra los agentes y superadmins del sistema.">
+              <div className="pt-4 space-y-4">
+                <div className="flex justify-end mb-4">
+                  <Button variant="primary" onClick={() => setShowUserModal(true)}>
+                    <Plus size={18} className="mr-2" /> Crear Nuevo Usuario
+                  </Button>
+                </div>
+                
+                {loadingUsers ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 className="animate-spin text-slate-400" size={32} />
+                  </div>
+                ) : (
+                  <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold">Nombre</th>
+                          <th className="px-4 py-3 font-semibold">Email</th>
+                          <th className="px-4 py-3 font-semibold">Rol</th>
+                          <th className="px-4 py-3 font-semibold text-center">Contraseña Mágica</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50">
+                        {usersList.map((u) => (
+                          <tr key={u.user_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                            <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{u.name}</td>
+                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{u.email}</td>
+                            <td className="px-4 py-3">
+                              <Badge variant={u.role === 'superadmin' ? 'purple' : 'blue'}>
+                                {u.role === 'superadmin' ? 'Superadmin' : 'Agente'}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {u.must_change_password ? (
+                                <Badge variant="warning" size="sm">Pendiente Reset</Badge>
+                              ) : (
+                                <Badge variant="success" size="sm">Actualizada</Badge>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                        {usersList.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                              No se encontraron usuarios.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
+
+      {showUserModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">Crear Nuevo Usuario</h3>
+              <button onClick={() => setShowUserModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateUser} className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Nombre Completo</label>
+                <input
+                  type="text"
+                  required
+                  value={newUser.name}
+                  onChange={(e) => setNewUser(p => ({ ...p, name: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={newUser.email}
+                  onChange={(e) => setNewUser(p => ({ ...p, email: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Contraseña Provisoria</label>
+                <input
+                  type="password"
+                  required
+                  value={newUser.password}
+                  onChange={(e) => setNewUser(p => ({ ...p, password: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Rol</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser(p => ({ ...p, role: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-900 dark:text-slate-100"
+                >
+                  <option value="agent">Agente</option>
+                  <option value="superadmin">Superadmin</option>
+                </select>
+              </div>
+              <div className="pt-2 flex gap-3">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setShowUserModal(false)}>Cancelar</Button>
+                <Button type="submit" variant="primary" className="flex-1" isLoading={creatingUser}>
+                  {creatingUser ? 'Creando...' : 'Crear Usuario'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

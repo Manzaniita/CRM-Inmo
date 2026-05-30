@@ -31,6 +31,8 @@ export interface Profile {
   templateProperty: string;
   templateClient: string;
   templateBuyer: string;
+  role?: 'agent' | 'superadmin';
+  must_change_password?: boolean;
 }
 
 interface AppContextType {
@@ -247,6 +249,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           templateProperty: p.templateProperty ?? profile.templateProperty,
           templateClient: p.templateClient ?? profile.templateClient,
           templateBuyer: p.templateBuyer ?? profile.templateBuyer,
+          role: p.role ?? 'agent',
+          must_change_password: p.must_change_password ?? false,
         });
       }
       setIsCloudReady(true);
