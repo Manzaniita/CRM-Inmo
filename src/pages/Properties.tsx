@@ -40,6 +40,7 @@ import { cn, formatCurrency, generateWhatsAppLink, formatWhatsAppTemplate, parse
 import { contractTimeRemaining } from '../lib/dates';
 import { generateId } from '../lib/id';
 import { validateProperty } from '../lib/validators';
+import { scrapeProperty } from '../lib/scraper';
 import EntityNotesPanel from '../components/EntityNotesPanel';
 import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
@@ -1239,8 +1240,8 @@ export default function Properties() {
               <button onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-xs text-yellow-700 font-medium">
-                La extracción real desde portales requiere backend/API. Esta versión simula la captación para validar el flujo.
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 font-medium">
+                Extracción automática desde portales inmobiliarios. El sistema detecta precio, zona, ambientes y fotos directamente del link.
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">URL de la publicación</label>
@@ -1258,7 +1259,7 @@ export default function Properties() {
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider font-bold">Compatible con Zonaprop, Argenprop y Mercado Libre</p>
               </div>
               {captureStep === 'idle' && (
-                <Button variant="primary" className="w-full" onClick={() => {
+                <Button variant="primary" className="w-full" onClick={async () => {
                   if (!captureUrl || !captureUrl.startsWith('http')) {
                     showToast('Ingresa una URL válida que comience con http', 'error');
                     return;
@@ -1266,41 +1267,37 @@ export default function Properties() {
                   setCaptureStep('analyzing');
                   setCaptureProgressStep(0);
                   const steps = [
-                    'Validando URL',
-                    'Analizando publicación',
-                    'Detectando datos principales',
-                    'Detectando imágenes',
-                    'Generando vista previa'
+                    'Conectando con el portal...',
+                    'Descargando publicación...',
+                    'Extrayendo datos estructurados...',
+                    'Detectando imágenes...',
+                    'Generando vista previa...'
                   ];
                   steps.forEach((_, i) => {
-                    setTimeout(() => setCaptureProgressStep(i + 1), (i + 1) * 600);
+                    setTimeout(() => setCaptureProgressStep(i + 1), (i + 1) * 400);
                   });
-                  setTimeout(() => {
+                  try {
+                    const res = await fetch(`/api/scrape?url=${encodeURIComponent(captureUrl)}`);
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                      showToast(data.error || 'Error al conectar con el portal', 'error');
+                      setCaptureStep('idle');
+                      setCaptureProgressStep(0);
+                      return;
+                    }
+                    const scraped = scrapeProperty(data.html, captureUrl);
                     setCapturePreview({
-                      title: 'Hermoso Departamento en Palermo',
-                      type: 'departamento',
-                      operation: 'venta',
-                      price: 145000,
-                      currency: 'USD',
-                      address: 'Av. Santa Fe 3200',
-                      zone: 'Palermo',
-                      city: 'CABA',
-                      bedrooms: 2,
-                      bathrooms: 2,
-                      rooms: 4,
-                      surface: 85,
-                      externalLink: captureUrl,
-                      externalSource: 'Zonaprop',
-                      notes: 'Publicación detectada automáticamente. Datos simulados para validación de flujo.',
-                      images: [
-                        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-                        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
-                      ],
+                      ...scraped,
                       code: `P${Math.floor(Math.random() * 1000)}`,
-                      status: 'disponible'
+                      status: 'disponible',
+                      notes: `Captada automáticamente desde ${scraped.externalSource || 'portal'} el ${new Date().toLocaleDateString('es-AR')}.`,
                     });
                     setCaptureStep('preview');
-                  }, steps.length * 600 + 300);
+                  } catch (err: any) {
+                    showToast(err?.message || 'Error de conexión con el servidor', 'error');
+                    setCaptureStep('idle');
+                    setCaptureProgressStep(0);
+                  }
                 }}>
                   Analizar Link
                 </Button>
@@ -1397,12 +1394,15 @@ export default function Properties() {
                       <input className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.externalSource || ''} onChange={e => setCapturePreview({...capturePreview, externalSource: e.target.value})} />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Imágenes (placeholders)</label>
-                      <div className="flex gap-2 mt-1">
+                      <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Imágenes detectadas ({(capturePreview.images || []).length})</label>
+                      <div className="flex gap-2 mt-1 flex-wrap">
                         {(capturePreview.images || []).map((img, i) => (
                           <img key={i} src={img} alt={`Preview ${i+1}`} className="w-20 h-20 rounded-lg object-cover border border-slate-200 dark:border-slate-700" />
                         ))}
                       </div>
+                      {(capturePreview.images || []).length === 0 && (
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">No se detectaron imágenes automáticamente.</p>
+                      )}
                     </div>
                   </div>
                 </div>
