@@ -143,40 +143,152 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback((message: string, type: ToastType) => setToast({ message, type }), []);
 
-  // --- Migrate old immoflow_ keys to estatecrm_ ---
+  // --- Super-Migración: Recuperar datos de immoflow_ a estatecrm_ ---
   useEffect(() => {
-    const migrateOldData = () => {
-      const oldPrefix = 'immoflow_';
-      const newPrefix = 'estatecrm_';
-      let migrated = false;
+    const migrationFlag = 'estatecrm_super_migration_v1_done';
+    if (localStorage.getItem(migrationFlag)) return;
 
-      const oldKeys: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(oldPrefix)) {
-          oldKeys.push(key);
-        }
+    const isEmptyOrMock = (newValue: string | null, mockValue: unknown): boolean => {
+      if (!newValue || newValue === '' || newValue === '[]' || newValue === '{}') return true;
+      try {
+        return JSON.stringify(JSON.parse(newValue)) === JSON.stringify(mockValue);
+      } catch {
+        return false;
       }
-
-      for (const oldKey of oldKeys) {
-        const newKey = newPrefix + oldKey.slice(oldPrefix.length);
-        const oldValue = localStorage.getItem(oldKey);
-        const newValue = localStorage.getItem(newKey);
-
-        if (oldValue !== null && (newValue === null || newValue === '')) {
-          localStorage.setItem(newKey, oldValue);
-          migrated = true;
-        }
-
-        localStorage.removeItem(oldKey);
-      }
-
-      return migrated;
     };
 
-    const didMigrate = migrateOldData();
-    if (didMigrate) {
+    const defaultProfile = {
+      name: 'Martín Agente',
+      email: 'agente@estatecrm.app',
+      phone: '+54 9 11 1234 5678',
+      license: 'CUCICBA 12345',
+      templateProperty: '¡Hola! Te comparto la información de esta propiedad que puede interesarte:\n\n🏠 *{title}*\n📍 Ubicación: {address}, {zone}\n💰 Precio: {price}\n🔗 {link}\n\nQuedo a tu disposición por cualquier consulta.',
+      templateClient: 'Hola {name}, ¿cómo estás?\n\nTe escribe {agentName}. Quedo a tu disposición por cualquier consulta.',
+      templateBuyer: 'Hola {name}, ¿cómo estás?\n\nTe escribe {agentName}. Quedo a tu disposición por cualquier consulta.'
+    };
+
+    const migrations = [
+      {
+        oldKey: 'immoflow_clients',
+        newKey: STORAGE_KEYS.CLIENTS,
+        setter: setClients,
+        mock: MOCK_CLIENTS,
+        transform: (d: Client[]) => d
+      },
+      {
+        oldKey: 'immoflow_properties',
+        newKey: STORAGE_KEYS.PROPERTIES,
+        setter: setProperties,
+        mock: MOCK_PROPERTIES,
+        transform: (d: Property[]) => d
+      },
+      {
+        oldKey: 'immoflow_events',
+        newKey: STORAGE_KEYS.EVENTS,
+        setter: setEvents,
+        mock: MOCK_EVENTS,
+        transform: (d: CalendarEvent[]) => d
+      },
+      {
+        oldKey: 'immoflow_tasks',
+        newKey: STORAGE_KEYS.TASKS,
+        setter: setTasks,
+        mock: MOCK_TASKS,
+        transform: (d: Task[]) => d.map(t => ({ ...t, relatedEntities: t.relatedEntities ?? [] }))
+      },
+      {
+        oldKey: 'immoflow_sales',
+        newKey: STORAGE_KEYS.SALES,
+        setter: setSales,
+        mock: MOCK_SALES,
+        transform: (d: Sale[]) => d.map(s => ({
+          ...s,
+          operationStatus: s.operationStatus || 'activa',
+          isCollected: s.isCollected ?? false,
+          montoEscritura: typeof s.montoEscritura === 'number' ? String(s.montoEscritura) : s.montoEscritura
+        }))
+      },
+      {
+        oldKey: 'immoflow_rentals',
+        newKey: STORAGE_KEYS.RENTALS,
+        setter: setRentals,
+        mock: MOCK_RENTALS,
+        transform: (d: Rental[]) => d
+      },
+      {
+        oldKey: 'immoflow_documents',
+        newKey: STORAGE_KEYS.DOCUMENTS,
+        setter: setDocuments,
+        mock: MOCK_DOCUMENTS,
+        transform: (d: Document[]) => d
+      },
+      {
+        oldKey: 'immoflow_waiting_room',
+        newKey: STORAGE_KEYS.WAITING_ROOM,
+        setter: setWaitingRoom,
+        mock: [] as WaitingRoomEntry[],
+        transform: (d: WaitingRoomEntry[]) => d
+      },
+      {
+        oldKey: 'immoflow_buyers',
+        newKey: STORAGE_KEYS.BUYERS,
+        setter: setBuyers,
+        mock: [] as Buyer[],
+        transform: (d: Buyer[]) => d
+      },
+      {
+        oldKey: 'immoflow_referred_colleagues',
+        newKey: STORAGE_KEYS.REFERRED_COLLEAGUES,
+        setter: setReferredColleagues,
+        mock: [] as ReferredColleague[],
+        transform: (d: ReferredColleague[]) => d.map(c => ({ ...c, referredClientIds: c.referredClientIds ?? [] }))
+      },
+      {
+        oldKey: 'immoflow_activity_logs',
+        newKey: STORAGE_KEYS.ACTIVITY_LOGS,
+        setter: setActivityLogs,
+        mock: [] as ActivityLog[],
+        transform: (d: ActivityLog[]) => d
+      },
+      {
+        oldKey: 'immoflow_profile',
+        newKey: STORAGE_KEYS.PROFILE,
+        setter: setProfile,
+        mock: defaultProfile,
+        transform: (d: Partial<Profile>) => ({ ...defaultProfile, ...d })
+      }
+    ];
+
+    let migratedAny = false;
+
+    for (const mig of migrations) {
+      const oldValue = localStorage.getItem(mig.oldKey);
+      const newValue = localStorage.getItem(mig.newKey);
+
+      if (oldValue && isEmptyOrMock(newValue, mig.mock)) {
+        try {
+          const parsed = JSON.parse(oldValue);
+          const transformed = mig.transform(parsed);
+
+          localStorage.setItem(mig.newKey, JSON.stringify(transformed));
+          mig.setter(transformed);
+
+          const count = Array.isArray(transformed) ? transformed.length : 'perfil';
+          console.log(`MIGRACIÓN: Recuperando ${mig.oldKey}... → ${mig.newKey} (${count} items)`);
+          migratedAny = true;
+        } catch (e) {
+          console.error(`MIGRACIÓN ERROR: Falló al migrar ${mig.oldKey}`, e);
+        }
+      }
+    }
+
+    if (migratedAny) {
+      localStorage.setItem(migrationFlag, 'true');
+      console.log('MIGRACIÓN: Datos recuperados exitosamente. Recargando para sincronizar estados...');
       window.location.reload();
+    } else {
+      localStorage.setItem(migrationFlag, 'true');
+      console.log('MIGRACIÓN: No se encontraron datos antiguos de ImmoFlow para recuperar.');
     }
   }, []);
 

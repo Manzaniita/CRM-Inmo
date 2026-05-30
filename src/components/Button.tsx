@@ -10,12 +10,31 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, children, ...props }, ref) => {
     const variants = {
-      primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm',
-      secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-      outline: 'border border-gray-300 bg-transparent hover:bg-gray-50 text-gray-700',
-      ghost: 'bg-transparent hover:bg-gray-100 text-gray-600',
-      danger: 'bg-red-500 text-white hover:bg-red-600',
-      success: 'bg-green-600 text-white hover:bg-green-700',
+      primary: cn(
+        'bg-accent text-white hover:bg-accent/90',
+        'dark:bg-dark-accent dark:text-slate-900 dark:hover:bg-dark-accent/90',
+        'shadow-soft-md'
+      ),
+      secondary: cn(
+        'bg-slate-100 text-slate-900 hover:bg-slate-200',
+        'dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
+      ),
+      outline: cn(
+        'border border-slate-200 bg-transparent hover:bg-slate-50 text-slate-700',
+        'dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+      ),
+      ghost: cn(
+        'bg-transparent hover:bg-slate-100 text-slate-600',
+        'dark:hover:bg-slate-800 dark:text-slate-400'
+      ),
+      danger: cn(
+        'bg-rose-500 text-white hover:bg-rose-600',
+        'dark:bg-rose-500 dark:hover:bg-rose-600'
+      ),
+      success: cn(
+        'bg-emerald-600 text-white hover:bg-emerald-700',
+        'dark:bg-emerald-500 dark:hover:bg-emerald-600'
+      ),
     };
 
     const sizes = {
@@ -29,7 +48,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
+          'inline-flex items-center justify-center rounded-xl font-semibold',
+          'transition-all duration-200',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:focus-visible:ring-dark-accent/50',
+          'disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
+          'magnetic-btn',
           variants[variant],
           sizes[size],
           className

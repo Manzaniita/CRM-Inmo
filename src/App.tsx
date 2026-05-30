@@ -14,10 +14,13 @@ import {
   ShoppingCart,
   Briefcase,
   Store,
-  Gauge
+  Gauge,
+  Moon,
+  Sun
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import { cn } from './lib/utils';
 import { useAppContext } from './context/AppContext';
 
@@ -55,10 +58,48 @@ const MENU_ITEMS = [
 function NotFound() {
   return (
     <div className="flex flex-col items-center justify-center py-20">
-      <h2 className="text-4xl font-black text-gray-200 mb-4">404</h2>
-      <p className="text-gray-500 font-medium mb-6">La página que buscas no existe.</p>
-      <Link to="/dashboard" className="text-blue-600 font-bold hover:underline">Volver al Dashboard</Link>
+      <h2 className="text-4xl font-black text-slate-200 dark:text-slate-700 mb-4">404</h2>
+      <p className="text-slate-500 dark:text-slate-400 font-medium mb-6">La página que buscas no existe.</p>
+      <Link to="/dashboard" className="text-accent dark:text-dark-accent font-bold hover:underline">Volver al Dashboard</Link>
     </div>
+  );
+}
+
+function ThemeToggle({ isDark, toggle }: { isDark: boolean; toggle: () => void }) {
+  return (
+    <button
+      onClick={toggle}
+      className={cn(
+        "relative p-2 rounded-xl transition-all duration-300 magnetic-btn",
+        "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
+        "hover:bg-slate-200 dark:hover:bg-slate-700"
+      )}
+      aria-label="Cambiar tema"
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        {isDark ? (
+          <motion.div
+            key="moon"
+            initial={{ rotate: -90, opacity: 0, scale: 0.5 }}
+            animate={{ rotate: 0, opacity: 1, scale: 1 }}
+            exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Moon size={18} strokeWidth={1.5} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="sun"
+            initial={{ rotate: 90, opacity: 0, scale: 0.5 }}
+            animate={{ rotate: 0, opacity: 1, scale: 1 }}
+            exit={{ rotate: -90, opacity: 0, scale: 0.5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Sun size={18} strokeWidth={1.5} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </button>
   );
 }
 
@@ -73,17 +114,17 @@ function HeaderProfile() {
 
   return (
     <div className="flex items-center space-y-0 space-x-4">
-      <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500 relative" id="notifications">
-        <Bell size={20} />
-        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+      <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 relative transition-colors">
+        <Bell size={20} strokeWidth={1.5} />
+        <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>
       </button>
-      <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
+      <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2"></div>
       <div className="flex items-center cursor-pointer group" id="user-profile">
         <div className="text-right mr-3 hidden sm:block">
-          <p className="text-sm font-semibold text-gray-900">{profile.name}</p>
-          <p className="text-xs text-gray-500 font-medium">Agente Pro</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{profile.name}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Agente Pro</p>
         </div>
-        <div className="w-9 h-9 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-bold overflow-hidden ring-2 ring-transparent group-hover:ring-blue-100 transition-all">
+        <div className="w-9 h-9 rounded-full bg-accent/10 dark:bg-dark-accent/20 border border-accent/20 dark:border-dark-accent/30 flex items-center justify-center text-accent dark:text-dark-accent font-bold overflow-hidden ring-2 ring-transparent group-hover:ring-accent/20 dark:group-hover:ring-dark-accent/30 transition-all">
           {initials}
         </div>
       </div>
@@ -91,16 +132,48 @@ function HeaderProfile() {
   );
 }
 
+function PageTransition({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('estatecrm_theme');
+      if (stored) return stored === 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
   const location = useLocation();
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add('dark');
+      localStorage.setItem('estatecrm_theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      localStorage.setItem('estatecrm_theme', 'light');
+    }
+  }, [isDark]);
+
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
+    <div className="flex h-screen bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary font-sans overflow-hidden">
       {/* Sidebar Overlay for Mobile */}
       {!sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40 lg:hidden"
           onClick={() => setSidebarOpen(true)}
         />
       )}
@@ -108,19 +181,25 @@ export default function App() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "bg-white border-r border-gray-200 transition-all duration-300 z-50 flex flex-col",
+          "relative z-50 flex flex-col transition-all duration-300 ease-out",
+          "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl",
+          "border-r border-slate-200/60 dark:border-white/10",
           sidebarOpen ? "w-64" : "w-20"
         )}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-gray-100 overflow-hidden">
-          <div className="bg-blue-600 p-1.5 rounded-lg flex-shrink-0">
-            <Home className="text-white" size={20} />
+        <div className="h-16 flex items-center px-6 border-b border-slate-100/60 dark:border-white/5 overflow-hidden">
+          <div className="bg-accent dark:bg-dark-accent p-1.5 rounded-lg flex-shrink-0">
+            <Home className="text-white dark:text-slate-900" size={20} strokeWidth={1.5} />
           </div>
           {sidebarOpen && (
-            <span className="ml-3 font-bold text-xl tracking-tight text-gray-900 whitespace-nowrap">
-              Estate<span className="text-blue-600">CRM</span>
-            </span>
+            <motion.span
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="ml-3 font-bold text-xl tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap"
+            >
+              Estate<span className="text-accent dark:text-dark-accent">CRM</span>
+            </motion.span>
           )}
         </div>
 
@@ -133,21 +212,46 @@ export default function App() {
                 key={item.id}
                 to={item.path}
                 className={cn(
-                  "flex items-center w-full px-3 py-2.5 rounded-lg transition-all group relative",
+                  "flex items-center w-full px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
                   isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-accent/10 text-accent dark:bg-dark-accent/15 dark:text-dark-accent"
+                    : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
                 )}
                 id={`nav-${item.id}`}
               >
-                <item.icon size={20} className={cn(isActive ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600")} />
+                <item.icon
+                  size={20}
+                  strokeWidth={1.5}
+                  className={cn(
+                    "shrink-0 transition-transform duration-200",
+                    isActive
+                      ? "text-accent dark:text-dark-accent"
+                      : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                  )}
+                />
                 {sidebarOpen && (
-                  <span className="ml-3 font-medium text-sm whitespace-nowrap">{item.label}</span>
-                )}
-                {!sidebarOpen && (
-                  <div className="absolute left-16 bg-gray-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity font-medium z-50">
+                  <motion.span
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="ml-3 font-medium text-sm whitespace-nowrap"
+                  >
                     {item.label}
+                  </motion.span>
+                )}
+                {/* Organic slide label for collapsed sidebar */}
+                {!sidebarOpen && (
+                  <div className="absolute left-14 top-1/2 -translate-y-1/2 z-50 pointer-events-none">
+                    <div className={cn(
+                      "bg-slate-900 dark:bg-slate-800 text-white dark:text-slate-100 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap",
+                      "opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0",
+                      "transition-all duration-200 ease-out shadow-lg"
+                    )}>
+                      {item.label}
+                    </div>
                   </div>
+                )}
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-accent dark:bg-dark-accent rounded-r-full" />
                 )}
               </Link>
             );
@@ -155,16 +259,16 @@ export default function App() {
         </nav>
 
         {/* User / Logout */}
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-slate-100/60 dark:border-white/5">
           <button
             className={cn(
-              "flex items-center w-full px-3 py-2 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors group",
+              "flex items-center w-full px-3 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors group magnetic-btn",
               !sidebarOpen && "justify-center"
             )}
             onClick={() => console.log('Logout')}
             id="nav-logout"
           >
-            <LogOut size={20} />
+            <LogOut size={20} strokeWidth={1.5} />
             {sidebarOpen && <span className="ml-3 font-medium text-sm">Cerrar Sesión</span>}
           </button>
         </div>
@@ -173,42 +277,49 @@ export default function App() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0">
-          <div className="flex items-center">
+        <header className="h-16 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/10 flex items-center justify-between px-6 flex-shrink-0">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 transition-colors magnetic-btn"
               id="toggle-sidebar"
             >
-              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+              {sidebarOpen ? <X size={20} strokeWidth={1.5} /> : <Menu size={20} strokeWidth={1.5} />}
             </button>
             <GlobalSearch />
           </div>
 
-          <HeaderProfile />
+          <div className="flex items-center gap-3">
+            <ThemeToggle isDark={isDark} toggle={() => setIsDark(d => !d)} />
+            <HeaderProfile />
+          </div>
         </header>
 
         {/* Dynamic Content */}
         <main className="flex-1 overflow-y-auto p-6 scroll-smooth scrollbar-thin">
-          <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/clientes" element={<Clients />} />
-              <Route path="/clientes/:id" element={<Clients />} />
-              <Route path="/propiedades" element={<Properties />} />
-              <Route path="/propiedades/:id" element={<Properties />} />
-              <Route path="/agenda" element={<Agenda />} />
-              <Route path="/tareas" element={<Tasks />} />
-              <Route path="/reportes" element={<Reports />} />
-              <Route path="/configuracion" element={<Configuration />} />
-              <Route path="/sala-espera" element={<WaitingRoom />} />
-              <Route path="/compradores" element={<Buyers />} />
-              <Route path="/colegas-referidos" element={<ReferredColleagues />} />
-              <Route path="/marketplace" element={<Marketplace />} />
-              <Route path="/reservometro" element={<Reservometro />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+          <div className="max-w-7xl mx-auto">
+            <AnimatePresence mode="wait">
+              <div key={location.pathname}>
+                <Routes location={location}>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
+                  <Route path="/clientes" element={<PageTransition><Clients /></PageTransition>} />
+                  <Route path="/clientes/:id" element={<PageTransition><Clients /></PageTransition>} />
+                  <Route path="/propiedades" element={<PageTransition><Properties /></PageTransition>} />
+                  <Route path="/propiedades/:id" element={<PageTransition><Properties /></PageTransition>} />
+                  <Route path="/agenda" element={<PageTransition><Agenda /></PageTransition>} />
+                  <Route path="/tareas" element={<PageTransition><Tasks /></PageTransition>} />
+                  <Route path="/reportes" element={<PageTransition><Reports /></PageTransition>} />
+                  <Route path="/configuracion" element={<PageTransition><Configuration /></PageTransition>} />
+                  <Route path="/sala-espera" element={<PageTransition><WaitingRoom /></PageTransition>} />
+                  <Route path="/compradores" element={<PageTransition><Buyers /></PageTransition>} />
+                  <Route path="/colegas-referidos" element={<PageTransition><ReferredColleagues /></PageTransition>} />
+                  <Route path="/marketplace" element={<PageTransition><Marketplace /></PageTransition>} />
+                  <Route path="/reservometro" element={<PageTransition><Reservometro /></PageTransition>} />
+                  <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
+                </Routes>
+              </div>
+            </AnimatePresence>
           </div>
         </main>
       </div>

@@ -21,6 +21,7 @@ import {
   Link2
 } from 'lucide-react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
 import { Client, ClientType, ClientStatus, ClientOrigin, EntityNote, Document, Sale, Rental, Task, CalendarEvent, TaskStatus, TaskPriority, EventType, EventStatus, Property, ReferredColleague } from '../types';
 import Badge from '../components/Badge';
@@ -36,6 +37,31 @@ import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
 import RentalModal from '../components/RentalModal';
 import SearchableSelect from '../components/SearchableSelect';
+
+function BentoInfoItem({
+  icon: Icon,
+  label,
+  value,
+  action
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-100/60 dark:border-white/5 hover:border-accent/20 dark:hover:border-dark-accent/20 transition-colors">
+      <div className="w-10 h-10 bg-accent/10 dark:bg-dark-accent/15 rounded-lg flex items-center justify-center shrink-0">
+        <Icon size={18} className="text-accent dark:text-dark-accent" strokeWidth={1.5} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</p>
+        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{value}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
 
 export default function Clients() {
   const { id } = useParams();
@@ -616,124 +642,92 @@ export default function Clients() {
     const clientRentals = rentals.filter(r => r.inquilinoId === id);
 
     return (
-      <div className="animate-in slide-in-from-right duration-300">
-        <button 
-          onClick={() => navigate('/clientes')}
-          className="flex items-center text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors"
-        >
-          <ArrowLeft size={16} className="mr-1" /> Volver al listado
-        </button>
+      <div className="page-enter">
+        {/* Header Navigation */}
+        <div className="flex items-center justify-between mb-6">
+          <motion.button
+            whileHover={{ x: -4 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-accent dark:hover:text-dark-accent hover:bg-accent/5 dark:hover:bg-dark-accent/10 transition-colors"
+          >
+            <ArrowLeft size={18} strokeWidth={1.5} className="transition-transform group-hover:-translate-x-1" />
+            Volver al Panel Principal
+          </motion.button>
+          <Button variant="outline" size="sm" onClick={() => handleOpenForm(selectedClient)}>
+            <Plus size={16} className="mr-1" strokeWidth={1.5} /> Editar
+          </Button>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+        {/* Bento Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main Info Block - Large */}
+          <div className="lg:col-span-8 space-y-6">
+            <Card className="relative overflow-visible" glow>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-blue-100 border-2 border-blue-200 flex items-center justify-center text-blue-700 text-xl font-bold">
+                  <div className="w-16 h-16 rounded-2xl bg-accent/10 dark:bg-dark-accent/15 border-2 border-accent/20 dark:border-dark-accent/30 flex items-center justify-center text-accent dark:text-dark-accent text-2xl font-extrabold">
                     {selectedClient.name.charAt(0)}
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900">{selectedClient.name}</h1>
-                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight">{selectedClient.name}</h1>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type]).map(t => (
-                                              <span key={t}>
-                                                <Badge variant={getTypeBadgeVariant(t)}>{t}</Badge>
-                                              </span>
-                                          ))}
+                        <span key={t}>
+                          <Badge variant={getTypeBadgeVariant(t)}>{t}</Badge>
+                        </span>
+                      ))}
                       <Badge variant={getStatusBadgeVariant(selectedClient.status)}>{selectedClient.status}</Badge>
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => handleOpenForm(selectedClient)}>
-                  <Plus size={16} className="mr-1" /> Editar
-                </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 py-6 border-y border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <Phone size={18} className="text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 font-medium">Teléfono</p>
-                    <p className="text-sm font-bold text-gray-900">{selectedClient.phone}</p>
-                  </div>
-                  <button
-                    className="p-2 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors"
-                    onClick={() => {
-                      const msg = formatWhatsAppTemplate(profile.templateClient, {
-                        name: selectedClient.name,
-                        agentName: profile.name,
-                        title: '', address: '', price: '', link: ''
-                      });
-                      const link = generateWhatsAppLink(selectedClient.phone, msg);
-                      window.open(link, '_blank');
-                    }}
-                    title="Contactar por WhatsApp"
-                  >
-                    <MessageCircle size={18} />
-                  </button>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <Mail size={18} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Email</p>
-                    <p className="text-sm font-bold text-gray-900">{selectedClient.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <Globe size={18} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Origen</p>
-                    <p className="text-sm font-bold text-gray-900">{selectedClient.origin}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <DollarSign size={18} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Presupuesto</p>
-                    <p className="text-sm font-bold text-gray-900">
-                      {selectedClient.budget ? formatCurrency(selectedClient.budget, selectedClient.currency) : 'Sin especificar'}
-                    </p>
-                  </div>
-                </div>
-                {selectedClient.interestZone && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                      <MapPin size={18} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium">Zona de Interés</p>
-                      <p className="text-sm font-bold text-gray-900">{selectedClient.interestZone}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <Calendar size={18} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Último Contacto</p>
-                    <p className="text-sm font-bold text-gray-900">{formatDate(selectedClient.lastContact)}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <h3 className="font-bold text-gray-900 mb-3">Notas Internas</h3>
-                <div
-                  className="text-gray-600 leading-relaxed italic border-l-4 border-gray-100 pl-4"
-                  dangerouslySetInnerHTML={{ __html: parseRichText(selectedClient.notes || 'Sin notas adicionales.') }}
+              {/* Contact Grid - Asymmetric Bento */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+                <BentoInfoItem
+                  icon={Phone}
+                  label="Teléfono"
+                  value={selectedClient.phone}
+                  action={
+                    <button
+                      className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
+                      onClick={() => {
+                        const msg = formatWhatsAppTemplate(profile.templateClient, {
+                          name: selectedClient.name,
+                          agentName: profile.name,
+                          title: '', address: '', price: '', link: ''
+                        });
+                        const link = generateWhatsAppLink(selectedClient.phone, msg);
+                        window.open(link, '_blank');
+                      }}
+                      title="Contactar por WhatsApp"
+                    >
+                      <MessageCircle size={18} strokeWidth={1.5} />
+                    </button>
+                  }
                 />
+                <BentoInfoItem icon={Mail} label="Email" value={selectedClient.email} />
+                <BentoInfoItem icon={Globe} label="Origen" value={selectedClient.origin} />
+                <BentoInfoItem
+                  icon={DollarSign}
+                  label="Presupuesto"
+                  value={selectedClient.budget ? formatCurrency(selectedClient.budget, selectedClient.currency) : 'Sin especificar'}
+                />
+                {selectedClient.interestZone && (
+                  <BentoInfoItem icon={MapPin} label="Zona de Interés" value={selectedClient.interestZone} />
+                )}
+                <BentoInfoItem icon={Calendar} label="Último Contacto" value={formatDate(selectedClient.lastContact)} />
               </div>
+            </Card>
 
-              <div className="mt-8">
+            {/* Notes */}
+            <Card title="Notas Internas" glow>
+              <div
+                className="text-slate-600 dark:text-slate-300 leading-relaxed italic border-l-4 border-slate-100 dark:border-slate-700 pl-4"
+                dangerouslySetInnerHTML={{ __html: parseRichText(selectedClient.notes || 'Sin notas adicionales.') }}
+              />
+              <div className="mt-6">
                 <EntityNotesPanel
                   notes={selectedClient.historyNotes}
                   onAddNote={(content) => {
@@ -755,122 +749,106 @@ export default function Clients() {
                   }}
                 />
               </div>
-            </div>
+            </Card>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 text-lg">Propiedades Asociadas</h3>
-              </div>
+            {/* Properties */}
+            <Card title="Propiedades Asociadas" glow>
               {(() => {
                 const clientProperties = properties.filter(p => p.ownerId === id);
-                if (clientProperties.length === 0) return <p className="text-sm text-gray-400 italic py-2">Sin propiedades asociadas.</p>;
+                if (clientProperties.length === 0) return <p className="text-sm text-slate-400 dark:text-slate-500 italic py-2">Sin propiedades asociadas.</p>;
                 return (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {clientProperties.map(prop => (
-                      <div key={prop.id} onClick={() => navigate(`/propiedades/${prop.id}`)} className="cursor-pointer">
-                        <Card className="border-gray-100 hover:shadow-md transition-all">
+                      <motion.div
+                        key={prop.id}
+                        whileHover={{ y: -2 }}
+                        onClick={() => navigate(`/propiedades/${prop.id}`)}
+                        className="cursor-pointer"
+                      >
+                        <Card className="border-slate-100 dark:border-white/5 hover:shadow-soft-md transition-all" glow={false}>
                           <div className="flex items-center justify-between">
                             <div>
                               <Badge variant={prop.operation === 'venta' ? 'orange' : 'blue'}>{prop.operation}</Badge>
-                              <span className="ml-2 text-sm font-bold text-gray-900">{prop.title}</span>
-                              <p className="text-sm text-gray-500 mt-0.5">{prop.address}, {prop.zone}</p>
+                              <span className="ml-2 text-sm font-bold text-slate-900 dark:text-slate-100">{prop.title}</span>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{prop.address}, {prop.zone}</p>
                             </div>
-                            <ChevronRight size={16} className="text-gray-300" />
+                            <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
                           </div>
                         </Card>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 );
               })()}
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 text-lg">Operaciones Relacionadas</h3>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setSaleModalMode('create'); setSelectedSaleForModal(undefined); setIsSaleModalOpen(true); }}>
-                    <Plus size={14} className="mr-1" /> Nueva Venta
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => { setRentalModalMode('create'); setSelectedRentalForModal(undefined); setIsRentalModalOpen(true); }}>
-                    <Plus size={14} className="mr-1" /> Nuevo Alquiler
-                  </Button>
-                </div>
-              </div>
-              {clientSales.length === 0 && clientRentals.length === 0 ? (
-                <p className="text-sm text-gray-400 italic py-4">Sin operaciones relacionadas.</p>
-              ) : (
-                <>
-                  {clientSales.map(sale => (
-                    <React.Fragment key={sale.id}>
-                      <Card className="border-blue-100 cursor-pointer hover:shadow-md transition-all">
-                        <div onClick={() => { setSelectedSaleForModal(sale); setSaleModalMode('view'); setIsSaleModalOpen(true); }}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Badge variant="blue">Venta</Badge>
-                              <span className="ml-2 text-sm font-medium text-gray-700">{sale.estado}</span>
-                              <p className="text-sm text-gray-500 mt-1">{properties.find(p => p.id === sale.propiedadId)?.title || sale.propiedadId}</p>
-                            </div>
-                            <ChevronRight size={16} className="text-gray-300" />
-                          </div>
-                        </div>
-                      </Card>
-                    </React.Fragment>
-                  ))}
-                  {clientRentals.map(rental => (
-                    <React.Fragment key={rental.id}>
-                      <Card className="border-green-100 cursor-pointer hover:shadow-md transition-all">
-                        <div onClick={() => { setSelectedRentalForModal(rental); setRentalModalMode('view'); setIsRentalModalOpen(true); }}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Badge variant="green">Alquiler</Badge>
-                              <span className="ml-2 text-sm font-medium text-gray-700">{rental.estado}</span>
-                              <p className="text-sm text-gray-500 mt-1">{properties.find(p => p.id === rental.propiedadId)?.title || rental.propiedadId}</p>
-                            </div>
-                            <ChevronRight size={16} className="text-gray-300" />
-                          </div>
-                        </div>
-                      </Card>
-                    </React.Fragment>
-                  ))}
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <Card title="Documentos Relacionados">
-              <div className="space-y-3">
-                {documents.filter(d => d.clientId === id).length > 0 ? (
-                  documents.filter(d => d.clientId === id).slice(0, 4).map(doc => (
-                    <div key={doc.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => { setSelectedDocForModal(doc); setDocModalMode('view'); setIsDocModalOpen(true); }}>
-                      <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
-                        <FileText size={18} className="text-gray-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900 truncate">{doc.name}</p>
-                        <Badge size="sm" variant={doc.status === 'revisado' ? 'green' : doc.status === 'cargado' ? 'blue' : doc.status === 'vencido' ? 'red' : 'orange'}>{doc.status}</Badge>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-center text-gray-400 py-2 italic">Sin documentos relacionados.</p>
-                )}
-                {documents.filter(d => d.clientId === id).length > 4 && (
-                  <Button variant="ghost" size="sm" className="w-full" onClick={() => { setSelectedDocForModal(undefined); setDocModalMode('create'); setIsDocModalOpen(true); }}>
-                    Ver todos ({documents.filter(d => d.clientId === id).length})
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" className="w-full" onClick={() => { setSelectedDocForModal(undefined); setDocModalMode('create'); setIsDocModalOpen(true); }}>
-                  <Plus size={14} className="mr-1" /> Subir Documento
-                </Button>
-              </div>
             </Card>
 
-            <Card title="Acciones Rápidas">
+            {/* Operations */}
+            <Card title="Operaciones Relacionadas" subtitle="Ventas y alquileres"
+              footer={
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => { setSaleModalMode('create'); setSelectedSaleForModal(undefined); setIsSaleModalOpen(true); }}>
+                    <Plus size={14} className="mr-1" strokeWidth={1.5} /> Nueva Venta
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => { setRentalModalMode('create'); setSelectedRentalForModal(undefined); setIsRentalModalOpen(true); }}>
+                    <Plus size={14} className="mr-1" strokeWidth={1.5} /> Nuevo Alquiler
+                  </Button>
+                </div>
+              }
+              glow
+            >
+              {clientSales.length === 0 && clientRentals.length === 0 ? (
+                <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4">Sin operaciones relacionadas.</p>
+              ) : (
+                <div className="space-y-3">
+                  {clientSales.map(sale => (
+                    <motion.div
+                      key={sale.id}
+                      whileHover={{ x: 4 }}
+                      onClick={() => { setSelectedSaleForModal(sale); setSaleModalMode('view'); setIsSaleModalOpen(true); }}
+                      className="cursor-pointer"
+                    >
+                      <Card className="border-blue-100 dark:border-blue-500/20 hover:shadow-soft-md transition-all" glow={false}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Badge variant="blue">Venta</Badge>
+                            <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{sale.estado}</span>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{properties.find(p => p.id === sale.propiedadId)?.title || sale.propiedadId}</p>
+                          </div>
+                          <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
+                  {clientRentals.map(rental => (
+                    <motion.div
+                      key={rental.id}
+                      whileHover={{ x: 4 }}
+                      onClick={() => { setSelectedRentalForModal(rental); setRentalModalMode('view'); setIsRentalModalOpen(true); }}
+                      className="cursor-pointer"
+                    >
+                      <Card className="border-emerald-100 dark:border-emerald-500/20 hover:shadow-soft-md transition-all" glow={false}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Badge variant="green">Alquiler</Badge>
+                            <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{rental.estado}</span>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{properties.find(p => p.id === rental.propiedadId)?.title || rental.propiedadId}</p>
+                          </div>
+                          <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Sidebar Blocks - Compact */}
+          <div className="lg:col-span-4 space-y-6">
+            <Card title="Acciones Rápidas" glow>
               <div className="space-y-3">
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   className="w-full"
                   onClick={() => {
                     setEventFormData({
@@ -886,10 +864,10 @@ export default function Clients() {
                     setIsEventModalOpen(true);
                   }}
                 >
-                  <Calendar size={18} className="mr-2" /> Programar Cita
+                  <Calendar size={18} className="mr-2" strokeWidth={1.5} /> Programar Cita
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => {
                     setTaskFormData({
@@ -904,41 +882,69 @@ export default function Clients() {
                     setIsTaskModalOpen(true);
                   }}
                 >
-                  <ListTodo size={18} className="mr-2" /> Crear Tarea
+                  <ListTodo size={18} className="mr-2" strokeWidth={1.5} /> Crear Tarea
                 </Button>
               </div>
             </Card>
 
-                        <Card title="Información del Cliente">
+            <Card title="Documentos Relacionados" glow>
+              <div className="space-y-3">
+                {documents.filter(d => d.clientId === id).length > 0 ? (
+                  documents.filter(d => d.clientId === id).slice(0, 4).map(doc => (
+                    <div key={doc.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => { setSelectedDocForModal(doc); setDocModalMode('view'); setIsDocModalOpen(true); }}>
+                      <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center border border-slate-100 dark:border-white/5">
+                        <FileText size={18} className="text-slate-500 dark:text-slate-400" strokeWidth={1.5} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{doc.name}</p>
+                        <Badge size="sm" variant={doc.status === 'revisado' ? 'green' : doc.status === 'cargado' ? 'blue' : doc.status === 'vencido' ? 'red' : 'orange'}>{doc.status}</Badge>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-center text-slate-400 dark:text-slate-500 py-2 italic">Sin documentos relacionados.</p>
+                )}
+                {documents.filter(d => d.clientId === id).length > 4 && (
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => { setSelectedDocForModal(undefined); setDocModalMode('create'); setIsDocModalOpen(true); }}>
+                    Ver todos ({documents.filter(d => d.clientId === id).length})
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="w-full" onClick={() => { setSelectedDocForModal(undefined); setDocModalMode('create'); setIsDocModalOpen(true); }}>
+                  <Plus size={14} className="mr-1" strokeWidth={1.5} /> Subir Documento
+                </Button>
+              </div>
+            </Card>
+
+            <Card title="Información del Cliente" glow>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Creado</span>
-                  <span className="font-medium">{formatDate(selectedClient.createdAt)}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Creado</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{formatDate(selectedClient.createdAt)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Tipo</span>
+                  <span className="text-slate-500 dark:text-slate-400">Tipo</span>
                   <div className="flex gap-1 flex-wrap">
                     {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type]).map(t => (
-                                          <span key={t}>
-                                            <Badge variant={getTypeBadgeVariant(t)} size="sm">{t}</Badge>
-                                          </span>
-                                        ))}
+                      <span key={t}>
+                        <Badge variant={getTypeBadgeVariant(t)} size="sm">{t}</Badge>
+                      </span>
+                    ))}
                   </div>
                 </div>
                 {selectedClient.profession && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Profesión</span>
-                    <span className="font-medium">{selectedClient.profession}</span>
+                    <span className="text-slate-500 dark:text-slate-400">Profesión</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">{selectedClient.profession}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Origen</span>
-                  <span className="font-medium">{selectedClient.origin}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Origen</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{selectedClient.origin}</span>
                 </div>
                 {selectedClient.origin === 'Referido' && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Referido por</span>
-                    <span className="font-medium">
+                    <span className="text-slate-500 dark:text-slate-400">Referido por</span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">
                       {selectedClient.referredByColleagueId
                         ? referredColleagues.find(c => c.id === selectedClient.referredByColleagueId)?.nombreApellido || 'Colega desconocido'
                         : selectedClient.referredBy || '—'}
@@ -946,11 +952,11 @@ export default function Clients() {
                   </div>
                 )}
               </div>
-              <div className="mt-4 space-y-2 pt-4 border-t border-gray-100">
+              <div className="mt-4 space-y-2 pt-4 border-t border-slate-100 dark:border-white/5">
                 {selectedClient.dashboardPinned ? (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -960,9 +966,9 @@ export default function Clients() {
                     Quitar del panel principal
                   </Button>
                 ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -973,9 +979,9 @@ export default function Clients() {
                   </Button>
                 )}
                 {!selectedClient.dashboardArchived ? (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -985,9 +991,9 @@ export default function Clients() {
                     Archivar del dashboard
                   </Button>
                 ) : (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1001,7 +1007,7 @@ export default function Clients() {
             </Card>
 
             <Button variant="outline" className="w-full" onClick={() => openRelations('client', selectedClient.id)}>
-              <Link2 size={16} className="mr-2" /> Ver vínculos (Vista 360°)
+              <Link2 size={16} className="mr-2" strokeWidth={1.5} /> Ver vínculos (Vista 360°)
             </Button>
           </div>
         </div>
