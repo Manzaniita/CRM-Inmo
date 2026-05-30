@@ -16,7 +16,8 @@ import {
   Store,
   Gauge,
   Moon,
-  Sun
+  Sun,
+  Loader2
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
@@ -39,6 +40,7 @@ import ReferredColleagues from './pages/ReferredColleagues';
 import Marketplace from './pages/Marketplace';
 import Reservometro from './pages/Reservometro';
 import EntityRelationsDrawer from './components/EntityRelationsDrawer';
+import LoginPage from './pages/LoginPage';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Panel', icon: LayoutDashboard, path: '/dashboard' },
@@ -104,7 +106,7 @@ function ThemeToggle({ isDark, toggle }: { isDark: boolean; toggle: () => void }
 }
 
 function HeaderProfile() {
-  const { profile } = useAppContext();
+  const { profile, signOut } = useAppContext();
   const initials = profile.name
     .split(' ')
     .map(n => n[0])
@@ -119,7 +121,7 @@ function HeaderProfile() {
         <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>
       </button>
       <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2"></div>
-      <div className="flex items-center cursor-pointer group" id="user-profile">
+      <button onClick={signOut} className="flex items-center cursor-pointer group" id="user-profile">
         <div className="text-right mr-3 hidden sm:block">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{profile.name}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Agente Pro</p>
@@ -127,7 +129,7 @@ function HeaderProfile() {
         <div className="w-9 h-9 rounded-full bg-accent/10 dark:bg-dark-accent/20 border border-accent/20 dark:border-dark-accent/30 flex items-center justify-center text-accent dark:text-dark-accent font-bold overflow-hidden ring-2 ring-transparent group-hover:ring-accent/20 dark:group-hover:ring-dark-accent/30 transition-all">
           {initials}
         </div>
-      </div>
+      </button>
     </div>
   );
 }
@@ -145,6 +147,46 @@ function PageTransition({ children }: { children: React.ReactNode }) {
   );
 }
 
+function SidebarFooter({ sidebarOpen }: { sidebarOpen: boolean }) {
+  const { signOut } = useAppContext();
+  return (
+    <div className="p-4 border-t border-slate-100/60 dark:border-white/5">
+      <button
+        className={cn(
+          "flex items-center w-full px-3 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors group magnetic-btn",
+          !sidebarOpen && "justify-center"
+        )}
+        onClick={signOut}
+        id="nav-logout"
+      >
+        <LogOut size={20} strokeWidth={1.5} />
+        {sidebarOpen && <span className="ml-3 font-medium text-sm">Cerrar Sesión</span>}
+      </button>
+    </div>
+  );
+}
+
+function SplashScreen() {
+  return (
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#020617]">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col items-center"
+      >
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20 mb-5">
+          <Home className="text-white" size={32} strokeWidth={1.5} />
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-white mb-3">
+          Estate<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">CRM</span>
+        </h1>
+        <Loader2 size={20} className="animate-spin text-slate-500" strokeWidth={1.5} />
+      </motion.div>
+    </div>
+  );
+}
+
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isDark, setIsDark] = useState(() => {
@@ -156,6 +198,8 @@ export default function App() {
     return false;
   });
   const location = useLocation();
+  const { user, session } = useAppContext();
+  const [authChecking, setAuthChecking] = useState(true);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -168,6 +212,28 @@ export default function App() {
     }
   }, [isDark]);
 
+  // Esperar a que Supabase termine de verificar la sesión antes de decidir qué mostrar
+  useEffect(() => {
+    const timer = setTimeout(() => setAuthChecking(false), 600);
+    return () => clearTimeout(timer);
+  }, [session]);
+
+  // Splash screen mientras verificamos auth
+  if (authChecking) {
+    return <SplashScreen />;
+  }
+
+  // No autenticado: solo login accesible
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  // Autenticado: app completa
   return (
     <div className="flex h-screen bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary font-sans overflow-hidden">
       {/* Sidebar Overlay for Mobile */}
@@ -259,19 +325,7 @@ export default function App() {
         </nav>
 
         {/* User / Logout */}
-        <div className="p-4 border-t border-slate-100/60 dark:border-white/5">
-          <button
-            className={cn(
-              "flex items-center w-full px-3 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors group magnetic-btn",
-              !sidebarOpen && "justify-center"
-            )}
-            onClick={() => console.log('Logout')}
-            id="nav-logout"
-          >
-            <LogOut size={20} strokeWidth={1.5} />
-            {sidebarOpen && <span className="ml-3 font-medium text-sm">Cerrar Sesión</span>}
-          </button>
-        </div>
+        <SidebarFooter sidebarOpen={sidebarOpen} />
       </aside>
 
       {/* Main Content */}

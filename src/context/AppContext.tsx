@@ -126,7 +126,7 @@ function isMockId(id: string): boolean {
 
 // ---- Supabase helpers ----
 function cleanForSupabase<T extends Record<string, any>>(obj: T, userId: string): Record<string, any> {
-  const cleaned: Record<string, any> = { userId };
+  const cleaned: Record<string, any> = { user_id: userId };
   for (const [key, value] of Object.entries(obj)) {
     if (value !== undefined) {
       cleaned[key] = value;
@@ -213,14 +213,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     try {
       const [clientsRes, propertiesRes, eventsRes, tasksRes, salesRes, colleaguesRes, logsRes, profileRes] = await Promise.all([
-        supabase.from('clients').select('*').eq('userId', user.id),
-        supabase.from('properties').select('*').eq('userId', user.id),
-        supabase.from('events').select('*').eq('userId', user.id),
-        supabase.from('tasks').select('*').eq('userId', user.id),
-        supabase.from('sales').select('*').eq('userId', user.id),
-        supabase.from('referred_colleagues').select('*').eq('userId', user.id),
-        supabase.from('activity_logs').select('*').eq('userId', user.id).order('createdAt', { ascending: false }).limit(200),
-        supabase.from('profiles').select('*').eq('userId', user.id).single()
+        supabase.from('clients').select('*').eq('user_id', user.id),
+        supabase.from('properties').select('*').eq('user_id', user.id),
+        supabase.from('events').select('*').eq('user_id', user.id),
+        supabase.from('tasks').select('*').eq('user_id', user.id),
+        supabase.from('sales').select('*').eq('user_id', user.id),
+        supabase.from('referred_colleagues').select('*').eq('user_id', user.id),
+        supabase.from('activity_logs').select('*').eq('user_id', user.id).order('createdAt', { ascending: false }).limit(200),
+        supabase.from('profiles').select('*').eq('user_id', user.id).limit(1)
       ]);
 
       if (clientsRes.data) setClients(clientsRes.data as Client[]);
@@ -237,8 +237,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       if (colleaguesRes.data) setReferredColleagues((colleaguesRes.data as ReferredColleague[]).map(c => ({ ...c, referredClientIds: c.referredClientIds ?? [] })));
       if (logsRes.data) setActivityLogs(logsRes.data as ActivityLog[]);
-      if (profileRes.data) {
-        const p = profileRes.data as any;
+      if (profileRes.data && profileRes.data.length > 0) {
+        const p = profileRes.data[0] as any;
         setProfile({
           name: p.name ?? profile.name,
           email: p.email ?? profile.email,
@@ -289,6 +289,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (localSales.length) await supabase.from('sales').upsert(localSales.map(s => cleanForSupabase(s, user.id)));
       if (localColleagues.length) await supabase.from('referred_colleagues').upsert(localColleagues.map(c => cleanForSupabase(c, user.id)));
       if (localLogs.length) await supabase.from('activity_logs').upsert(localLogs.map(l => cleanForSupabase(l, user.id)));
+
+      // Sync profile if it's not the default mock profile
+      const localProfile = loadFromStorage<Profile>(STORAGE_KEYS.PROFILE, { name: '', email: '', phone: '', license: '', templateProperty: '', templateClient: '', templateBuyer: '' });
+      if (localProfile.name && localProfile.name !== 'Martín Agente') {
+        await supabase.from('profiles').upsert({ user_id: user.id, name: localProfile.name, email: localProfile.email, phone: localProfile.phone, license: localProfile.license, templateProperty: localProfile.templateProperty, templateClient: localProfile.templateClient, templateBuyer: localProfile.templateBuyer });
+      }
 
       localStorage.setItem(syncedFlag, 'true');
       showToast('Datos migrados a la nube correctamente', 'success');
@@ -605,7 +611,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const updateClient = async (client: Client) => {
     if (user) {
-      const { error } = await supabase.from('clients').update(cleanForSupabase(client, user.id)).eq('id', client.id).eq('userId', user.id);
+      const { error } = await supabase.from('clients').update(cleanForSupabase(client, user.id)).eq('id', client.id).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'updateClient', showToast);
     }
     setClients(prev => prev.map(c => c.id === client.id ? client : c));
@@ -625,7 +631,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const updateProperty = async (property: Property) => {
     if (user) {
-      const { error } = await supabase.from('properties').update(cleanForSupabase(property, user.id)).eq('id', property.id).eq('userId', user.id);
+      const { error } = await supabase.from('properties').update(cleanForSupabase(property, user.id)).eq('id', property.id).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'updateProperty', showToast);
     }
     setProperties(prev => prev.map(p => p.id === property.id ? property : p));
@@ -645,7 +651,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const updateTask = async (task: Task) => {
     if (user) {
-      const { error } = await supabase.from('tasks').update(cleanForSupabase(task, user.id)).eq('id', task.id).eq('userId', user.id);
+      const { error } = await supabase.from('tasks').update(cleanForSupabase(task, user.id)).eq('id', task.id).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'updateTask', showToast);
     }
     setTasks(prev => prev.map(t => t.id === task.id ? task : t));
@@ -654,7 +660,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const completeTask = async (taskId: string) => {
     if (user) {
-      const { error } = await supabase.from('tasks').update({ status: 'completada' }).eq('id', taskId).eq('userId', user.id);
+      const { error } = await supabase.from('tasks').update({ status: 'completada' }).eq('id', taskId).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'completeTask', showToast);
     }
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completada' } : t));
@@ -662,7 +668,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const deleteTask = async (taskId: string) => {
     if (user) {
-      const { error } = await supabase.from('tasks').delete().eq('id', taskId).eq('userId', user.id);
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'deleteTask', showToast);
     }
     setTasks(prev => prev.filter(t => t.id !== taskId));
@@ -681,7 +687,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const updateEvent = async (event: CalendarEvent) => {
     if (user) {
-      const { error } = await supabase.from('events').update(cleanForSupabase(event, user.id)).eq('id', event.id).eq('userId', user.id);
+      const { error } = await supabase.from('events').update(cleanForSupabase(event, user.id)).eq('id', event.id).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'updateEvent', showToast);
     }
     setEvents(prev => prev.map(e => e.id === event.id ? event : e));
@@ -690,7 +696,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const completeEvent = async (eventId: string) => {
     if (user) {
-      const { error } = await supabase.from('events').update({ status: 'realizado' }).eq('id', eventId).eq('userId', user.id);
+      const { error } = await supabase.from('events').update({ status: 'realizado' }).eq('id', eventId).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'completeEvent', showToast);
     }
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: 'realizado' } : e));
@@ -698,7 +704,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const cancelEvent = async (eventId: string) => {
     if (user) {
-      const { error } = await supabase.from('events').update({ status: 'cancelado' }).eq('id', eventId).eq('userId', user.id);
+      const { error } = await supabase.from('events').update({ status: 'cancelado' }).eq('id', eventId).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'cancelEvent', showToast);
     }
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: 'cancelado' } : e));
@@ -706,7 +712,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const deleteEvent = async (eventId: string) => {
     if (user) {
-      const { error } = await supabase.from('events').delete().eq('id', eventId).eq('userId', user.id);
+      const { error } = await supabase.from('events').delete().eq('id', eventId).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'deleteEvent', showToast);
     }
     setEvents(prev => prev.filter(e => e.id !== eventId));
@@ -726,7 +732,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const updateSale = async (sale: Sale) => {
     if (user) {
-      const { error } = await supabase.from('sales').update(cleanForSupabase(sale, user.id)).eq('id', sale.id).eq('userId', user.id);
+      const { error } = await supabase.from('sales').update(cleanForSupabase(sale, user.id)).eq('id', sale.id).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'updateSale', showToast);
     }
     setSales(prev => prev.map(s => s.id === sale.id ? sale : s));
@@ -736,7 +742,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const deleteSale = async (saleId: string) => {
     if (user) {
-      const { error } = await supabase.from('sales').delete().eq('id', saleId).eq('userId', user.id);
+      const { error } = await supabase.from('sales').delete().eq('id', saleId).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'deleteSale', showToast);
     }
     setSales(prev => prev.filter(s => s.id !== saleId));
@@ -821,7 +827,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const updateReferredColleague = async (colleague: ReferredColleague) => {
     if (user) {
-      const { error } = await supabase.from('referred_colleagues').update(cleanForSupabase(colleague, user.id)).eq('id', colleague.id).eq('userId', user.id);
+      const { error } = await supabase.from('referred_colleagues').update(cleanForSupabase(colleague, user.id)).eq('id', colleague.id).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'updateReferredColleague', showToast);
     }
     setReferredColleagues(prev => prev.map(c => c.id === colleague.id ? colleague : c));
@@ -830,7 +836,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const deleteReferredColleague = async (colleagueId: string) => {
     if (user) {
-      const { error } = await supabase.from('referred_colleagues').delete().eq('id', colleagueId).eq('userId', user.id);
+      const { error } = await supabase.from('referred_colleagues').delete().eq('id', colleagueId).eq('user_id', user.id);
       if (error) handleSupabaseError(error, 'deleteReferredColleague', showToast);
     }
     setReferredColleagues(prev => prev.filter(c => c.id !== colleagueId));
@@ -840,7 +846,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (newProfile: Profile) => {
     if (user) {
       const { error } = await supabase.from('profiles').upsert({
-        userId: user.id,
+        user_id: user.id,
         name: newProfile.name,
         email: newProfile.email,
         phone: newProfile.phone,
