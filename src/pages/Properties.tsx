@@ -85,9 +85,11 @@ export default function Properties() {
 
   // Captar desde Link states
   const [captureUrl, setCaptureUrl] = useState('');
-  const [captureStep, setCaptureStep] = useState<'idle' | 'analyzing' | 'preview'>('idle');
+  const [captureStep, setCaptureStep] = useState<'idle' | 'analyzing' | 'error' | 'manual' | 'preview'>('idle');
   const [captureProgressStep, setCaptureProgressStep] = useState(0);
   const [capturePreview, setCapturePreview] = useState<Partial<Property> | null>(null);
+  const [captureManualText, setCaptureManualText] = useState('');
+  const [captureErrorMsg, setCaptureErrorMsg] = useState('');
 
   // Form State
   const [formData, setFormData] = useState<Partial<Property>>({
@@ -1233,11 +1235,11 @@ export default function Properties() {
 
       {isImportModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }}></div>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); setCaptureManualText(''); setCaptureErrorMsg(''); }}></div>
           <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
               <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">Captar desde Link</h2>
-              <button onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
+              <button onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); setCaptureManualText(''); setCaptureErrorMsg(''); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 font-medium">
@@ -1267,21 +1269,21 @@ export default function Properties() {
                   setCaptureStep('analyzing');
                   setCaptureProgressStep(0);
                   const steps = [
-                    'Conectando con el portal...',
+                    'Intentando conexión segura...',
                     'Descargando publicación...',
                     'Extrayendo datos estructurados...',
                     'Detectando imágenes...',
-                    'Generando vista previa...'
+                    'Casi listo...'
                   ];
                   steps.forEach((_, i) => {
-                    setTimeout(() => setCaptureProgressStep(i + 1), (i + 1) * 400);
+                    setTimeout(() => setCaptureProgressStep(i + 1), (i + 1) * 500);
                   });
                   try {
                     const res = await fetch(`/api/scrape?url=${encodeURIComponent(captureUrl)}`);
                     const data = await res.json();
                     if (!res.ok || !data.success) {
-                      showToast(data.error || 'Error al conectar con el portal', 'error');
-                      setCaptureStep('idle');
+                      setCaptureErrorMsg(data.error || `Error ${res.status}: El portal bloqueó la conexión.`);
+                      setCaptureStep('error');
                       setCaptureProgressStep(0);
                       return;
                     }
@@ -1294,8 +1296,8 @@ export default function Properties() {
                     });
                     setCaptureStep('preview');
                   } catch (err: any) {
-                    showToast(err?.message || 'Error de conexión con el servidor', 'error');
-                    setCaptureStep('idle');
+                    setCaptureErrorMsg(err?.message || 'Error de conexión con el servidor. El portal puede estar bloqueando solicitudes automáticas.');
+                    setCaptureStep('error');
                     setCaptureProgressStep(0);
                   }
                 }}>
@@ -1308,7 +1310,7 @@ export default function Properties() {
                     <Loader2 size={20} className="animate-spin" /> Analizando publicación...
                   </div>
                   <div className="space-y-2">
-                    {['Validando URL', 'Analizando publicación', 'Detectando datos principales', 'Detectando imágenes', 'Generando vista previa'].map((label, i) => (
+                    {['Intentando conexión segura...', 'Descargando publicación...', 'Extrayendo datos estructurados...', 'Detectando imágenes...', 'Casi listo...'].map((label, i) => (
                       <div key={label} className="flex items-center gap-3">
                         {captureProgressStep > i ? (
                           <CheckCircle2 size={16} className="text-green-500" />
@@ -1323,6 +1325,74 @@ export default function Properties() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+              {captureStep === 'error' && (
+                <div className="p-6 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800/30 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-red-100 dark:bg-red-800/30 rounded-lg shrink-0">
+                      <X size={20} className="text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-red-800 dark:text-red-300">El portal bloqueó la conexión automática</h4>
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-1 leading-relaxed">
+                        {captureErrorMsg || 'No se pudo acceder al link automáticamente. Algunos portales (como Zonaprop) protegen sus publicaciones contra bots.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-slate-800/50 rounded-lg p-3 border border-red-100 dark:border-slate-700 space-y-2">
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">¿Qué podés hacer?</p>
+                    <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-1 list-disc list-inside">
+                      <li>Verificá que el link sea una publicación activa y pública.</li>
+                      <li>Probá de nuevo en unos segundos.</li>
+                      <li>Usá el <strong>Modo Manual</strong> como fallback infalible.</li>
+                    </ul>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => { setCaptureStep('idle'); setCaptureErrorMsg(''); }}>
+                      Reintentar
+                    </Button>
+                    <Button variant="primary" className="flex-1" onClick={() => { setCaptureStep('manual'); setCaptureManualText(''); }}>
+                      Modo Manual
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {captureStep === 'manual' && (
+                <div className="space-y-4">
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl">
+                    <p className="text-xs text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+                      <strong>Modo de Captación Manual.</strong> Abrí el link en tu navegador, seleccioná todo (<kbd className="px-1 py-0.5 bg-white dark:bg-slate-800 rounded border border-amber-200 dark:border-amber-700 font-mono text-[10px]">Ctrl+A</kbd> + <kbd className="px-1 py-0.5 bg-white dark:bg-slate-800 rounded border border-amber-200 dark:border-amber-700 font-mono text-[10px]">Ctrl+C</kbd> en Zonaprop) y pegalo acá abajo. El sistema extraerá los datos directamente del contenido.
+                    </p>
+                  </div>
+                  <textarea
+                    rows={8}
+                    placeholder="Pegá acá todo el contenido copiado de la página (Ctrl+V)..."
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50 dark:bg-slate-800/50 font-mono text-xs leading-relaxed resize-y"
+                    value={captureManualText}
+                    onChange={e => setCaptureManualText(e.target.value)}
+                  />
+                  <Button
+                    variant="primary"
+                    className="w-full"
+                    disabled={captureManualText.trim().length < 50}
+                    onClick={() => {
+                      try {
+                        const scraped = scrapeProperty(captureManualText, captureUrl);
+                        setCapturePreview({
+                          ...scraped,
+                          code: `P${Math.floor(Math.random() * 1000)}`,
+                          status: 'disponible',
+                          notes: `Captada manualmente desde ${scraped.externalSource || 'portal'} el ${new Date().toLocaleDateString('es-AR')}.`,
+                        });
+                        setCaptureStep('preview');
+                      } catch (err: any) {
+                        showToast('No se pudieron extraer datos del texto pegado. Verificá que sea el contenido completo de la publicación.', 'error');
+                      }
+                    }}
+                  >
+                    Procesar contenido pegado
+                  </Button>
                 </div>
               )}
               {captureStep === 'preview' && capturePreview && (
@@ -1409,7 +1479,7 @@ export default function Properties() {
               )}
             </div>
             <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2 shrink-0">
-              <Button variant="ghost" onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); }}>Cancelar</Button>
+              <Button variant="ghost" onClick={() => { setIsImportModalOpen(false); setCaptureStep('idle'); setCapturePreview(null); setCaptureUrl(''); setCaptureManualText(''); setCaptureErrorMsg(''); }}>Cancelar</Button>
               <Button 
                 variant="primary" 
                 disabled={captureStep !== 'preview' || !capturePreview}
@@ -1425,6 +1495,8 @@ export default function Properties() {
                   setCaptureStep('idle');
                   setCapturePreview(null);
                   setCaptureUrl('');
+                  setCaptureManualText('');
+                  setCaptureErrorMsg('');
                 }}
               >
                 Guardar Propiedad

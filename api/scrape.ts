@@ -59,15 +59,28 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Simulate human browsing delay (anti-bot)
+    const delay = Math.floor(Math.random() * 500) + 300; // 300-800ms
+    await new Promise(r => setTimeout(r, delay));
+
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'es-AR,es;q=0.9,en-US;q=0.8,en;q=0.7',
         'Cache-Control': 'no-cache',
+        'Referer': 'https://www.google.com.ar/',
+        'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'Connection': 'keep-alive',
       },
-      // Vercel serverless runtime supports fetch natively (Node 18+)
+      redirect: 'follow',
     });
 
     if (!response.ok) {
