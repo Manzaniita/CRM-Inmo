@@ -5,7 +5,7 @@ export interface SearchResultItem {
   id: string;
   title: string;
   subtitle: string;
-  type: 'cliente' | 'propiedad' | 'venta' | 'documento' | 'tarea' | 'colega';
+  type: 'cliente' | 'propiedad' | 'venta' | 'tarea' | 'colega';
   path: string;
 }
 
@@ -13,7 +13,6 @@ interface SearchData {
   clients: Client[];
   properties: Property[];
   sales: Sale[];
-  documents: Document[];
   tasks: Task[];
   referredColleagues: ReferredColleague[];
   buyers: import('../types').Buyer[];
@@ -120,28 +119,6 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
         subtitle: `${b.telefono} · ${b.estado}`,
         type: 'cliente',
         path: '/compradores',
-      });
-    }
-  });
-
-  // Documentos
-  data.documents.forEach((d) => {
-    if (
-      matches(d.name) ||
-      matches(d.type) ||
-      matches(d.status)
-    ) {
-      const path = d.propertyId
-        ? `/propiedades/${d.propertyId}`
-        : d.clientId
-          ? `/clientes/${d.clientId}`
-          : '/clientes';
-      found.push({
-        id: d.id,
-        title: d.name,
-        subtitle: `${d.type} · ${d.status}`,
-        type: 'documento',
-        path,
       });
     }
   });

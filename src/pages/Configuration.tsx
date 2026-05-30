@@ -14,7 +14,8 @@ import {
   Plus,
   X,
   Loader2,
-  Key
+  Key,
+  RefreshCw
 } from 'lucide-react';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
@@ -23,6 +24,14 @@ import { cn } from '../lib/utils';
 import { useAppContext, Profile } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+
+interface UserProfile {
+  user_id: string;
+  name: string;
+  email: string;
+  role: 'agent' | 'superadmin';
+  must_change_password?: boolean;
+}
 
 type ConfigTabId = 'perfil' | 'plantillas' | 'datos' | 'usuarios';
 
@@ -37,23 +46,27 @@ export default function Configuration() {
   const [form, setForm] = useState<Profile>(profile);
 
   // Superadmin state
-  const [usersList, setUsersList] = useState<any[]>([]);
+  const [usersList, setUsersList] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [newUser, setNewUser] = useState({ email: '', password: '', name: '', role: 'agent' });
   const [creatingUser, setCreatingUser] = useState(false);
 
   React.useEffect(() => {
-    if (activeTab === 'usuarios' && profile.role === 'superadmin') {
+    if (activeTab === 'usuarios' && profile?.role === 'superadmin') {
+      console.log("AUDITORIA: Cargando usuarios como", profile?.role);
       fetchUsers();
     }
   }, [activeTab, profile.role]);
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
+    console.log("AUDITORIA: Cargando usuarios como", profile?.role);
     const { data, error } = await supabase.from('profiles').select('*').order('name');
-    if (!error && data) {
-      setUsersList(data);
+    if (error) {
+      showToast(`Error de permisos: ${error.message}`, 'error');
+    } else if (data) {
+      setUsersList(data as UserProfile[]);
     }
     setLoadingUsers(false);
   };
@@ -98,6 +111,10 @@ export default function Configuration() {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    if (userId === profile.user_id) {
+      showToast('No podés eliminarte a vos mismo.', 'warning');
+      return;
+    }
     if (window.confirm('¿Estás seguro de eliminar este usuario? Esto solo lo borrará de la lista de agentes. Para impedir el acceso, debes eliminarlo manualmente desde Supabase Auth (o vía Edge Function).')) {
       const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
       if (error) {
@@ -110,6 +127,10 @@ export default function Configuration() {
   };
 
   const handleForceReset = async (userId: string) => {
+    if (userId === profile.user_id) {
+      showToast('No podés restablecer tu propia clave desde aquí.', 'warning');
+      return;
+    }
     if (window.confirm('¿Forzar reseteo de clave para este usuario en su próximo ingreso?')) {
       const { error } = await supabase.from('profiles').update({ must_change_password: true }).eq('user_id', userId);
       if (error) {
@@ -416,7 +437,10 @@ export default function Configuration() {
           {activeTab === 'usuarios' && profile.role === 'superadmin' && (
             <Card title="Gestión de Usuarios" subtitle="Administra los agentes y superadmins del sistema.">
               <div className="pt-4 space-y-4">
-                <div className="flex justify-end mb-4">
+                <div className="flex justify-end mb-4 gap-2">
+                  <Button variant="outline" onClick={fetchUsers}>
+                    <RefreshCw size={16} className="mr-2" /> Refrescar Lista
+                  </Button>
                   <Button variant="primary" onClick={() => setShowUserModal(true)}>
                     <Plus size={18} className="mr-2" /> Crear Nuevo Usuario
                   </Button>
@@ -450,9 +474,9 @@ export default function Configuration() {
                             </td>
                             <td className="px-4 py-4 text-center">
                               {u.must_change_password ? (
-                                <Badge variant="warning" size="sm">Reset Pendiente</Badge>
+                                <Badge variant="orange" size="sm">Reset Pendiente</Badge>
                               ) : (
-                                <Badge variant="success" size="sm">Actualizada</Badge>
+                                <Badge variant="green" size="sm">Actualizada</Badge>
                               )}
                             </td>
                             <td className="px-4 py-4">

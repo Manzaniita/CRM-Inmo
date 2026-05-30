@@ -286,7 +286,6 @@ export default function Properties() {
 
   if (selectedProp) {
     const propSales = sales.filter(s => s.propiedadId === id);
-    const propRentals = rentals.filter(r => r.propiedadId === id);
     
     // Find interested clients based on zone and budget
     const interestedClients = clients.filter(c => 
@@ -403,12 +402,9 @@ export default function Properties() {
                   <Button variant="outline" size="sm" onClick={() => { setSaleModalMode('create'); setSelectedSaleForModal(undefined); setIsSaleModalOpen(true); }}>
                     <Plus size={14} className="mr-1" /> Nueva Venta
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => { setRentalModalMode('create'); setSelectedRentalForModal(undefined); setIsRentalModalOpen(true); }}>
-                    <Plus size={14} className="mr-1" /> Nuevo Alquiler
-                  </Button>
                 </div>
               </div>
-              {propSales.length === 0 && propRentals.length === 0 ? (
+              {propSales.length === 0 ? (
                 <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4">Sin operaciones relacionadas.</p>
               ) : (
                 <>
@@ -421,22 +417,6 @@ export default function Properties() {
                               <Badge variant="blue">Venta</Badge>
                               <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{sale.estado}</span>
                               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Cliente: {clients.find(c => c.id === sale.clientCompradorId)?.name || 'Desconocido'}</p>
-                            </div>
-                            <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" />
-                          </div>
-                        </div>
-                      </Card>
-                    </React.Fragment>
-                  ))}
-                  {propRentals.map(rental => (
-                    <React.Fragment key={rental.id}>
-                      <Card className="border-green-100 cursor-pointer hover:shadow-md transition-all">
-                        <div onClick={() => { setSelectedRentalForModal(rental); setRentalModalMode('view'); setIsRentalModalOpen(true); }}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Badge variant="green">Alquiler</Badge>
-                              <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{rental.estado}</span>
-                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Cliente: {clients.find(c => c.id === rental.inquilinoId)?.name || 'Desconocido'}</p>
                             </div>
                             <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" />
                           </div>
@@ -493,9 +473,6 @@ export default function Properties() {
                   <Button variant="outline" size="sm" onClick={() => { setSaleModalMode('create'); setSelectedSaleForModal(undefined); setIsSaleModalOpen(true); }}>
                     <Plus size={14} className="mr-1" /> Nueva Venta
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => { setRentalModalMode('create'); setSelectedRentalForModal(undefined); setIsRentalModalOpen(true); }}>
-                    <Plus size={14} className="mr-1" /> Nuevo Alquiler
-                  </Button>
                   <Button variant="ghost" size="sm" className="border border-slate-100 dark:border-slate-800" onClick={() => selectedProp.externalLink && window.open(selectedProp.externalLink, '_blank')}>
                     <ExternalLink size={16} className="mr-2" /> Ver Publicación
                   </Button>
@@ -523,33 +500,7 @@ export default function Properties() {
               </div>
             </Card>
 
-            <Card title="Documentos Relacionados">
-              <div className="space-y-3">
-                {documents.filter(d => d.propertyId === id).length > 0 ? (
-                  documents.filter(d => d.propertyId === id).slice(0, 4).map(doc => (
-                    <div key={doc.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => { setSelectedDocForModal(doc); setDocModalMode('view'); setIsDocModalOpen(true); }}>
-                      <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex items-center justify-center border border-slate-100 dark:border-slate-800">
-                        <FileText size={18} className="text-slate-500 dark:text-slate-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{doc.name}</p>
-                        <Badge size="sm" variant={doc.status === 'revisado' ? 'green' : doc.status === 'cargado' ? 'blue' : doc.status === 'vencido' ? 'red' : 'orange'}>{doc.status}</Badge>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-center text-slate-400 dark:text-slate-500 py-2 italic">Sin documentos relacionados.</p>
-                )}
-                {documents.filter(d => d.propertyId === id).length > 4 && (
-                  <Button variant="ghost" size="sm" className="w-full" onClick={() => { setSelectedDocForModal(undefined); setDocModalMode('create'); setIsDocModalOpen(true); }}>
-                    Ver todos ({documents.filter(d => d.propertyId === id).length})
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" className="w-full" onClick={() => { setQuickUploadTitle(''); setQuickUploadFile(null); setIsQuickUploadOpen(true); }}>
-                  <Plus size={14} className="mr-1" /> Subir Documento
-                </Button>
-              </div>
-            </Card>
+
 
             <Card title="Clientes con Perfil de Interés">
               <div className="space-y-4">

@@ -15,11 +15,8 @@ import {
   Key,
   Activity,
   AlertTriangle,
-  FileText,
   Bell,
-  Star,
-  Target,
-  ListChecks
+  Star
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -134,7 +131,7 @@ function LinearProgress({
 }
 
 export default function Dashboard() {
-  const { clients, properties, events, tasks, sales, rentals, documents, activityLogs, completeTask, profile } = useAppContext();
+  const { clients, properties, events, tasks, sales, activityLogs, completeTask, profile } = useAppContext();
   const navigate = useNavigate();
 
   const today = new Date().toISOString().split('T')[0];
@@ -145,24 +142,14 @@ export default function Dashboard() {
   const totalProperties = properties.length;
   const availableProperties = properties.filter(p => p.status === 'disponible').length;
   const soldProperties = properties.filter(p => p.status === 'vendida').length;
-  const rentedProperties = properties.filter(p => p.status === 'alquilada').length;
   const activeSales = sales.filter(s => !['vendida', 'caída'].includes(s.estado)).length;
-  const activeRentals = rentals.filter(r => r.estado === 'en curso').length;
   const pendingTasks = tasks.filter(t => t.status === 'pendiente' || t.status === 'en proceso').length;
-  const pendingDocs = documents.filter(d => d.status === 'pendiente' || d.status === 'vencido').length;
 
   // Alertas
   const overdueTasks = tasks.filter(t => isOverdue(t.dueDate) && t.status !== 'completada');
   const todayTasks = tasks.filter(t => isToday(t.dueDate) && t.status !== 'completada');
-  const expiringRentals = rentals.filter(
-    r => r.estado === 'en curso' && isWithinNextDays(r.fechaFin, 30)
-  );
-  const pendingDocuments = documents.filter(d => d.status === 'pendiente');
-  const overdueDocuments = documents.filter(d => d.status === 'vencido');
 
   const todayEvents = events.filter(e => e.date === today && e.status !== 'cancelado');
-  const urgentTasks = tasks.filter(t => (t.priority === 'urgente' || t.status === 'vencida') && t.status !== 'completada');
-
   const pendingTasksList = tasks
     .filter(t => !['completada', 'cancelada'].includes(t.status))
     .sort((a, b) => {
@@ -208,14 +195,12 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Total Clientes" value={totalClients} icon={Users} color="blue" />
         <StatCard label="Total Propiedades" value={totalProperties} icon={Home} color="green" />
         <StatCard label="Prop. Disponibles" value={availableProperties} icon={Home} color="green" />
         <StatCard label="Prop. Vendidas" value={soldProperties} icon={TrendingUp} color="purple" />
-        <StatCard label="Prop. Alquiladas" value={rentedProperties} icon={Key} color="orange" />
         <StatCard label="Ventas en Curso" value={activeSales} icon={TrendingUp} color="cyan" />
-        <StatCard label="Alquileres Activos" value={activeRentals} icon={Key} color="cyan" />
         <StatCard label="Tareas Pendientes" value={pendingTasks} icon={CheckSquare} color="orange" />
       </div>
 
@@ -274,34 +259,7 @@ export default function Dashboard() {
                 onAction={() => navigate('/tareas')}
               />
             )}
-            {expiringRentals.length > 0 && (
-              <AlertRow
-                icon={Clock}
-                color="purple"
-                text={`${expiringRentals.length} alquiler${expiringRentals.length > 1 ? 'es' : ''} por vencer`}
-                actionText="Ver"
-                onAction={() => navigate('/alquileres')}
-              />
-            )}
-            {overdueDocuments.length > 0 && (
-              <AlertRow
-                icon={FileText}
-                color="red"
-                text={`${overdueDocuments.length} documento${overdueDocuments.length > 1 ? 's' : ''} vencido${overdueDocuments.length > 1 ? 's' : ''}`}
-                actionText="Ver"
-                onAction={() => navigate('/documentos')}
-              />
-            )}
-            {pendingDocuments.length > 0 && (
-              <AlertRow
-                icon={FileText}
-                color="blue"
-                text={`${pendingDocuments.length} documento${pendingDocuments.length > 1 ? 's' : ''} pendiente${pendingDocuments.length > 1 ? 's' : ''}`}
-                actionText="Ver"
-                onAction={() => navigate('/documentos')}
-              />
-            )}
-            {overdueTasks.length === 0 && todayTasks.length === 0 && expiringRentals.length === 0 && overdueDocuments.length === 0 && pendingDocuments.length === 0 && (
+            {overdueTasks.length === 0 && todayTasks.length === 0 && (
               <div className="text-center py-6">
                 <CheckCircle2 size={32} className="mx-auto text-slate-200 dark:text-slate-700 mb-2" strokeWidth={1.5} />
                 <p className="text-sm text-slate-400 dark:text-slate-500 italic">¡Todo bajo control!</p>

@@ -639,7 +639,6 @@ export default function Clients() {
 
   if (selectedClient) {
     const clientSales = sales.filter(s => s.clientCompradorId === id);
-    const clientRentals = rentals.filter(r => r.inquilinoId === id);
 
     return (
       <div className="page-enter">
@@ -783,20 +782,17 @@ export default function Clients() {
             </Card>
 
             {/* Operations */}
-            <Card title="Operaciones Relacionadas" subtitle="Ventas y alquileres"
+            <Card title="Operaciones Relacionadas" subtitle="Ventas"
               footer={
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => { setSaleModalMode('create'); setSelectedSaleForModal(undefined); setIsSaleModalOpen(true); }}>
                     <Plus size={14} className="mr-1" strokeWidth={1.5} /> Nueva Venta
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => { setRentalModalMode('create'); setSelectedRentalForModal(undefined); setIsRentalModalOpen(true); }}>
-                    <Plus size={14} className="mr-1" strokeWidth={1.5} /> Nuevo Alquiler
-                  </Button>
                 </div>
               }
               glow
             >
-              {clientSales.length === 0 && clientRentals.length === 0 ? (
+              {clientSales.length === 0 ? (
                 <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4">Sin operaciones relacionadas.</p>
               ) : (
                 <div className="space-y-3">
@@ -813,25 +809,6 @@ export default function Clients() {
                             <Badge variant="blue">Venta</Badge>
                             <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{sale.estado}</span>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{properties.find(p => p.id === sale.propiedadId)?.title || sale.propiedadId}</p>
-                          </div>
-                          <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
-                        </div>
-                      </Card>
-                    </motion.div>
-                  ))}
-                  {clientRentals.map(rental => (
-                    <motion.div
-                      key={rental.id}
-                      whileHover={{ x: 4 }}
-                      onClick={() => { setSelectedRentalForModal(rental); setRentalModalMode('view'); setIsRentalModalOpen(true); }}
-                      className="cursor-pointer"
-                    >
-                      <Card className="border-emerald-100 dark:border-emerald-500/20 hover:shadow-soft-md transition-all" glow={false}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Badge variant="green">Alquiler</Badge>
-                            <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{rental.estado}</span>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{properties.find(p => p.id === rental.propiedadId)?.title || rental.propiedadId}</p>
                           </div>
                           <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
                         </div>
@@ -887,33 +864,7 @@ export default function Clients() {
               </div>
             </Card>
 
-            <Card title="Documentos Relacionados" glow>
-              <div className="space-y-3">
-                {documents.filter(d => d.clientId === id).length > 0 ? (
-                  documents.filter(d => d.clientId === id).slice(0, 4).map(doc => (
-                    <div key={doc.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => { setSelectedDocForModal(doc); setDocModalMode('view'); setIsDocModalOpen(true); }}>
-                      <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center border border-slate-100 dark:border-white/5">
-                        <FileText size={18} className="text-slate-500 dark:text-slate-400" strokeWidth={1.5} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{doc.name}</p>
-                        <Badge size="sm" variant={doc.status === 'revisado' ? 'green' : doc.status === 'cargado' ? 'blue' : doc.status === 'vencido' ? 'red' : 'orange'}>{doc.status}</Badge>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-center text-slate-400 dark:text-slate-500 py-2 italic">Sin documentos relacionados.</p>
-                )}
-                {documents.filter(d => d.clientId === id).length > 4 && (
-                  <Button variant="ghost" size="sm" className="w-full" onClick={() => { setSelectedDocForModal(undefined); setDocModalMode('create'); setIsDocModalOpen(true); }}>
-                    Ver todos ({documents.filter(d => d.clientId === id).length})
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" className="w-full" onClick={() => { setSelectedDocForModal(undefined); setDocModalMode('create'); setIsDocModalOpen(true); }}>
-                  <Plus size={14} className="mr-1" strokeWidth={1.5} /> Subir Documento
-                </Button>
-              </div>
-            </Card>
+
 
             <Card title="Información del Cliente" glow>
               <div className="space-y-3 text-sm">

@@ -19,7 +19,6 @@ export type RelationEntityType =
   | 'sale'
   | 'task'
   | 'event'
-  | 'document'
   | 'marketplace'
   | 'waitingRoom';
 
@@ -47,7 +46,6 @@ interface AppData {
   sales: Sale[];
   tasks: Task[];
   events: CalendarEvent[];
-  documents: Document[];
   referredColleagues: ReferredColleague[];
   waitingRoom: WaitingRoomEntry[];
   buyers: Buyer[];
@@ -217,19 +215,7 @@ export function getClientRelations(
   })));
   if (eventGroup) groups.push(eventGroup);
 
-  // 7. Documentos
-  const clientDocs = data.documents.filter(d => d.clientId === clientId);
-  const docGroup = buildGroup('Documentos', clientDocs.map(d => ({
-    id: d.id,
-    type: 'document',
-    title: d.name,
-    subtitle: d.type,
-    status: d.status,
-    route: `/clientes?clientId=${clientId}`
-  })));
-  if (docGroup) groups.push(docGroup);
-
-  // 8. Últimos movimientos
+  // 7. Últimos movimientos
   const logs = data.activityLogs.filter(l =>
     l.entityId === clientId ||
     normalizeText(l.title).includes(normalizeText(client.name)) ||
@@ -373,19 +359,7 @@ export function getPropertyRelations(
   })));
   if (taskGroup) groups.push(taskGroup);
 
-  // 6. Documentos
-  const propDocs = data.documents.filter(d => d.propertyId === propertyId);
-  const docGroup = buildGroup('Documentos', propDocs.map(d => ({
-    id: d.id,
-    type: 'document',
-    title: d.name,
-    subtitle: d.type,
-    status: d.status,
-    route: `/propiedades?propertyId=${propertyId}`
-  })));
-  if (docGroup) groups.push(docGroup);
-
-  // 7. Últimos movimientos
+  // 6. Últimos movimientos
   const logs = data.activityLogs.filter(l =>
     l.entityId === propertyId ||
     normalizeText(l.title).includes(normalizeText(property.title)) ||

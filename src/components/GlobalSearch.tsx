@@ -6,7 +6,6 @@ import {
   Home,
   CheckSquare,
   TrendingUp,
-  FileText,
   Briefcase,
   X
 } from 'lucide-react';
@@ -19,13 +18,12 @@ const TYPE_CONFIG = {
   propiedad: { label: 'Propiedades', icon: Home, color: 'text-green-600', bg: 'bg-green-50' },
   tarea: { label: 'Tareas', icon: CheckSquare, color: 'text-purple-600', bg: 'bg-purple-50' },
   venta: { label: 'Ventas', icon: TrendingUp, color: 'text-cyan-600', bg: 'bg-cyan-50' },
-  documento: { label: 'Documentos', icon: FileText, color: 'text-red-600', bg: 'bg-red-50' },
   colega: { label: 'Colegas', icon: Briefcase, color: 'text-orange-600', bg: 'bg-orange-50' },
 };
 
 export default function GlobalSearch() {
   const navigate = useNavigate();
-  const { clients, properties, tasks, sales, documents, referredColleagues, buyers } = useAppContext();
+  const { clients, properties, tasks, sales, referredColleagues, buyers } = useAppContext();
 
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -33,12 +31,12 @@ export default function GlobalSearch() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const results: SearchResultItem[] = useMemo(() => {
-    return searchAll({ clients, properties, tasks, sales, documents, referredColleagues, buyers }, query);
-  }, [query, clients, properties, tasks, sales, documents, referredColleagues, buyers]);
+    return searchAll({ clients, properties, tasks, sales, referredColleagues, buyers }, query);
+  }, [query, clients, properties, tasks, sales, referredColleagues, buyers]);
 
   const grouped = useMemo(() => {
     const groups: { type: SearchResultItem['type']; items: SearchResultItem[] }[] = [];
-    const order: SearchResultItem['type'][] = ['cliente', 'propiedad', 'venta', 'documento', 'tarea', 'colega'];
+    const order: SearchResultItem['type'][] = ['cliente', 'propiedad', 'venta', 'tarea', 'colega'];
     order.forEach(type => {
       const items = results.filter(r => r.type === type);
       if (items.length > 0) groups.push({ type, items });

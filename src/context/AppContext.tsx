@@ -24,6 +24,7 @@ interface ToastState {
 }
 
 export interface Profile {
+  user_id?: string;
   name: string;
   email: string;
   phone: string;
@@ -242,6 +243,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (profileRes.data && profileRes.data.length > 0) {
         const p = profileRes.data[0] as any;
         setProfile({
+          user_id: p.user_id ?? user.id,
           name: p.name ?? profile.name,
           email: p.email ?? profile.email,
           phone: p.phone ?? profile.phone,

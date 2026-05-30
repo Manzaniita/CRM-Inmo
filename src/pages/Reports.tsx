@@ -111,7 +111,7 @@ export default function Reports() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
          <ReportStat label="Ventas Totales Est. (USD)" value={formatCurrency(totalSalesEstimated, 'USD')} trend="+8.5%" trendType="up" />
          <ReportStat label="Ventas Reservadas" value={reservedSales.toString()} trend="+2" trendType="up" />
          <ReportStat label="Visitas del Mes" value={monthlyVisits.toString()} trend="-4%" trendType="down" />
@@ -195,7 +195,6 @@ export default function Reports() {
           <Card title="Estado de Propiedades">
              <div className="space-y-4">
                 <ProgressItem label="Venta" value={Math.round((properties.filter(p => p.operation === 'venta').length / properties.length) * 100) || 0} color="bg-orange-500" />
-                <ProgressItem label="Alquiler" value={Math.round((properties.filter(p => p.operation === 'alquiler').length / properties.length) * 100) || 0} color="bg-blue-500" />
                 <ProgressItem label="Disponibles" value={Math.round((properties.filter(p => p.status === 'disponible').length / properties.length) * 100) || 0} color="bg-green-500" />
                 <ProgressItem label="Ventas Reservadas" value={Math.round((sales.filter(s => s.estado === 'reserva').length / sales.length) * 100) || 0} color="bg-purple-500" />
              </div>

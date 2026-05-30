@@ -58,16 +58,6 @@ const MENU_ITEMS = [
   { id: 'configuracion', label: 'Configuración', icon: Settings, path: '/configuracion' },
 ];
 
-function NotFound() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20">
-      <h2 className="text-4xl font-black text-slate-200 dark:text-slate-700 mb-4">404</h2>
-      <p className="text-slate-500 dark:text-slate-400 font-medium mb-6">La página que buscas no existe.</p>
-      <Link to="/dashboard" className="text-accent dark:text-dark-accent font-bold hover:underline">Volver al Dashboard</Link>
-    </div>
-  );
-}
-
 function ThemeToggle({ isDark, toggle }: { isDark: boolean; toggle: () => void }) {
   return (
     <button
@@ -374,6 +364,8 @@ export default function App() {
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/login" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/reset-password" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/documentos" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/alquileres" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
                   <Route path="/clientes" element={<PageTransition><Clients /></PageTransition>} />
                   <Route path="/clientes/:id" element={<PageTransition><Clients /></PageTransition>} />
@@ -388,7 +380,7 @@ export default function App() {
                   <Route path="/colegas-referidos" element={<PageTransition><ReferredColleagues /></PageTransition>} />
                   <Route path="/marketplace" element={<PageTransition><Marketplace /></PageTransition>} />
                   <Route path="/reservometro" element={<PageTransition><Reservometro /></PageTransition>} />
-                  <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </div>
             </AnimatePresence>
