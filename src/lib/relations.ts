@@ -19,6 +19,7 @@ export type RelationEntityType =
   | 'sale'
   | 'task'
   | 'event'
+  | 'document'
   | 'marketplace'
   | 'waitingRoom';
 
@@ -46,6 +47,7 @@ interface AppData {
   sales: Sale[];
   tasks: Task[];
   events: CalendarEvent[];
+  documents: Document[];
   referredColleagues: ReferredColleague[];
   waitingRoom: WaitingRoomEntry[];
   buyers: Buyer[];

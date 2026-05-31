@@ -21,7 +21,8 @@ import Button from '../components/Button';
 import { Card } from '../components/Card';
 import Badge from '../components/Badge';
 import { cn } from '../lib/utils';
-import { useAppContext, Profile } from '../context/AppContext';
+import { useAppContext } from '../context/AppContext';
+import type { Profile } from '../types';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -51,13 +52,27 @@ export default function Configuration() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [newUser, setNewUser] = useState({ email: '', password: '', name: '', role: 'agent' });
   const [creatingUser, setCreatingUser] = useState(false);
+  const [serverRole, setServerRole] = useState<string | null>(null);
+
+  const verifyRole = async () => {
+    const { data, error } = await supabase.rpc('get_my_role');
+    if (!error && data) {
+      setServerRole(data as string);
+    } else {
+      setServerRole(null);
+    }
+  };
 
   React.useEffect(() => {
-    if (activeTab === 'usuarios' && profile?.role === 'superadmin') {
-      console.log("AUDITORIA: Cargando usuarios como", profile?.role);
+    verifyRole();
+  }, []);
+
+  React.useEffect(() => {
+    if (activeTab === 'usuarios' && serverRole === 'superadmin') {
+      console.log("AUDITORIA: Cargando usuarios como", serverRole);
       fetchUsers();
     }
-  }, [activeTab, profile.role]);
+  }, [activeTab, serverRole]);
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -148,7 +163,7 @@ export default function Configuration() {
     setTimeout(() => setSaveStatus(false), 2000);
   };
 
-  const handleImport = (content: string) => {
+  const handleImport = async (content: string) => {
     try {
       const parsed = JSON.parse(content);
       const hasData = parsed && typeof parsed === 'object' && (
@@ -164,7 +179,7 @@ export default function Configuration() {
         return;
       }
       if (window.confirm('¿Estás seguro de importar este backup? Se reemplazarán todos los datos actuales.')) {
-        const ok = importData(content);
+        const ok = await importData(content);
         if (ok) {
           showToast('Datos importados correctamente', 'success');
         }
@@ -221,7 +236,7 @@ export default function Configuration() {
             active={activeTab === 'datos'}
             onClick={() => setActiveTab('datos')}
           />
-          {profile.role === 'superadmin' && (
+          {(profile.role === 'superadmin' || serverRole === 'superadmin') && (
             <ConfigTab
               icon={Users}
               label="Gestión de Usuarios"
@@ -434,7 +449,7 @@ export default function Configuration() {
             </Card>
           )}
 
-          {activeTab === 'usuarios' && profile.role === 'superadmin' && (
+          {activeTab === 'usuarios' && serverRole === 'superadmin' && (
             <Card title="Gestión de Usuarios" subtitle="Administra los agentes y superadmins del sistema.">
               <div className="pt-4 space-y-4">
                 <div className="flex justify-end mb-4 gap-2">

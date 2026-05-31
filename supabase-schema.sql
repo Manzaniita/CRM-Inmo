@@ -1,5 +1,5 @@
 -- ============================================================
--- EstateCRM Supabase Schema
+-- EstateCRM Supabase Schema (Cloud-First / snake_case)
 -- Copiar y pegar en el SQL Editor de Supabase
 -- ============================================================
 
@@ -16,10 +16,13 @@ CREATE TABLE IF NOT EXISTS profiles (
   email TEXT,
   phone TEXT,
   license TEXT,
-  templateProperty TEXT,
-  templateClient TEXT,
-  templateBuyer TEXT,
-  createdAt TIMESTAMPTZ DEFAULT NOW(),
+  template_property TEXT,
+  template_client TEXT,
+  template_buyer TEXT,
+  role TEXT DEFAULT 'agent',
+  must_change_password BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id)
 );
 
@@ -38,17 +41,17 @@ CREATE TABLE IF NOT EXISTS clients (
   origin TEXT,
   budget NUMERIC,
   currency TEXT,
-  interestZone TEXT,
-  propertyTypeInterest TEXT,
-  lastContact TEXT,
+  interest_zone TEXT,
+  property_type_interest TEXT,
+  last_contact TEXT,
   notes TEXT,
-  historyNotes JSONB,
-  createdAt TEXT,
+  history_notes JSONB,
+  created_at TEXT,
   profession TEXT,
-  referredBy TEXT,
-  referredByColleagueId TEXT,
-  dashboardPinned BOOLEAN DEFAULT FALSE,
-  dashboardArchived BOOLEAN DEFAULT FALSE,
+  referred_by TEXT,
+  referred_by_colleague_id TEXT,
+  dashboard_pinned BOOLEAN DEFAULT FALSE,
+  dashboard_archived BOOLEAN DEFAULT FALSE,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -72,22 +75,22 @@ CREATE TABLE IF NOT EXISTS properties (
   bedrooms INTEGER,
   bathrooms INTEGER,
   surface NUMERIC,
-  externalLink TEXT,
-  propertyLink TEXT,
-  externalSource TEXT,
+  external_link TEXT,
+  property_link TEXT,
+  external_source TEXT,
   notes TEXT,
-  historyNotes JSONB,
-  ownerId TEXT,
+  history_notes JSONB,
+  owner_id TEXT,
   images TEXT[],
-  imageUrl TEXT,
-  contractStartDate TEXT,
-  contractEndDate TEXT,
-  propertyCode TEXT,
-  marketplaceId TEXT,
-  marketplaceStatus TEXT,
-  marketplaceTitle TEXT,
-  marketplaceDescription TEXT,
-  marketplaceLastPublishedAt TEXT,
+  image_url TEXT,
+  contract_start_date TEXT,
+  contract_end_date TEXT,
+  property_code TEXT,
+  marketplace_id TEXT,
+  marketplace_status TEXT,
+  marketplace_title TEXT,
+  marketplace_description TEXT,
+  marketplace_last_published_at TEXT,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -97,48 +100,48 @@ CREATE TABLE IF NOT EXISTS properties (
 CREATE TABLE IF NOT EXISTS sales (
   id TEXT PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  clientCompradorId TEXT NOT NULL,
-  propiedadId TEXT NOT NULL,
-  propietarioId TEXT,
-  vendedorId TEXT,
-  precioPublicado NUMERIC,
-  precioOfrecido NUMERIC,
-  precioAcordado NUMERIC,
+  client_comprador_id TEXT NOT NULL,
+  propiedad_id TEXT NOT NULL,
+  propietario_id TEXT,
+  vendedor_id TEXT,
+  precio_publicado NUMERIC,
+  precio_ofrecido NUMERIC,
+  precio_acordado NUMERIC,
   moneda TEXT,
-  comisionEstimada NUMERIC,
-  fechaReserva TEXT,
-  fechaEscritura TEXT,
+  comision_estimada NUMERIC,
+  fecha_reserva TEXT,
+  fecha_escritura TEXT,
   estado TEXT,
   notas TEXT,
-  fechaCreacion TEXT,
-  fechaActualizacion TEXT,
+  fecha_creacion TEXT,
+  fecha_actualizacion TEXT,
   nombre TEXT,
   fecha TEXT,
   vendedor TEXT,
   comprador TEXT,
-  inmoAgente TEXT,
+  inmo_agente TEXT,
   puntas INTEGER,
-  porcentajeBruto NUMERIC,
-  porcentajeNeto NUMERIC,
-  porcentajeReferido NUMERIC,
-  valorOfertado NUMERIC,
+  porcentaje_bruto NUMERIC,
+  porcentaje_neto NUMERIC,
+  porcentaje_referido NUMERIC,
+  valor_ofertado NUMERIC,
   contraoferta1 NUMERIC,
   contraoferta2 NUMERIC,
-  valorCierre NUMERIC,
+  valor_cierre NUMERIC,
   escribania TEXT,
-  montoEscritura TEXT,
-  operationStatus TEXT,
-  isCollected BOOLEAN DEFAULT FALSE,
-  grossCommissionUsd NUMERIC,
-  infoExtra TEXT,
+  monto_escritura TEXT,
+  operation_status TEXT DEFAULT 'activa',
+  is_collected BOOLEAN DEFAULT FALSE,
+  gross_commission_usd NUMERIC,
+  info_extra TEXT,
   presupuesto NUMERIC,
-  compradorManual TEXT,
-  vendedorManual TEXT,
-  compradorInmobiliaria TEXT,
-  vendedorInmobiliaria TEXT,
-  externalPropertyAddress TEXT,
-  externalPropertyLink TEXT,
-  externalPropertyCode TEXT,
+  comprador_manual TEXT,
+  vendedor_manual TEXT,
+  comprador_inmobiliaria TEXT,
+  vendedor_inmobiliaria TEXT,
+  external_property_address TEXT,
+  external_property_link TEXT,
+  external_property_code TEXT,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -150,16 +153,16 @@ CREATE TABLE IF NOT EXISTS tasks (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
   description TEXT,
-  dueDate TEXT,
+  due_date TEXT,
   priority TEXT,
   status TEXT,
-  clientId TEXT,
-  propertyId TEXT,
+  client_id TEXT,
+  property_id TEXT,
   notes TEXT,
-  createdAt TEXT,
+  created_at TEXT,
   source TEXT,
-  autoKey TEXT,
-  relatedEntities JSONB,
+  auto_key TEXT,
+  related_entities JSONB,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -175,10 +178,10 @@ CREATE TABLE IF NOT EXISTS events (
   time TEXT,
   type TEXT,
   status TEXT,
-  clientId TEXT,
-  propertyId TEXT,
+  client_id TEXT,
+  property_id TEXT,
   notes TEXT,
-  createdAt TEXT,
+  created_at TEXT,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -188,22 +191,22 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE TABLE IF NOT EXISTS referred_colleagues (
   id TEXT PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  nombreApellido TEXT NOT NULL,
+  nombre_apellido TEXT NOT NULL,
   oficina TEXT,
   respondio BOOLEAN DEFAULT FALSE,
-  quienContacto TEXT,
-  comoRespondio INTEGER,
-  yaRefirio BOOLEAN DEFAULT FALSE,
-  aQuien TEXT,
-  primerContacto TEXT,
+  quien_contacto TEXT,
+  como_respondio INTEGER,
+  ya_refirio BOOLEAN DEFAULT FALSE,
+  a_quien TEXT,
+  primer_contacto TEXT,
   toque1 TEXT,
   toque2 TEXT,
   toque3 TEXT,
   toque4 TEXT,
   toque5 TEXT,
   toque6 TEXT,
-  propertyIds TEXT[],
-  referredClientIds TEXT[],
+  property_ids TEXT[],
+  referred_client_ids TEXT[],
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -217,8 +220,91 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   action TEXT,
   title TEXT,
   description TEXT,
-  createdAt TEXT,
-  entityId TEXT,
+  created_at TEXT,
+  entity_id TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- RENTALS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS rentals (
+  id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  inquilino_id TEXT NOT NULL,
+  propiedad_id TEXT NOT NULL,
+  propietario_id TEXT,
+  locador_id TEXT,
+  monto_mensual NUMERIC,
+  deposito NUMERIC,
+  comision NUMERIC,
+  moneda TEXT,
+  fecha_inicio TEXT,
+  fecha_fin TEXT,
+  dia_pago INTEGER,
+  estado TEXT,
+  notas TEXT,
+  fecha_creacion TEXT,
+  fecha_actualizacion TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- DOCUMENTS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS documents (
+  id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT,
+  status TEXT,
+  client_id TEXT,
+  property_id TEXT,
+  sale_id TEXT,
+  rental_id TEXT,
+  upload_date TEXT,
+  notes TEXT,
+  file_name TEXT,
+  file_size INTEGER,
+  file_extension TEXT,
+  simulated_url TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- WAITING ROOM
+-- ============================================================
+CREATE TABLE IF NOT EXISTS waiting_room (
+  id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  nombre TEXT NOT NULL,
+  telefono TEXT,
+  email TEXT,
+  interes TEXT,
+  propiedad_id TEXT,
+  estado TEXT,
+  fecha_ingreso TEXT,
+  notas TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- BUYERS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS buyers (
+  id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  nombre TEXT NOT NULL,
+  telefono TEXT,
+  email TEXT,
+  presupuesto_min NUMERIC,
+  presupuesto_max NUMERIC,
+  moneda TEXT,
+  zona_buscada TEXT,
+  tipo_propiedad TEXT,
+  estado TEXT,
+  notas TEXT,
+  created_at TEXT,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -233,12 +319,33 @@ ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE referred_colleagues ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rentals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE waiting_room ENABLE ROW LEVEL SECURITY;
+ALTER TABLE buyers ENABLE ROW LEVEL SECURITY;
 
--- Profiles: users can only see/update their own
+-- Helper function: SECURITY DEFINER evita recursión infinita
+CREATE OR REPLACE FUNCTION get_my_role()
+RETURNS TEXT
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT role FROM profiles WHERE user_id = auth.uid() LIMIT 1;
+$$;
+
+-- Profiles
+DROP POLICY IF EXISTS "Users can manage own profile" ON profiles;
+DROP POLICY IF EXISTS "Superadmin can manage all profiles" ON profiles;
+
 CREATE POLICY "Users can manage own profile" ON profiles
   FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
--- Clients: users can only see/manage their own
+CREATE POLICY "Superadmin can manage all profiles" ON profiles
+  FOR ALL USING (get_my_role() = 'superadmin') WITH CHECK (get_my_role() = 'superadmin');
+
+-- Clients
 CREATE POLICY "Users can manage own clients" ON clients
   FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
@@ -266,6 +373,22 @@ CREATE POLICY "Users can manage own colleagues" ON referred_colleagues
 CREATE POLICY "Users can manage own logs" ON activity_logs
   FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
+-- Rentals
+CREATE POLICY "Users can manage own rentals" ON rentals
+  FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- Documents
+CREATE POLICY "Users can manage own documents" ON documents
+  FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- Waiting Room
+CREATE POLICY "Users can manage own waiting_room" ON waiting_room
+  FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- Buyers
+CREATE POLICY "Users can manage own buyers" ON buyers
+  FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
 -- ============================================================
 -- INDEXES
 -- ============================================================
@@ -275,6 +398,10 @@ CREATE INDEX IF NOT EXISTS idx_sales_user_id ON sales(user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id);
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
-CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(dueDate);
+CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON activity_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_referred_colleagues_user_id ON referred_colleagues(user_id);
+CREATE INDEX IF NOT EXISTS idx_rentals_user_id ON rentals(user_id);
+CREATE INDEX IF NOT EXISTS idx_documents_user_id ON documents(user_id);
+CREATE INDEX IF NOT EXISTS idx_waiting_room_user_id ON waiting_room(user_id);
+CREATE INDEX IF NOT EXISTS idx_buyers_user_id ON buyers(user_id);

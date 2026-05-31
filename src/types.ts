@@ -270,3 +270,16 @@ export interface ActivityLog {
   createdAt: string;
   entityId?: string;
 }
+
+export interface Profile {
+  user_id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  license: string;
+  templateProperty: string;
+  templateClient: string;
+  templateBuyer: string;
+  role?: 'agent' | 'superadmin';
+  must_change_password?: boolean;
+}
