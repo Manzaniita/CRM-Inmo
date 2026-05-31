@@ -93,19 +93,73 @@ export default function Configuration() {
       return;
     }
     setCreatingUser(true);
+
+    // Intento 1: crear usuario nuevo en Auth
     const { data, error } = await supabase.auth.signUp({
       email: newUser.email,
       password: newUser.password,
     });
 
     if (error) {
+      const errMsg = error.message.toLowerCase();
+      const isAlreadyRegistered =
+        errMsg.includes('already registered') ||
+        errMsg.includes('user already registered') ||
+        errMsg.includes('user already exists');
+
+      if (isAlreadyRegistered) {
+        // Intento 2: el usuario ya existe en Auth. Intentamos loguearnos
+        // con la contraseña provista para obtener su user_id y crear/actualizar el perfil.
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: newUser.email,
+          password: newUser.password,
+        });
+
+        if (signInError || !signInData.user) {
+          showToast(
+            'El usuario ya existe en el sistema de autenticación. Intenta restablecer su contraseña.',
+            'error'
+          );
+          setCreatingUser(false);
+          return;
+        }
+
+        // Upsert del perfil para el usuario existente
+        const { error: upsertError } = await supabase.from('profiles').upsert({
+          user_id: signInData.user.id,
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role,
+          must_change_password: true,
+        });
+
+        if (upsertError) {
+          showToast('Error al crear el perfil: ' + upsertError.message, 'error');
+          setCreatingUser(false);
+          return;
+        }
+
+        setShowUserModal(false);
+        setCreatingUser(false);
+        setNewUser({ email: '', password: '', name: '', role: 'agent' });
+
+        // Cerramos sesión porque signInWithPassword nos logueó como el usuario existente
+        await signOut();
+        showToast(
+          'Perfil creado/actualizado para usuario existente. Por seguridad, re-ingresa como Administrador.',
+          'info'
+        );
+        navigate('/login');
+        return;
+      }
+
       showToast(error.message, 'error');
       setCreatingUser(false);
       return;
     }
 
     if (data.user) {
-      // Upsert profile
+      // Upsert profile para usuario recién creado
       await supabase.from('profiles').upsert({
         user_id: data.user.id,
         email: newUser.email,
@@ -117,7 +171,7 @@ export default function Configuration() {
       setShowUserModal(false);
       setCreatingUser(false);
       setNewUser({ email: '', password: '', name: '', role: 'agent' });
-      
+
       // Auto-login happens here, so we force sign out and redirect
       await signOut();
       showToast('Usuario creado con éxito. Por seguridad del sistema, por favor re-ingresa a tu cuenta de Administrador.', 'info');
