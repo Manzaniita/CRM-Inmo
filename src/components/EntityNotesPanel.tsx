@@ -13,11 +13,12 @@ interface EntityNotesPanelProps {
 }
 
 export default function EntityNotesPanel({
-  notes = [],
+  notes: rawNotes,
   onAddNote,
   onDeleteNote,
   title = 'Notas Históricas'
 }: EntityNotesPanelProps) {
+  const notes = rawNotes ?? [];
   const [newNoteContent, setNewNoteContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 

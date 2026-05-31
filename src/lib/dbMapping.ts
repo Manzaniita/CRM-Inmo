@@ -35,9 +35,10 @@ export function toDb<T extends object>(
 export function fromDb<T extends object>(obj: Record<string, unknown>): T {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (value === undefined) continue;
     if (key === 'user_id' || key === 'updated_at') continue;
-    result[toCamelCase(key)] = value;
+    const camelKey = toCamelCase(key);
+    // Normalizar null → undefined para evitar crashes en campos opcionales del frontend
+    result[camelKey] = value === null ? undefined : value;
   }
   return result as T;
 }

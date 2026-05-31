@@ -182,13 +182,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
         supabase.from('profiles').select('*').eq('user_id', uid).limit(1),
       ]);
 
-      if (clientsRes.data) setClients(fromDbArray<Client>(clientsRes.data as Record<string, unknown>[]));
-      if (propertiesRes.data) setProperties(fromDbArray<Property>(propertiesRes.data as Record<string, unknown>[]));
-      if (eventsRes.data) setEvents(fromDbArray<CalendarEvent>(eventsRes.data as Record<string, unknown>[]));
-      if (tasksRes.data) {
+      if (clientsRes.error) {
+        console.error('[EstateCRM] clients load error:', clientsRes.error);
+        showToast('Error al cargar clientes', 'error');
+      } else if (clientsRes.data) {
+        setClients(fromDbArray<Client>(clientsRes.data as Record<string, unknown>[]));
+      }
+
+      if (propertiesRes.error) {
+        console.error('[EstateCRM] properties load error:', propertiesRes.error);
+      } else if (propertiesRes.data) {
+        setProperties(fromDbArray<Property>(propertiesRes.data as Record<string, unknown>[]));
+      }
+
+      if (eventsRes.error) {
+        console.error('[EstateCRM] events load error:', eventsRes.error);
+      } else if (eventsRes.data) {
+        setEvents(fromDbArray<CalendarEvent>(eventsRes.data as Record<string, unknown>[]));
+      }
+
+      if (tasksRes.error) {
+        console.error('[EstateCRM] tasks load error:', tasksRes.error);
+      } else if (tasksRes.data) {
         setTasks(fromDbArray<Task>(tasksRes.data as Record<string, unknown>[]).map(t => ({ ...t, relatedEntities: t.relatedEntities ?? [] })));
       }
-      if (salesRes.data) {
+
+      if (salesRes.error) {
+        console.error('[EstateCRM] sales load error:', salesRes.error);
+      } else if (salesRes.data) {
         setSales(fromDbArray<Sale>(salesRes.data as Record<string, unknown>[]).map(s => ({
           ...s,
           operationStatus: s.operationStatus || 'activa',
@@ -196,15 +217,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
           montoEscritura: typeof s.montoEscritura === 'number' ? String(s.montoEscritura) : s.montoEscritura,
         })));
       }
-      if (rentalsRes.data) setRentals(fromDbArray<Rental>(rentalsRes.data as Record<string, unknown>[]));
-      if (documentsRes.data) setDocuments(fromDbArray<Document>(documentsRes.data as Record<string, unknown>[]));
-      if (colleaguesRes.data) {
+
+      if (rentalsRes.error) {
+        console.error('[EstateCRM] rentals load error:', rentalsRes.error);
+      } else if (rentalsRes.data) {
+        setRentals(fromDbArray<Rental>(rentalsRes.data as Record<string, unknown>[]));
+      }
+
+      if (documentsRes.error) {
+        console.error('[EstateCRM] documents load error:', documentsRes.error);
+      } else if (documentsRes.data) {
+        setDocuments(fromDbArray<Document>(documentsRes.data as Record<string, unknown>[]));
+      }
+
+      if (colleaguesRes.error) {
+        console.error('[EstateCRM] colleagues load error:', colleaguesRes.error);
+      } else if (colleaguesRes.data) {
         setReferredColleagues(fromDbArray<ReferredColleague>(colleaguesRes.data as Record<string, unknown>[]).map(c => ({ ...c, referredClientIds: c.referredClientIds ?? [] })));
       }
-      if (logsRes.data) setActivityLogs(fromDbArray<ActivityLog>(logsRes.data as Record<string, unknown>[]));
-      if (profileRes.data && profileRes.data.length > 0) {
+
+      if (logsRes.error) {
+        console.error('[EstateCRM] logs load error:', logsRes.error);
+      } else if (logsRes.data) {
+        setActivityLogs(fromDbArray<ActivityLog>(logsRes.data as Record<string, unknown>[]));
+      }
+
+      if (profileRes.error) {
+        console.error('[EstateCRM] profile load error:', profileRes.error);
+      } else if (profileRes.data && profileRes.data.length > 0) {
         const p = fromDb<Profile>(profileRes.data[0] as Record<string, unknown>);
-        // Validar rol desde el servidor para evitar manipulación local
         const { data: roleData } = await supabase.rpc('get_my_role');
         const serverRole = (roleData as string) ?? p.role ?? 'agent';
         setProfile(prev => ({

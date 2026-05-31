@@ -88,7 +88,7 @@ export function getClientRelations(
 ): RelationGroup[] {
   const groups: RelationGroup[] = [];
   const client = data.clients.find(c => c.id === clientId);
-  if (!client) return groups;
+  if (!client || !client.name) return groups;
 
   // 1. Datos principales
   groups.push({
@@ -246,7 +246,7 @@ export function getPropertyRelations(
 ): RelationGroup[] {
   const groups: RelationGroup[] = [];
   const property = data.properties.find(p => p.id === propertyId);
-  if (!property) return groups;
+  if (!property || !property.title) return groups;
 
   // 1. Datos principales
   groups.push({
@@ -391,7 +391,7 @@ export function getColleagueRelations(
 ): RelationGroup[] {
   const groups: RelationGroup[] = [];
   const colleague = data.referredColleagues.find(c => c.id === colleagueId);
-  if (!colleague) return groups;
+  if (!colleague || !colleague.nombreApellido) return groups;
 
   // 1. Datos principales
   groups.push({
@@ -513,7 +513,7 @@ export function getSaleRelations(
 ): RelationGroup[] {
   const groups: RelationGroup[] = [];
   const sale = data.sales.find(s => s.id === saleId);
-  if (!sale) return groups;
+  if (!sale || !sale.estado) return groups;
 
   const property = data.properties.find(p => p.id === sale.propiedadId);
   const buyer = data.clients.find(c => c.id === sale.clientCompradorId);
@@ -628,7 +628,7 @@ export function getBuyerRelations(
 ): RelationGroup[] {
   const groups: RelationGroup[] = [];
   const buyer = data.buyers.find(b => b.id === buyerId);
-  if (!buyer) return groups;
+  if (!buyer || !buyer.nombre) return groups;
 
   // 1. Datos principales
   groups.push({

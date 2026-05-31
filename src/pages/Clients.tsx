@@ -148,6 +148,20 @@ export default function Clients() {
 
   const selectedClient = clients.find(c => c.id === effectiveClientId);
 
+  // Estado de error si el ID de la URL no corresponde a ningún cliente cargado
+  if (effectiveClientId && !selectedClient) {
+    return (
+      <div className="page-enter flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+          <Users size={32} className="text-slate-400" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Cliente no encontrado</h2>
+        <p className="text-slate-500 dark:text-slate-400">El cliente que buscás no existe o fue eliminado.</p>
+        <Button variant="outline" onClick={() => navigate('/clientes')}>Volver a la lista</Button>
+      </div>
+    );
+  }
+
   const lowerSearch = normalizeSearchText(searchTerm);
 
   // Compute client IDs with operations (sales or rentals)
@@ -666,12 +680,12 @@ export default function Clients() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-2xl bg-accent/10 dark:bg-dark-accent/15 border-2 border-accent/20 dark:border-dark-accent/30 flex items-center justify-center text-accent dark:text-dark-accent text-2xl font-extrabold">
-                    {selectedClient.name.charAt(0)}
+                    {selectedClient.name?.charAt(0) || '?'}
                   </div>
                   <div>
                     <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight">{selectedClient.name}</h1>
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type]).map(t => (
+                      {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type || 'interesado']).map(t => (
                         <span key={t}>
                           <Badge variant={getTypeBadgeVariant(t)}>{t}</Badge>
                         </span>
@@ -687,7 +701,7 @@ export default function Clients() {
                 <BentoInfoItem
                   icon={Phone}
                   label="Teléfono"
-                  value={selectedClient.phone}
+                  value={selectedClient.phone || ''}
                   action={
                     <button
                       className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
@@ -706,8 +720,8 @@ export default function Clients() {
                     </button>
                   }
                 />
-                <BentoInfoItem icon={Mail} label="Email" value={selectedClient.email} />
-                <BentoInfoItem icon={Globe} label="Origen" value={selectedClient.origin} />
+                <BentoInfoItem icon={Mail} label="Email" value={selectedClient.email || ''} />
+                <BentoInfoItem icon={Globe} label="Origen" value={selectedClient.origin || ''} />
                 <BentoInfoItem
                   icon={DollarSign}
                   label="Presupuesto"
@@ -716,7 +730,7 @@ export default function Clients() {
                 {selectedClient.interestZone && (
                   <BentoInfoItem icon={MapPin} label="Zona de Interés" value={selectedClient.interestZone} />
                 )}
-                <BentoInfoItem icon={Calendar} label="Último Contacto" value={formatDate(selectedClient.lastContact)} />
+                <BentoInfoItem icon={Calendar} label="Último Contacto" value={formatDate(selectedClient.lastContact || '')} />
               </div>
             </Card>
 
@@ -728,7 +742,7 @@ export default function Clients() {
               />
               <div className="mt-6">
                 <EntityNotesPanel
-                  notes={selectedClient.historyNotes}
+                  notes={selectedClient.historyNotes ?? undefined}
                   onAddNote={(content) => {
                     const newNote: EntityNote = {
                       id: generateId('n'),
@@ -870,12 +884,12 @@ export default function Clients() {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Creado</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100">{formatDate(selectedClient.createdAt)}</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{formatDate(selectedClient.createdAt || '')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Tipo</span>
                   <div className="flex gap-1 flex-wrap">
-                    {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type]).map(t => (
+                    {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type || 'interesado']).map(t => (
                       <span key={t}>
                         <Badge variant={getTypeBadgeVariant(t)} size="sm">{t}</Badge>
                       </span>
@@ -890,7 +904,7 @@ export default function Clients() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-slate-500 dark:text-slate-400">Origen</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100">{selectedClient.origin}</span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{selectedClient.origin || 'Otro'}</span>
                 </div>
                 {selectedClient.origin === 'Referido' && (
                   <div className="flex justify-between">
@@ -1438,7 +1452,7 @@ export default function Clients() {
                 </p>
               </div>
                             <div className="flex items-center gap-1">
-                {(client.types && client.types.length > 0 ? client.types : [client.type]).map(t => (
+                {(client.types && client.types.length > 0 ? client.types : [client.type || 'interesado']).map(t => (
                                   <span key={t}>
                                     <Badge variant={getTypeBadgeVariant(t)} size="sm">{t}</Badge>
                                   </span>
