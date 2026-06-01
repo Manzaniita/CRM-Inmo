@@ -6,7 +6,6 @@ import type {
   WaitingRoomEntry, Buyer, ReferredColleague, ActivityLog, Profile
 } from '../types';
 import Toast, { ToastType } from '../components/Toast';
-import { toDb, fromDb, fromDbArray } from '../lib/dbMapping';
 import { generateId } from '../lib/id';
 
 interface ToastState {
@@ -167,6 +166,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         rentalsRes,
         documentsRes,
         colleaguesRes,
+        buyersRes,
+        waitingRoomRes,
         logsRes,
         profileRes,
       ] = await Promise.all([
@@ -178,7 +179,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         supabase.from('rentals').select('*').eq('user_id', uid),
         supabase.from('documents').select('*').eq('user_id', uid),
         supabase.from('referred_colleagues').select('*').eq('user_id', uid),
-        supabase.from('activity_logs').select('*').eq('user_id', uid).limit(200).order('created_at', { ascending: false }),
+        supabase.from('buyers').select('*').eq('user_id', uid),
+        supabase.from('waiting_room').select('*').eq('user_id', uid),
+        supabase.from('activity_logs').select('*').eq('user_id', uid).limit(200).order('createdAt', { ascending: false }),
         supabase.from('profiles').select('*').eq('user_id', uid).limit(1),
       ]);
 
@@ -186,31 +189,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error('[EstateCRM] clients load error:', clientsRes.error);
         showToast('Error al cargar clientes', 'error');
       } else if (clientsRes.data) {
-        setClients(fromDbArray<Client>(clientsRes.data as Record<string, unknown>[]));
+        setClients(clientsRes.data as Client[]);
       }
 
       if (propertiesRes.error) {
         console.error('[EstateCRM] properties load error:', propertiesRes.error);
       } else if (propertiesRes.data) {
-        setProperties(fromDbArray<Property>(propertiesRes.data as Record<string, unknown>[]));
+        setProperties(propertiesRes.data as Property[]);
       }
 
       if (eventsRes.error) {
         console.error('[EstateCRM] events load error:', eventsRes.error);
       } else if (eventsRes.data) {
-        setEvents(fromDbArray<CalendarEvent>(eventsRes.data as Record<string, unknown>[]));
+        setEvents(eventsRes.data as CalendarEvent[]);
       }
 
       if (tasksRes.error) {
         console.error('[EstateCRM] tasks load error:', tasksRes.error);
       } else if (tasksRes.data) {
-        setTasks(fromDbArray<Task>(tasksRes.data as Record<string, unknown>[]).map(t => ({ ...t, relatedEntities: t.relatedEntities ?? [] })));
+        setTasks((tasksRes.data as Task[]).map(t => ({ ...t, relatedEntities: t.relatedEntities ?? [] })));
       }
 
       if (salesRes.error) {
         console.error('[EstateCRM] sales load error:', salesRes.error);
       } else if (salesRes.data) {
-        setSales(fromDbArray<Sale>(salesRes.data as Record<string, unknown>[]).map(s => ({
+        setSales((salesRes.data as Sale[]).map(s => ({
           ...s,
           operationStatus: s.operationStatus || 'activa',
           isCollected: s.isCollected ?? false,
@@ -221,31 +224,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (rentalsRes.error) {
         console.error('[EstateCRM] rentals load error:', rentalsRes.error);
       } else if (rentalsRes.data) {
-        setRentals(fromDbArray<Rental>(rentalsRes.data as Record<string, unknown>[]));
+        setRentals(rentalsRes.data as Rental[]);
       }
 
       if (documentsRes.error) {
         console.error('[EstateCRM] documents load error:', documentsRes.error);
       } else if (documentsRes.data) {
-        setDocuments(fromDbArray<Document>(documentsRes.data as Record<string, unknown>[]));
+        setDocuments(documentsRes.data as Document[]);
       }
 
       if (colleaguesRes.error) {
         console.error('[EstateCRM] colleagues load error:', colleaguesRes.error);
       } else if (colleaguesRes.data) {
-        setReferredColleagues(fromDbArray<ReferredColleague>(colleaguesRes.data as Record<string, unknown>[]).map(c => ({ ...c, referredClientIds: c.referredClientIds ?? [] })));
+        setReferredColleagues((colleaguesRes.data as ReferredColleague[]).map(c => ({ ...c, referredClientIds: c.referredClientIds ?? [] })));
       }
 
       if (logsRes.error) {
         console.error('[EstateCRM] logs load error:', logsRes.error);
       } else if (logsRes.data) {
-        setActivityLogs(fromDbArray<ActivityLog>(logsRes.data as Record<string, unknown>[]));
+        setActivityLogs(logsRes.data as ActivityLog[]);
+      }
+
+      if (buyersRes.error) {
+        console.error('[EstateCRM] buyers load error:', buyersRes.error);
+      } else if (buyersRes.data) {
+        setBuyers(buyersRes.data as Buyer[]);
+      }
+
+      if (waitingRoomRes.error) {
+        console.error('[EstateCRM] waiting_room load error:', waitingRoomRes.error);
+      } else if (waitingRoomRes.data) {
+        setWaitingRoom(waitingRoomRes.data as WaitingRoomEntry[]);
       }
 
       if (profileRes.error) {
         console.error('[EstateCRM] profile load error:', profileRes.error);
       } else if (profileRes.data && profileRes.data.length > 0) {
-        const p = fromDb<Profile>(profileRes.data[0] as Record<string, unknown>);
+        const p = profileRes.data[0] as Profile;
         const { data: roleData } = await supabase.rpc('get_my_role');
         const serverRole = (roleData as string) ?? p.role ?? 'agent';
         setProfile(prev => ({
@@ -289,7 +304,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setActivityLogs(prev => [newLog, ...prev].slice(0, 200));
     if (user) {
-      const { error } = await supabase.from('activity_logs').insert(toDb(newLog, { user_id: user.id }));
+      const { createdAt, ...rest } = newLog;
+      const { error } = await supabase.from('activity_logs').insert({ ...rest, user_id: user.id });
       if (error) console.error('[EstateCRM] Activity log insert error:', error);
     }
   }, [user]);
@@ -328,9 +344,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 autoKey: warningKey,
               };
               if (user) {
-                const { data, error } = await supabase.from('tasks').insert(toDb(newTask, { user_id: user.id })).select();
+                const { createdAt, ...rest } = newTask;
+                const { data, error } = await supabase.from('tasks').insert({ ...rest, user_id: user.id }).select();
                 if (!error && data) {
-                  const inserted = fromDb<Task>(data[0] as Record<string, unknown>);
+                  const inserted = data[0] as Task;
                   setTasks(prev => [inserted, ...prev]);
                   addActivityLog({
                     type: 'task',
@@ -367,9 +384,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 autoKey: expiredKey,
               };
               if (user) {
-                const { data, error } = await supabase.from('tasks').insert(toDb(newTask, { user_id: user.id })).select();
+                const { createdAt, ...rest } = newTask;
+                const { data, error } = await supabase.from('tasks').insert({ ...rest, user_id: user.id }).select();
                 if (!error && data) {
-                  const inserted = fromDb<Task>(data[0] as Record<string, unknown>);
+                  const inserted = data[0] as Task;
                   setTasks(prev => [inserted, ...prev]);
                 }
               } else {
@@ -422,12 +440,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Clients ---
   const addClient = async (client: Client) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('clients').insert(toDb(client, { user_id: user.id })).select();
+    const { createdAt, ...rest } = client;
+    const { data, error } = await supabase.from('clients').insert({ ...rest, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addClient');
       return;
     }
-    const inserted = fromDb<Client>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as Client;
     setClients(prev => [inserted, ...prev]);
     addActivityLog({ type: 'client', action: 'created', title: `Cliente creado: ${inserted.name}`, entityId: inserted.id });
     showToast('Cliente creado con éxito', 'success');
@@ -435,7 +454,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateClient = async (client: Client) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('clients').update(toDb(client)).eq('id', client.id).eq('user_id', user.id);
+    const { error } = await supabase.from('clients').update(client).eq('id', client.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateClient');
       return;
@@ -448,12 +467,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Properties ---
   const addProperty = async (property: Property) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('properties').insert(toDb(property, { user_id: user.id })).select();
+    const { data, error } = await supabase.from('properties').insert({ ...property, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addProperty');
       return;
     }
-    const inserted = fromDb<Property>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as Property;
     setProperties(prev => [inserted, ...prev]);
     addActivityLog({ type: 'property', action: 'created', title: `Propiedad creada: ${inserted.title}`, entityId: inserted.id });
     showToast('Propiedad añadida', 'success');
@@ -461,7 +480,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateProperty = async (property: Property) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('properties').update(toDb(property)).eq('id', property.id).eq('user_id', user.id);
+    const { error } = await supabase.from('properties').update(property).eq('id', property.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateProperty');
       return;
@@ -474,12 +493,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Tasks ---
   const addTask = async (task: Task) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('tasks').insert(toDb(task, { user_id: user.id })).select();
+    const { createdAt, ...rest } = task;
+    const { data, error } = await supabase.from('tasks').insert({ ...rest, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addTask');
       return;
     }
-    const inserted = fromDb<Task>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as Task;
     setTasks(prev => [inserted, ...prev]);
     addActivityLog({ type: 'task', action: 'created', title: `Tarea creada: ${inserted.title}`, entityId: inserted.id });
     showToast('Tarea creada', 'success');
@@ -487,7 +507,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateTask = async (task: Task) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('tasks').update(toDb(task)).eq('id', task.id).eq('user_id', user.id);
+    const { error } = await supabase.from('tasks').update(task).eq('id', task.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateTask');
       return;
@@ -522,12 +542,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Events ---
   const addEvent = async (event: CalendarEvent) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('events').insert(toDb(event, { user_id: user.id })).select();
+    const { createdAt, ...rest } = event;
+    const { data, error } = await supabase.from('events').insert({ ...rest, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addEvent');
       return;
     }
-    const inserted = fromDb<CalendarEvent>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as CalendarEvent;
     setEvents(prev => [inserted, ...prev]);
     addActivityLog({ type: 'event', action: 'created', title: `Evento creado: ${inserted.title}`, entityId: inserted.id });
     showToast('Evento agendado', 'success');
@@ -535,7 +556,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateEvent = async (event: CalendarEvent) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('events').update(toDb(event)).eq('id', event.id).eq('user_id', user.id);
+    const { error } = await supabase.from('events').update(event).eq('id', event.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateEvent');
       return;
@@ -581,12 +602,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Sales ---
   const addSale = async (sale: Sale) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('sales').insert(toDb(sale, { user_id: user.id })).select();
+    const { data, error } = await supabase.from('sales').insert({ ...sale, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addSale');
       return;
     }
-    const inserted = fromDb<Sale>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as Sale;
     setSales(prev => [inserted, ...prev]);
     if (inserted.estado === 'vendida') {
       await supabase.from('properties').update({ status: 'vendida' }).eq('id', inserted.propiedadId).eq('user_id', user.id);
@@ -599,7 +620,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateSale = async (sale: Sale) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('sales').update(toDb(sale)).eq('id', sale.id).eq('user_id', user.id);
+    const { error } = await supabase.from('sales').update(sale).eq('id', sale.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateSale');
       return;
@@ -628,12 +649,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Rentals ---
   const addRental = async (rental: Rental) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('rentals').insert(toDb(rental, { user_id: user.id })).select();
+    const { data, error } = await supabase.from('rentals').insert({ ...rental, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addRental');
       return;
     }
-    const inserted = fromDb<Rental>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as Rental;
     setRentals(prev => [inserted, ...prev]);
     if (inserted.estado === 'firmado' || inserted.estado === 'en curso') {
       await supabase.from('properties').update({ status: 'alquilada' }).eq('id', inserted.propiedadId).eq('user_id', user.id);
@@ -646,7 +667,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateRental = async (rental: Rental) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('rentals').update(toDb(rental)).eq('id', rental.id).eq('user_id', user.id);
+    const { error } = await supabase.from('rentals').update(rental).eq('id', rental.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateRental');
       return;
@@ -675,12 +696,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Documents ---
   const addDocument = async (doc: Document) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('documents').insert(toDb(doc, { user_id: user.id })).select();
+    const { data, error } = await supabase.from('documents').insert({ ...doc, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addDocument');
       return;
     }
-    const inserted = fromDb<Document>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as Document;
     setDocuments(prev => [inserted, ...prev]);
     addActivityLog({ type: 'document', action: 'created', title: `Documento añadido: ${inserted.name}`, entityId: inserted.id });
     showToast('Documento añadido', 'success');
@@ -688,7 +709,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateDocument = async (doc: Document) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('documents').update(toDb(doc)).eq('id', doc.id).eq('user_id', user.id);
+    const { error } = await supabase.from('documents').update(doc).eq('id', doc.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateDocument');
       return;
@@ -712,12 +733,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Waiting Room ---
   const addWaitingRoomEntry = async (entry: WaitingRoomEntry) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('waiting_room').insert(toDb(entry, { user_id: user.id })).select();
+    const { data, error } = await supabase.from('waiting_room').insert({ ...entry, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addWaitingRoomEntry');
       return;
     }
-    const inserted = fromDb<WaitingRoomEntry>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as WaitingRoomEntry;
     setWaitingRoom(prev => [inserted, ...prev]);
     addActivityLog({ type: 'waiting_room', action: 'created', title: `Sala de espera: ${inserted.nombre}`, entityId: inserted.id });
     showToast('Entrada añadida a Sala de Espera', 'success');
@@ -725,7 +746,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateWaitingRoomEntry = async (entry: WaitingRoomEntry) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('waiting_room').update(toDb(entry)).eq('id', entry.id).eq('user_id', user.id);
+    const { error } = await supabase.from('waiting_room').update(entry).eq('id', entry.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateWaitingRoomEntry');
       return;
@@ -749,12 +770,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Buyers ---
   const addBuyer = async (buyer: Buyer) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('buyers').insert(toDb(buyer, { user_id: user.id })).select();
+    const { createdAt, ...rest } = buyer;
+    const { data, error } = await supabase.from('buyers').insert({ ...rest, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addBuyer');
       return;
     }
-    const inserted = fromDb<Buyer>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as Buyer;
     setBuyers(prev => [inserted, ...prev]);
     addActivityLog({ type: 'buyer', action: 'created', title: `Comprador añadido: ${inserted.nombre}`, entityId: inserted.id });
     showToast('Comprador añadido', 'success');
@@ -762,7 +784,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateBuyer = async (buyer: Buyer) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('buyers').update(toDb(buyer)).eq('id', buyer.id).eq('user_id', user.id);
+    const { error } = await supabase.from('buyers').update(buyer).eq('id', buyer.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateBuyer');
       return;
@@ -786,12 +808,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Referred Colleagues ---
   const addReferredColleague = async (colleague: ReferredColleague) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('referred_colleagues').insert(toDb(colleague, { user_id: user.id })).select();
+    const { data, error } = await supabase.from('referred_colleagues').insert({ ...colleague, user_id: user.id }).select();
     if (error || !data) {
       handleSupabaseError(error, 'addReferredColleague');
       return;
     }
-    const inserted = fromDb<ReferredColleague>(data[0] as Record<string, unknown>);
+    const inserted = data[0] as ReferredColleague;
     setReferredColleagues(prev => [inserted, ...prev]);
     addActivityLog({ type: 'colleague', action: 'created', title: `Colega añadido: ${inserted.nombreApellido}`, entityId: inserted.id });
     showToast('Colega referido añadido', 'success');
@@ -799,7 +821,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateReferredColleague = async (colleague: ReferredColleague) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('referred_colleagues').update(toDb(colleague)).eq('id', colleague.id).eq('user_id', user.id);
+    const { error } = await supabase.from('referred_colleagues').update(colleague).eq('id', colleague.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateReferredColleague');
       return;
@@ -828,9 +850,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       email: newProfile.email,
       phone: newProfile.phone,
       license: newProfile.license,
-      template_property: newProfile.templateProperty,
-      template_client: newProfile.templateClient,
-      template_buyer: newProfile.templateBuyer,
+      templateProperty: newProfile.templateProperty,
+      templateClient: newProfile.templateClient,
+      templateBuyer: newProfile.templateBuyer,
       role: newProfile.role ?? 'agent',
       must_change_password: newProfile.must_change_password ?? false,
     };
@@ -904,7 +926,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (user) {
         const upsertMany = async (table: string, items: object[]) => {
           if (!items.length) return;
-          const dbItems = items.map(item => toDb(item as object, { user_id: user.id }));
+          const dbItems = items.map(item => {
+            const { createdAt, ...rest } = item as Record<string, unknown>;
+            return { ...rest, user_id: user.id };
+          });
           await supabase.from(table).upsert(dbItems, { onConflict: 'id' });
         };
 
