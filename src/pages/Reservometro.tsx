@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Gauge, Search, Plus, ChevronRight, Clock, DollarSign, Grid, List as ListIcon, X, ArrowUpDown, Edit3, Trash2, MoreVertical, Link2, CheckCircle2, AlertCircle
 } from 'lucide-react';
@@ -345,15 +346,22 @@ export default function Reservometro() {
 
 function SaleOperationMenu({ sale, onUpdate, onLog, showToast }: { sale: Sale; onUpdate: (s: Sale) => void; onLog: (log: Omit<ActivityLog, 'id' | 'createdAt'>) => void; showToast: (message: string, type: any) => void }) {
   const [open, setOpen] = useState(false);
-  const menuRef = React.useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+      if (
+        menuRef.current && !menuRef.current.contains(e.target as Node) &&
+        buttonRef.current && !buttonRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [open]);
 
   const changeStatus = (status: SaleStatus) => {
     setOpen(false);
@@ -370,19 +378,62 @@ function SaleOperationMenu({ sale, onUpdate, onLog, showToast }: { sale: Sale; o
     showToast(next ? 'Operación marcada como cobrada' : 'Operación desmarcada como cobrada', 'success');
   };
 
+  const menuPos = useMemo(() => {
+    if (!buttonRef.current || !open) return null;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const menuWidth = 192;
+    const menuHeight = 220;
+    let left = rect.right - menuWidth + 4;
+    let top = rect.bottom + 6;
+    if (left < 8) left = 8;
+    if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+    if (top + menuHeight > window.innerHeight - 8) top = rect.top - menuHeight - 6;
+    return { top, left };
+  }, [open]);
+
   return (
-    <div className="relative" ref={menuRef}>
-      <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
+    <div className="relative inline-block">
+      <button
+        ref={buttonRef}
+        type="button"
+        className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+      >
         <MoreVertical size={16} />
       </button>
-      {open && (
-        <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 py-1 text-xs font-medium">
-          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-blue-700" onClick={() => changeStatus('activa')}>Marcar como Activa</button>
-          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-green-700" onClick={() => changeStatus('vendida')}>Marcar como Vendida</button>
-          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-red-700" onClick={() => changeStatus('caída')}>Marcar como Caída</button>
-          <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
-          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-blue-700" onClick={toggleCollected}>{sale.isCollected ? 'Desmarcar cobrada' : 'Marcar como cobrada'}</button>
-        </div>
+      {open && menuPos && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[200] w-48 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-2 text-xs font-medium overflow-hidden"
+          style={{ top: menuPos.top, left: menuPos.left }}
+        >
+          <button
+            className="w-full text-left px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-slate-700/50 text-blue-700 dark:text-blue-400 transition-colors"
+            onClick={e => { e.stopPropagation(); changeStatus('activa'); }}
+          >
+            Marcar como Activa
+          </button>
+          <button
+            className="w-full text-left px-4 py-2.5 hover:bg-green-50 dark:hover:bg-slate-700/50 text-green-700 dark:text-green-400 transition-colors"
+            onClick={e => { e.stopPropagation(); changeStatus('vendida'); }}
+          >
+            Marcar como Vendida
+          </button>
+          <button
+            className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-slate-700/50 text-red-700 dark:text-red-400 transition-colors"
+            onClick={e => { e.stopPropagation(); changeStatus('caída'); }}
+          >
+            Marcar como Caída
+          </button>
+          <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
+          <button
+            className="w-full text-left px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-slate-700/50 text-blue-700 dark:text-blue-400 transition-colors"
+            onClick={e => { e.stopPropagation(); toggleCollected(); }}
+          >
+            {sale.isCollected ? 'Desmarcar cobrada' : 'Marcar como cobrada'}
+          </button>
+        </div>,
+        document.body
       )}
     </div>
   );
