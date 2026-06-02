@@ -286,7 +286,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } else {
       clearAllState();
     }
-  }, [user, loadAllFromSupabase, clearAllState]);
+  }, [user?.id, loadAllFromSupabase, clearAllState]);
 
   // ---- Supabase error helper ----
   const handleSupabaseError = useCallback((error: { message?: string } | null, label: string) => {
