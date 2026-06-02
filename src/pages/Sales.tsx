@@ -37,7 +37,7 @@ function getBestDate(sale: Sale): string {
 }
 
 const STAGES: SaleStatus[] = [
-  'consulta', 'visita', 'oferta', 'negociación', 'reserva', 'boleto', 'escritura', 'vendida'
+  'activa', 'vendida', 'caída'
 ];
 
 export default function Sales() {
@@ -109,9 +109,9 @@ export default function Sales() {
   }, [sales, lowerSearch, filterStatus, sortKey, sortDirection, clients, properties]);
 
   const stats = {
-    active: sales.filter(s => !['vendida', 'caída'].includes(s.estado)).length,
-    negotiation: sales.filter(s => ['oferta', 'negociación'].includes(s.estado)).length,
-    reserved: sales.filter(s => s.estado === 'reserva').length,
+    active: sales.filter(s => s.estado === 'activa').length,
+    sold: sales.filter(s => s.estado === 'vendida').length,
+    fallen: sales.filter(s => s.estado === 'caída').length,
     totalCommissions: sales
       .filter(s => s.estado === 'vendida')
       .reduce((acc, s) => acc + (s.moneda === 'ARS' ? s.comisionEstimada : 0), 0),
@@ -119,13 +119,7 @@ export default function Sales() {
 
   const getStatusVariant = (status: string): any => {
     switch (status) {
-      case 'consulta': return 'blue';
-      case 'visita': return 'blue';
-      case 'oferta': return 'purple';
-      case 'negociación': return 'orange';
-      case 'reserva': return 'yellow';
-      case 'boleto': return 'green';
-      case 'escritura': return 'green';
+      case 'activa': return 'blue';
       case 'vendida': return 'green';
       case 'caída': return 'red';
       default: return 'gray';
@@ -171,9 +165,9 @@ export default function Sales() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Ventas Activas" value={stats.active.toString()} icon={TrendingUp} color="blue" />
-        <StatCard label="En Negociación" value={stats.negotiation.toString()} icon={Clock} color="orange" />
-        <StatCard label="Reservadas" value={stats.reserved.toString()} icon={Activity} color="purple" />
+        <StatCard label="Activas" value={stats.active.toString()} icon={TrendingUp} color="blue" />
+        <StatCard label="Vendidas" value={stats.sold.toString()} icon={CheckCircle2} color="green" />
+        <StatCard label="Caídas" value={stats.fallen.toString()} icon={AlertCircle} color="red" />
         <StatCard label="Comisiones (ARS)" value={formatCurrency(stats.totalCommissions, 'ARS')} icon={DollarSign} color="green" />
       </div>
 
@@ -196,7 +190,6 @@ export default function Sales() {
           >
             <option value="all">Todos los estados</option>
             {STAGES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-            <option value="caída">Caída</option>
           </select>
           <select
             className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
@@ -542,7 +535,7 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
   const { clients, properties, addSale, updateSale, showToast } = useAppContext();
 
   const [formData, setFormData] = useState<Partial<Sale>>(sale || {
-    estado: 'consulta',
+    estado: 'activa',
     moneda: 'USD',
     precioPublicado: 0,
     comisionEstimada: 0,
@@ -595,27 +588,6 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 scrollbar-thin">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Estado *</label>
-              <div className="flex flex-wrap gap-2">
-                {STAGES.map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setFormData({...formData, estado: s})}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all border",
-                      formData.estado === s
-                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
-                        : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300"
-                    )}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div>
               <SearchableSelect
                 label="Comprador *"

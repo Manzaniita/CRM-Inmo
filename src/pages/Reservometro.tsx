@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Gauge, Search, Plus, ChevronRight, Clock, DollarSign, Grid, List as ListIcon, X, ArrowUpDown, Edit3, Trash2, MoreVertical, Link2
+  Gauge, Search, Plus, ChevronRight, Clock, DollarSign, Grid, List as ListIcon, X, ArrowUpDown, Edit3, Trash2, MoreVertical, Link2, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -14,9 +14,7 @@ import { validateSale } from '../lib/validators';
 import type { Sale, SaleStatus, ActivityLog } from '../types';
 import SearchableSelect from '../components/SearchableSelect';
 
-const STAGES: SaleStatus[] = [
-  'consulta', 'visita', 'oferta', 'negociación', 'reserva', 'boleto', 'escritura', 'vendida'
-];
+const STAGES: SaleStatus[] = ['activa', 'vendida', 'caída'];
 
 function getBestDate(sale: Sale): string {
   return sale.fecha || sale.fechaReserva || sale.fechaEscritura || sale.fechaActualizacion || sale.fechaCreacion || '';
@@ -29,7 +27,6 @@ export default function Reservometro() {
   const [view, setView] = useState<'pipeline' | 'list'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterOperationStatus, setFilterOperationStatus] = useState<string>('all');
   const [filterPropertyType, setFilterPropertyType] = useState<string>('all');
   const [filterBuyer, setFilterBuyer] = useState<string>('');
   const [filterSeller, setFilterSeller] = useState<string>('');
@@ -49,7 +46,6 @@ export default function Reservometro() {
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-      // optionally open form
       const sale = sales.find(s => s.id === saleId);
       if (sale) {
         setEditingSale(sale);
@@ -74,13 +70,12 @@ export default function Reservometro() {
         normalizeSearchText(sale.id).includes(lowerSearch) ||
         normalizeSearchText(sale.externalPropertyCode).includes(lowerSearch);
       const matchesStatus = filterStatus === 'all' || sale.estado === filterStatus;
-      const matchesOpStatus = filterOperationStatus === 'all' || (sale.operationStatus || 'activa') === filterOperationStatus;
       const matchesPropertyType = filterPropertyType === 'all' ||
         (filterPropertyType === 'vinculada' ? !!sale.propiedadId : !sale.propiedadId);
       const matchesBuyer = !filterBuyer || sale.clientCompradorId === filterBuyer;
       const matchesSeller = !filterSeller || sale.propietarioId === filterSeller;
       const matchesAgent = !filterAgent || normalizeSearchText(sale.inmoAgente || '').includes(normalizeSearchText(filterAgent));
-      return matchesSearch && matchesStatus && matchesOpStatus && matchesPropertyType && matchesBuyer && matchesSeller && matchesAgent;
+      return matchesSearch && matchesStatus && matchesPropertyType && matchesBuyer && matchesSeller && matchesAgent;
     });
 
     result.sort((a, b) => {
@@ -111,20 +106,20 @@ export default function Reservometro() {
     });
 
     return result;
-  }, [sales, lowerSearch, filterStatus, filterOperationStatus, filterPropertyType, filterBuyer, filterSeller, filterAgent, sortKey, sortDirection, clients, properties]);
+  }, [sales, lowerSearch, filterStatus, filterPropertyType, filterBuyer, filterSeller, filterAgent, sortKey, sortDirection, clients, properties]);
 
   const currentYear = new Date().getFullYear();
 
   const stats = {
-    active: sales.filter(s => !['vendida', 'caída'].includes(s.estado)).length,
-    negotiation: sales.filter(s => ['oferta', 'negociación'].includes(s.estado)).length,
-    reserved: sales.filter(s => s.estado === 'reserva').length,
+    active: sales.filter(s => s.estado === 'activa').length,
+    sold: sales.filter(s => s.estado === 'vendida').length,
+    fallen: sales.filter(s => s.estado === 'caída').length,
     totalCommissions: sales
       .filter(s => s.estado === 'vendida')
       .reduce((acc, s) => acc + (s.moneda === 'ARS' ? s.comisionEstimada : 0), 0),
     grossCommissionsUsd: sales
       .filter(s => {
-        if (s.operationStatus !== 'vendida' || !s.isCollected) return false;
+        if (s.estado !== 'vendida' || !s.isCollected) return false;
         const dateStr = s.fecha || s.fechaCreacion;
         if (!dateStr) return false;
         return new Date(dateStr).getFullYear() === currentYear;
@@ -139,13 +134,7 @@ export default function Reservometro() {
 
   const getStatusVariant = (status: string): string => {
     switch (status) {
-      case 'consulta': return 'blue';
-      case 'visita': return 'blue';
-      case 'oferta': return 'purple';
-      case 'negociación': return 'orange';
-      case 'reserva': return 'yellow';
-      case 'boleto': return 'green';
-      case 'escritura': return 'green';
+      case 'activa': return 'blue';
       case 'vendida': return 'green';
       case 'caída': return 'red';
       default: return 'gray';
@@ -172,8 +161,8 @@ export default function Reservometro() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard label="Activas" value={stats.active.toString()} icon={Gauge} color="blue" />
-        <StatCard label="En Negociación" value={stats.negotiation.toString()} icon={Clock} color="orange" />
-        <StatCard label="Reservadas" value={stats.reserved.toString()} icon={Gauge} color="purple" />
+        <StatCard label="Vendidas" value={stats.sold.toString()} icon={CheckCircle2} color="green" />
+        <StatCard label="Caídas" value={stats.fallen.toString()} icon={AlertCircle} color="red" />
         <StatCard label="Comisiones (ARS)" value={formatCurrency(stats.totalCommissions, 'ARS')} icon={DollarSign} color="green" />
         <StatCard label="Com. brutas cobradas (USD)" value={formatCurrency(stats.grossCommissionsUsd, 'USD')} icon={DollarSign} color="green" />
       </div>
@@ -185,12 +174,6 @@ export default function Reservometro() {
             <input type="text" placeholder="Buscar por comprador, propiedad o ID..." className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
           <div className="flex gap-2 w-full md:w-auto flex-wrap">
-            <select className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none" value={filterOperationStatus} onChange={e => setFilterOperationStatus(e.target.value)}>
-              <option value="all">Todas las operaciones</option>
-              <option value="activa">Activas</option>
-              <option value="vendida">Vendidas</option>
-              <option value="caída">Caídas</option>
-            </select>
             <select className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none" value={filterPropertyType} onChange={e => setFilterPropertyType(e.target.value)}>
               <option value="all">Tipo propiedad</option>
               <option value="vinculada">Vinculada</option>
@@ -216,7 +199,7 @@ export default function Reservometro() {
           </div>
           <div className="flex flex-wrap gap-1.5">
             <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest self-center mr-1">Estado:</span>
-            {(['all', ...STAGES, 'caída'] as const).map(s => (
+            {(['all', ...STAGES] as const).map(s => (
               <button
                 key={s}
                 onClick={() => setFilterStatus(s)}
@@ -252,10 +235,7 @@ export default function Reservometro() {
                       <div key={sale.id}>
                         <Card className="p-4 cursor-pointer hover:border-blue-300 transition-all active:scale-[0.98] group relative">
                           <div className="flex items-center justify-between mb-3">
-                            <div className="flex gap-1">
-                              <Badge size="xs" variant={getStatusVariant(sale.estado) as any}>{sale.estado}</Badge>
-                              <Badge size="xs" variant={(sale.operationStatus || 'activa') === 'activa' ? 'blue' : (sale.operationStatus || 'activa') === 'vendida' ? 'green' : 'red'}>{sale.operationStatus || 'activa'}</Badge>
-                            </div>
+                            <Badge size="xs" variant={getStatusVariant(sale.estado) as any}>{sale.estado}</Badge>
                             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">#{sale.id}</p>
                           </div>
                           <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 transition-colors line-clamp-1">{sale.nombre || property?.title || sale.externalPropertyAddress || 'Propiedad no vinculada'}</h4>
@@ -294,7 +274,6 @@ export default function Reservometro() {
                   <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Monto escritura</th>
                   <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Fecha</th>
                   <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Estado</th>
-                  <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Operación</th>
                   <th className="px-4 py-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Acciones</th>
                 </tr>
               </thead>
@@ -332,9 +311,6 @@ export default function Reservometro() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={getStatusVariant(sale.estado) as any}>{sale.estado}</Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge size="xs" variant={(sale.operationStatus || 'activa') === 'activa' ? 'blue' : (sale.operationStatus || 'activa') === 'vendida' ? 'green' : 'red'}>{sale.operationStatus || 'activa'}</Badge>
                         {sale.isCollected && <span className="block text-[10px] text-green-600 font-bold mt-0.5">Cobrada</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -379,11 +355,11 @@ function SaleOperationMenu({ sale, onUpdate, onLog, showToast }: { sale: Sale; o
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const changeStatus = (status: 'activa' | 'vendida' | 'caída') => {
+  const changeStatus = (status: SaleStatus) => {
     setOpen(false);
-    onUpdate({ ...sale, operationStatus: status });
+    onUpdate({ ...sale, estado: status });
     onLog({ type: 'sale', action: 'status_changed', title: `Operación ${sale.nombre || sale.id} marcada como ${status}`, entityId: sale.id });
-    showToast(`Estado de operación actualizado a ${status}`, 'success');
+    showToast(`Estado actualizado a ${status}`, 'success');
   };
 
   const toggleCollected = () => {
@@ -396,12 +372,12 @@ function SaleOperationMenu({ sale, onUpdate, onLog, showToast }: { sale: Sale; o
 
   return (
     <div className="relative" ref={menuRef}>
-      <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
+      <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>
         <MoreVertical size={16} />
       </button>
       {open && (
         <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50 py-1 text-xs font-medium">
-          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300" onClick={() => changeStatus('activa')}>Marcar como Activa</button>
+          <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-blue-700" onClick={() => changeStatus('activa')}>Marcar como Activa</button>
           <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-green-700" onClick={() => changeStatus('vendida')}>Marcar como Vendida</button>
           <button className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:bg-slate-800/50 text-red-700" onClick={() => changeStatus('caída')}>Marcar como Caída</button>
           <div className="border-t border-slate-100 dark:border-slate-800 my-1" />
@@ -433,13 +409,12 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
     if (sale) {
       return {
         ...sale,
-        operationStatus: sale.operationStatus || 'activa',
         isCollected: sale.isCollected ?? false,
         montoEscritura: typeof sale.montoEscritura === 'number' ? String(sale.montoEscritura) : sale.montoEscritura
       };
     }
     return {
-      estado: 'consulta',
+      estado: 'activa',
       moneda: 'USD',
       precioPublicado: 0,
       comisionEstimada: 0,
@@ -469,7 +444,6 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
       montoEscritura: undefined,
       infoExtra: '',
       presupuesto: undefined,
-      operationStatus: 'activa' as 'activa' | 'vendida' | 'caída',
       isCollected: false,
       grossCommissionUsd: undefined,
       fechaCreacion: new Date().toISOString().split('T')[0],
@@ -544,7 +518,6 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
     setErrors({});
 
     const data: Partial<Sale> = { ...formData };
-    // If compradorManual is set, it prevails; clear clientCompradorId
     if (data.compradorManual?.trim()) {
       data.clientCompradorId = '';
     }
@@ -581,7 +554,6 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
     cn('w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all',
       errors[field] ? 'border-red-500 bg-red-50/30' : 'border-slate-200 dark:border-slate-700');
 
-  // Find selected property details for rich display
   const selectedProperty = properties.find(p => p.id === formData.propiedadId);
 
   return (
@@ -594,20 +566,6 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 scrollbar-thin">
           <div className="space-y-8">
-
-            {/* Estado */}
-            <div>
-              <label className={cn('block text-xs font-black uppercase tracking-widest mb-2', errors.estado ? 'text-red-500' : 'text-slate-400 dark:text-slate-500')}>Estado *</label>
-              <div className="flex flex-wrap gap-2">
-                {STAGES.map(s => (
-                  <button key={s} type="button" onClick={() => { setFormData({...formData, estado: s}); setErrors(prev => ({...prev, estado: false})); }}
-                    className={cn('px-3 py-1.5 rounded-full text-xs font-bold transition-all border',
-                      errors.estado ? 'border-red-300' : '',
-                      formData.estado === s ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300'
-                    )}>{s}</button>
-                ))}
-              </div>
-            </div>
 
             {/* Comprador */}
             <div className="space-y-3">
@@ -803,14 +761,6 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
                   onChange={e => setFormData({...formData, montoEscritura: e.target.value})} />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Estado operación</label>
-                <select className={inputCls('')} value={formData.operationStatus || 'activa'} onChange={e => setFormData({...formData, operationStatus: e.target.value as 'activa' | 'vendida' | 'caída'})}>
-                  <option value="activa">Activa</option>
-                  <option value="vendida">Vendida</option>
-                  <option value="caída">Caída</option>
-                </select>
-              </div>
-              <div>
                 <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Cobrada</label>
                 <div className="flex items-center h-[42px]">
                   <button type="button" onClick={() => setFormData({...formData, isCollected: !formData.isCollected})}
@@ -821,7 +771,7 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
               </div>
             </div>
 
-            {/* Fechas (sin "Fecha Tomada") */}
+            {/* Fechas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Fecha Reserva</label>

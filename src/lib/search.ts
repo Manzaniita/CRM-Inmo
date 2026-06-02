@@ -87,7 +87,6 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
       matches(agentName) ||
       matches(propTitle) ||
       matches(s.estado) ||
-      matches(s.operationStatus) ||
       matches(s.externalPropertyAddress) ||
       matches(s.externalPropertyLink) ||
       matches(s.externalPropertyCode) ||

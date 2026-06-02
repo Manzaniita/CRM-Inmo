@@ -528,7 +528,7 @@ export function getSaleRelations(
       id: sale.id,
       type: 'sale',
       title: sale.nombre || property?.title || sale.externalPropertyAddress || `Operación ${sale.id}`,
-      subtitle: `${formatStatusLabel(sale.estado)} · ${sale.operationStatus || 'activa'}`,
+      subtitle: formatStatusLabel(sale.estado),
       status: sale.estado,
       metadata: {
         montoEscritura: sale.montoEscritura ? String(sale.montoEscritura) : undefined,

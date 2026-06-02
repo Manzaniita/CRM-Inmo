@@ -438,7 +438,7 @@ export const MOCK_SALES: Sale[] = [
     precioOfrecido: 235000,
     comisionEstimada: 7050,
     moneda: 'USD',
-    estado: 'negociación',
+    estado: 'activa',
     notas: 'El comprador ofreció un 4% menos.',
     fechaCreacion: '2024-05-01',
     fechaActualizacion: '2024-05-10'
@@ -456,7 +456,7 @@ export const MOCK_SALES: Sale[] = [
     moneda: 'USD',
     fechaReserva: '2024-05-01',
     fechaEscritura: '2024-06-15',
-    estado: 'reserva',
+    estado: 'activa',
     notas: 'Reserva confirmada.',
     fechaCreacion: '2024-04-25',
     fechaActualizacion: '2024-05-01'
@@ -485,7 +485,7 @@ export const MOCK_SALES: Sale[] = [
     precioPublicado: 165000,
     comisionEstimada: 4950,
     moneda: 'USD',
-    estado: 'visita',
+    estado: 'activa',
     notas: 'Interesada en segunda visita.',
     fechaCreacion: '2024-05-05',
     fechaActualizacion: '2024-05-05'

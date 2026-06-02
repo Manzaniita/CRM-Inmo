@@ -11,7 +11,7 @@ import { generateId } from '../lib/id';
 import { validateSale } from '../lib/validators';
 
 const SALE_STAGES: SaleStatus[] = [
-  'consulta', 'visita', 'oferta', 'negociación', 'reserva', 'boleto', 'escritura', 'vendida', 'caída'
+  'activa', 'vendida', 'caída'
 ];
 
 interface SaleModalProps {
@@ -46,7 +46,7 @@ export default function SaleModal({
     propiedadId: defaultPropertyId || '',
     propietarioId: '',
     vendedorId: '',
-    estado: 'consulta',
+    estado: 'activa',
     precioPublicado: 0,
     precioOfrecido: undefined,
     precioAcordado: undefined,
@@ -75,8 +75,7 @@ export default function SaleModal({
 
   const getStatusVariant = (status: string): any => {
     const map: Record<string, any> = {
-      vendida: 'green', reserva: 'orange', boleto: 'blue',
-      escritura: 'purple', caída: 'red', negociación: 'yellow'
+      activa: 'blue', vendida: 'green', caída: 'red'
     };
     return map[status] || 'gray';
   };
@@ -183,17 +182,6 @@ export default function SaleModal({
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 scrollbar-thin">
           <div className="space-y-4">
-            <div className="md:col-span-2">
-              <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Estado *</label>
-              <div className="flex flex-wrap gap-2">
-                {SALE_STAGES.map(s => (
-                  <button key={s} type="button" onClick={() => setFormData({...formData, estado: s})}
-                    className={cn('px-3 py-1.5 rounded-full text-xs font-bold transition-all border',
-                      formData.estado === s ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300'
-                    )}>{s}</button>
-                ))}
-              </div>
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Comprador *</label>

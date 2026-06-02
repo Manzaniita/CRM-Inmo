@@ -115,7 +115,7 @@ export interface Task {
   relatedEntities?: TaskRelatedEntity[];
 }
 
-export type SaleStatus = 'consulta' | 'visita' | 'oferta' | 'negociación' | 'reserva' | 'boleto' | 'escritura' | 'vendida' | 'caída';
+export type SaleStatus = 'activa' | 'vendida' | 'caída';
 
 export interface Sale {
   id: string;
@@ -150,7 +150,6 @@ export interface Sale {
   valorCierre?: number;
   escribania?: string;
   montoEscritura?: string | number;
-  operationStatus?: 'activa' | 'vendida' | 'caída';
   isCollected?: boolean;
   grossCommissionUsd?: number;
   infoExtra?: string;

@@ -214,7 +214,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } else if (salesRes.data) {
         setSales((salesRes.data as Sale[]).map(s => ({
           ...s,
-          operationStatus: s.operationStatus || 'activa',
           isCollected: s.isCollected ?? false,
           montoEscritura: typeof s.montoEscritura === 'number' ? String(s.montoEscritura) : s.montoEscritura,
         })));
@@ -957,7 +956,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (data.events) setEvents(data.events);
       if (data.sales) setSales(data.sales.map((s: Sale) => ({
         ...s,
-        operationStatus: s.operationStatus || 'activa',
         isCollected: s.isCollected ?? false,
         montoEscritura: typeof s.montoEscritura === 'number' ? String(s.montoEscritura) : s.montoEscritura,
       })));

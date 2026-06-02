@@ -48,7 +48,7 @@ export default function Reports() {
   const closedOps = sales.filter(s => s.estado === 'vendida');
   const conversionRate = activeOps.length > 0 ? Math.round((closedOps.length / activeOps.length) * 100) : 0;
 
-  const reservedSales = sales.filter(s => s.estado === 'reserva').length;
+  const activeSales = sales.filter(s => s.estado === 'activa').length;
 
   const collectedCommissions = useMemo(() => 
     sales
@@ -113,7 +113,7 @@ export default function Reports() {
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
          <ReportStat label="Ventas Totales Est. (USD)" value={formatCurrency(totalSalesEstimated, 'USD')} trend="+8.5%" trendType="up" />
-         <ReportStat label="Ventas Reservadas" value={reservedSales.toString()} trend="+2" trendType="up" />
+         <ReportStat label="Operaciones Activas" value={activeSales.toString()} trend="+2" trendType="up" />
          <ReportStat label="Visitas del Mes" value={monthlyVisits.toString()} trend="-4%" trendType="down" />
          <ReportStat label="Tasa de Cierre" value={`${conversionRate}%`} trend="+2%" trendType="up" />
          <ReportStat label="Comisiones Brutas Cobradas (USD)" value={formatCurrency(collectedCommissions, 'USD')} trend="+12%" trendType="up" />
@@ -196,7 +196,7 @@ export default function Reports() {
              <div className="space-y-4">
                 <ProgressItem label="Venta" value={Math.round((properties.filter(p => p.operation === 'venta').length / properties.length) * 100) || 0} color="bg-orange-500" />
                 <ProgressItem label="Disponibles" value={Math.round((properties.filter(p => p.status === 'disponible').length / properties.length) * 100) || 0} color="bg-green-500" />
-                <ProgressItem label="Ventas Reservadas" value={Math.round((sales.filter(s => s.estado === 'reserva').length / sales.length) * 100) || 0} color="bg-purple-500" />
+                <ProgressItem label="Operaciones Activas" value={Math.round((sales.filter(s => s.estado === 'activa').length / sales.length) * 100) || 0} color="bg-purple-500" />
              </div>
           </Card>
         </div>
