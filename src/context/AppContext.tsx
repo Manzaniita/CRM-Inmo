@@ -7,6 +7,7 @@ import type {
 } from '../types';
 import Toast, { ToastType } from '../components/Toast';
 import { generateId } from '../lib/id';
+import { formatCurrency } from '../lib/utils';
 
 interface ToastState {
   message: string;
@@ -449,13 +450,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateClient = async (client: Client) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
+    const prev = clients.find(c => c.id === client.id);
+    let description: string | undefined;
+    if (prev && prev.status !== client.status) {
+      description = `Estado: ${prev.status} -> ${client.status}`;
+    }
     const { error } = await supabase.from('clients').update(client).eq('id', client.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateClient');
       return;
     }
     setClients(prev => prev.map(c => c.id === client.id ? client : c));
-    addActivityLog({ type: 'client', action: 'updated', title: `Cliente actualizado: ${client.name}`, entityId: client.id });
+    addActivityLog({ type: 'client', action: 'updated', title: `Cliente actualizado: ${client.name}`, description, entityId: client.id });
     showToast('Cliente actualizado', 'success');
   };
 
@@ -475,13 +481,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateProperty = async (property: Property) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
+    const prev = properties.find(p => p.id === property.id);
+    const changes: string[] = [];
+    if (prev) {
+      if (prev.price !== property.price) {
+        changes.push(`Precio: ${formatCurrency(prev.price, prev.currency)} -> ${formatCurrency(property.price, property.currency)}`);
+      }
+      if (prev.status !== property.status) {
+        changes.push(`Estado: ${prev.status} -> ${property.status}`);
+      }
+    }
     const { error } = await supabase.from('properties').update(property).eq('id', property.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateProperty');
       return;
     }
     setProperties(prev => prev.map(p => p.id === property.id ? property : p));
-    addActivityLog({ type: 'property', action: 'updated', title: `Propiedad actualizada: ${property.title}`, entityId: property.id });
+    addActivityLog({ type: 'property', action: 'updated', title: `Propiedad actualizada: ${property.title}`, description: changes.length > 0 ? changes.join(' | ') : undefined, entityId: property.id });
     showToast('Propiedad actualizada', 'success');
   };
 

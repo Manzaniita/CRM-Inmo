@@ -23,16 +23,25 @@ const typeIcons: Record<RelationEntityType, React.ElementType> = {
 
 function RelationItemCard({ item }: { item: RelationItem }) {
   const Icon = typeIcons[item.type] || Activity;
+  const isLog = !!item.metadata?.action;
   return (
-    <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 hover:shadow-sm transition-all group">
-      <div className="flex items-start gap-3 min-w-0">
+    <div className="flex items-start justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 hover:shadow-sm transition-all group">
+      <div className="flex items-start gap-3 min-w-0 flex-1">
         <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0">
           <Icon size={14} className="text-slate-400 dark:text-slate-500" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{item.title}</p>
-          {item.subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{item.subtitle}</p>}
-          {item.status && (
+          {item.subtitle && (
+            isLog ? (
+              <div className="mt-1.5 px-2.5 py-1.5 bg-slate-50/80 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/50 rounded-lg text-[11px] text-slate-600 dark:text-slate-300 break-words leading-relaxed backdrop-blur-sm">
+                {item.subtitle}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{item.subtitle}</p>
+            )
+          )}
+          {item.status && !isLog && (
             <span className={cn(
               "inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium",
               item.status === 'disponible' || item.status === 'completada' || item.status === 'realizado' ? "bg-green-100 text-green-700" :

@@ -136,7 +136,6 @@ export interface Sale {
   fechaActualizacion: string;
   // Campos extendidos Reservómetro
   nombre?: string;
-  fecha?: string;
   vendedor?: string;
   comprador?: string;
   inmoAgente?: string;

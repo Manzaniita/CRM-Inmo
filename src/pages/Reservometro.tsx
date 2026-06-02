@@ -18,7 +18,7 @@ import SearchableSelect from '../components/SearchableSelect';
 const STAGES: SaleStatus[] = ['activa', 'vendida', 'caída'];
 
 function getBestDate(sale: Sale): string {
-  return sale.fecha || sale.fechaReserva || sale.fechaEscritura || sale.fechaActualizacion || sale.fechaCreacion || '';
+  return sale.fechaReserva || sale.fechaEscritura || sale.fechaActualizacion || sale.fechaCreacion || '';
 }
 
 export default function Reservometro() {
@@ -121,7 +121,7 @@ export default function Reservometro() {
     grossCommissionsUsd: sales
       .filter(s => {
         if (s.estado !== 'vendida' || !s.isCollected) return false;
-        const dateStr = s.fecha || s.fechaCreacion;
+        const dateStr = s.fechaCreacion;
         if (!dateStr) return false;
         return new Date(dateStr).getFullYear() === currentYear;
       })
@@ -475,7 +475,6 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
       propietarioId: '',
       vendedorId: '',
       nombre: '',
-      fecha: '',
       vendedor: '',
       comprador: '',
       compradorManual: '',
@@ -749,14 +748,10 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
             </div>
 
             {/* Datos básicos */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Nombre de la operación</label>
                 <input className={inputCls('')} value={formData.nombre || ''} onChange={e => setFormData({...formData, nombre: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Fecha</label>
-                <input type="date" className={inputCls('')} value={formData.fecha || ''} onChange={e => setFormData({...formData, fecha: e.target.value})} />
               </div>
               <div>
                 <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Inmo / Agente (texto)</label>
