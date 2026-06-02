@@ -52,10 +52,10 @@ export interface Property {
   city: string;
   price: number;
   currency: 'USD' | 'ARS';
-  rooms: number;
-  bedrooms: number;
-  bathrooms: number;
-  surface: number;
+  rooms?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  surface?: number;
   externalLink?: string;
   propertyLink?: string;
   externalSource?: string;

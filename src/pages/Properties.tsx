@@ -102,10 +102,6 @@ export default function Properties() {
     city: '',
     price: 0,
     currency: 'USD',
-    bedrooms: 1,
-    bathrooms: 1,
-    rooms: 1,
-    surface: 0,
     externalLink: '',
     propertyLink: '',
     externalSource: '',
@@ -168,10 +164,6 @@ export default function Properties() {
         city: '',
         price: 0,
         currency: 'USD',
-        bedrooms: 1,
-        bathrooms: 1,
-        rooms: 1,
-        surface: 0,
         externalLink: '',
         propertyLink: '',
         externalSource: '',
@@ -767,20 +759,6 @@ export default function Properties() {
                   value={formData.city}
                   onChange={e => setFormData({...formData, city: e.target.value})}
                 />
-              </div>
-              <div className="grid grid-cols-3 gap-2 md:col-span-2">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Dorm.</label>
-                  <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={formData.bedrooms} onChange={e => setFormData({...formData, bedrooms: Number(e.target.value)})} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Baños</label>
-                  <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={formData.bathrooms} onChange={e => setFormData({...formData, bathrooms: Number(e.target.value)})} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Superficie</label>
-                  <input type="number" className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={formData.surface} onChange={e => setFormData({...formData, surface: Number(e.target.value)})} />
-                </div>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Imagen principal</label>
