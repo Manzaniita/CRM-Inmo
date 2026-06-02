@@ -144,9 +144,9 @@ export interface Sale {
   porcentajeBruto?: number;
   porcentajeNeto?: number;
   porcentajeReferido?: number;
-  valorOfertado?: number;
-  contraoferta1?: number;
-  contraoferta2?: number;
+  valorOfertado?: string | number;
+  contraoferta1?: string | number;
+  contraoferta2?: string | number;
   valorCierre?: number;
   escribania?: string;
   montoEscritura?: string | number;

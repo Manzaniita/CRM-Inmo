@@ -113,6 +113,8 @@ export default function Reservometro() {
     return result;
   }, [sales, lowerSearch, filterStatus, filterOperationStatus, filterPropertyType, filterBuyer, filterSeller, filterAgent, sortKey, sortDirection, clients, properties]);
 
+  const currentYear = new Date().getFullYear();
+
   const stats = {
     active: sales.filter(s => !['vendida', 'caída'].includes(s.estado)).length,
     negotiation: sales.filter(s => ['oferta', 'negociación'].includes(s.estado)).length,
@@ -121,8 +123,18 @@ export default function Reservometro() {
       .filter(s => s.estado === 'vendida')
       .reduce((acc, s) => acc + (s.moneda === 'ARS' ? s.comisionEstimada : 0), 0),
     grossCommissionsUsd: sales
-      .filter(s => s.operationStatus === 'vendida' && s.isCollected)
-      .reduce((acc, s) => acc + (s.grossCommissionUsd || (typeof s.valorCierre === 'number' && typeof s.porcentajeBruto === 'number' ? s.valorCierre * s.porcentajeBruto / 100 : 0)), 0),
+      .filter(s => {
+        if (s.operationStatus !== 'vendida' || !s.isCollected) return false;
+        const dateStr = s.fecha || s.fechaCreacion;
+        if (!dateStr) return false;
+        return new Date(dateStr).getFullYear() === currentYear;
+      })
+      .reduce((acc, s) => {
+        if (typeof s.valorCierre === 'number' && typeof s.porcentajeNeto === 'number') {
+          return acc + (s.valorCierre * (s.porcentajeNeto / 100));
+        }
+        return acc;
+      }, 0),
   };
 
   const getStatusVariant = (status: string): string => {
@@ -300,7 +312,11 @@ export default function Reservometro() {
                       <td className="px-4 py-3">
                         <div className="flex flex-col text-xs">
                           <span className="font-bold text-slate-700 dark:text-slate-300">Pub: {formatCurrency(sale.precioPublicado, sale.moneda)}</span>
-                          {sale.valorOfertado !== undefined && <span className="text-blue-600 font-medium">Ofertado: {formatCurrency(sale.valorOfertado, sale.moneda)}</span>}
+                          {sale.valorOfertado !== undefined && (
+                            <span className="text-blue-600 font-medium">
+                              Ofertado: {typeof sale.valorOfertado === 'number' ? formatCurrency(sale.valorOfertado, sale.moneda) : sale.valorOfertado}
+                            </span>
+                          )}
                           {sale.valorCierre !== undefined && <span className="text-green-600 font-medium">Cierre: {formatCurrency(sale.valorCierre, sale.moneda)}</span>}
                         </div>
                       </td>
@@ -742,19 +758,27 @@ function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => vo
             {/* Precios */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { key: 'precioPublicado', label: 'Precio Publicado', required: true },
-                { key: 'valorOfertado', label: 'Valor Ofertado', required: false },
-                { key: 'contraoferta1', label: 'Contraoferta 1', required: false },
-                { key: 'contraoferta2', label: 'Contraoferta 2', required: false },
-                { key: 'valorCierre', label: 'Valor Cierre', required: false },
-                { key: 'comisionEstimada', label: 'Comisión Estimada', required: false },
-                { key: 'puntas', label: 'Puntas', required: false },
-                { key: 'presupuesto', label: 'Presupuesto', required: false },
+                { key: 'precioPublicado', label: 'Precio Publicado', required: true, numeric: true },
+                { key: 'valorOfertado', label: 'Valor Ofertado', required: false, numeric: false },
+                { key: 'contraoferta1', label: 'Contraoferta 1', required: false, numeric: false },
+                { key: 'contraoferta2', label: 'Contraoferta 2', required: false, numeric: false },
+                { key: 'valorCierre', label: 'Valor Cierre', required: false, numeric: true },
+                { key: 'comisionEstimada', label: 'Comisión Estimada', required: false, numeric: true },
+                { key: 'puntas', label: 'Puntas', required: false, numeric: true },
+                { key: 'presupuesto', label: 'Presupuesto', required: false, numeric: true },
               ].map(field => (
                 <div key={field.key}>
                   <label className={cn('block text-[10px] font-black uppercase tracking-widest mb-1', errors[field.key] ? 'text-red-500' : 'text-slate-400 dark:text-slate-500')}>{field.label}{field.required ? ' *' : ''}</label>
-                  <input type="number" className={inputCls(field.key)} value={(formData as Record<string, unknown>)[field.key] as number ?? ''}
-                    onChange={e => { setFormData({...formData, [field.key]: e.target.value ? Number(e.target.value) : undefined}); if (field.required) setErrors(prev => ({...prev, [field.key]: false})); }} />
+                  <input
+                    type={field.numeric ? 'number' : 'text'}
+                    className={inputCls(field.key)}
+                    value={(formData as Record<string, unknown>)[field.key] as string | number ?? ''}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setFormData({...formData, [field.key]: field.numeric ? (val ? Number(val) : undefined) : (val || undefined)});
+                      if (field.required) setErrors(prev => ({...prev, [field.key]: false}));
+                    }}
+                  />
                 </div>
               ))}
             </div>

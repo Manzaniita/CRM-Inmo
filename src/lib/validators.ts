@@ -52,6 +52,7 @@ export function validateSale(sale: Partial<Sale>): ValidationResult {
   if (sale.nombre && !sale.nombre.trim()) {
     return { valid: false, message: 'El nombre no puede estar vacío.' };
   }
+  // valorOfertado, contraoferta1 y contraoferta2 aceptan string | number
   if (typeof sale.valorOfertado === 'number' && sale.valorOfertado < 0) {
     return { valid: false, message: 'El valor ofertado no puede ser negativo.' };
   }
