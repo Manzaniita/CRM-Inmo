@@ -1,18 +1,14 @@
 /**
- * Helper de transformación entre camelCase (frontend) y snake_case (Supabase DB).
- * El frontend sigue usando camelCase; la capa de datos traduce automáticamente.
+ * Helper de normalización de datos entre frontend y Supabase.
+ * El esquema de la base de datos usa camelCase nativo; esta capa
+ * se limita a filtrar campos prohibidos y normalizar null/undefined.
+ * NO transforma el casing de las claves.
  */
 
-function toSnakeCase(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-}
-
-function toCamelCase(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-}
-
-/** Convierte las claves de un objeto de camelCase a snake_case.
- *  Útil para INSERT/UPDATE hacia Supabase.
+/** Prepara un objeto para enviar a Supabase.
+ *  - Elimina campos `undefined` para no sobreescribirlos con null.
+ *  - Filtra campos de control interno (userId / user_id) porque se
+ *    inyectan manualmente en la capa de autenticación.
  */
 export function toDb<T extends object>(
   obj: T,
@@ -21,24 +17,22 @@ export function toDb<T extends object>(
   const result: Record<string, unknown> = { ...extra };
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) continue;
-    // No enviamos campos de control internos al payload de Supabase
     if (key === 'userId' || key === 'user_id') continue;
-    result[toSnakeCase(key)] = value;
+    result[key] = value;
   }
   return result;
 }
 
-/** Convierte las claves de un registro de Supabase (snake_case) a camelCase.
- *  Útil al leer datos de la nube.
- *  Filtra campos de sistema que no pertenecen al estado de React.
+/** Normaliza un registro recibido de Supabase.
+ *  - Convierte `null` → `undefined` para evitar crashes en campos
+ *    opcionales del frontend que esperan string | number | undefined.
+ *  - Filtra campos de sistema que no pertenecen al estado de React.
  */
 export function fromDb<T extends object>(obj: Record<string, unknown>): T {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (key === 'user_id' || key === 'updated_at') continue;
-    const camelKey = toCamelCase(key);
-    // Normalizar null → undefined para evitar crashes en campos opcionales del frontend
-    result[camelKey] = value === null ? undefined : value;
+    if (key === 'user_id' || key === 'userId') continue;
+    result[key] = value === null ? undefined : value;
   }
   return result as T;
 }
