@@ -434,7 +434,7 @@ export default function Properties() {
               <div className="space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                  className="w-full border-green-200 text-green-700 hover:bg-green-50 dark:hover:bg-slate-800 hover:text-green-800"
                   onClick={() => {
                     const propertyLink = selectedProp.externalLink || selectedProp.propertyLink || '';
                     const msg = formatWhatsAppTemplate(profile.templateProperty, {
@@ -483,7 +483,7 @@ export default function Properties() {
             <Card title="Agenda Relacionada">
                <div className="space-y-3">
                 {events.filter(e => e.propertyId === id).slice(0, 3).map(event => (
-                  <div key={event.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:bg-slate-800/50 transition-colors cursor-pointer" onClick={() => navigate('/agenda')}>
+                  <div key={event.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => navigate('/agenda')}>
                     <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800/50 rounded-lg flex flex-col items-center justify-center border border-slate-100 dark:border-slate-800 shrink-0">
                       <span className="text-[8px] font-black uppercase">{event.time}</span>
                       <span className="text-[10px] font-bold">{event.date.split('-')[2]}</span>
@@ -506,7 +506,7 @@ export default function Properties() {
               <div className="space-y-4">
                 {interestedClients.map(client => (
                   <div key={client.id} className="flex items-center gap-3 active:scale-95 transition-transform cursor-pointer group" onClick={() => navigate(`/clientes/${client.id}`)}>
-                    <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-800 border border-blue-100 dark:border-slate-700 flex items-center justify-center text-blue-700 dark:text-blue-400 text-xs font-bold">
                       {client.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1035,7 +1035,7 @@ export default function Properties() {
                   {/* 3-dots menu + 360 button + WhatsApp */}
                   <div className="absolute top-2 right-2 flex gap-1">
                     <button
-                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-green-50 transition-colors"
+                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-green-50 dark:hover:bg-slate-800 transition-colors"
                       onClick={e => {
                         e.stopPropagation();
                         const propertyLink = prop.externalLink || prop.propertyLink || '';
@@ -1056,7 +1056,7 @@ export default function Properties() {
                       <MessageCircle size={16} className="text-green-600" />
                     </button>
                     <button
-                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white dark:bg-slate-800 transition-colors text-[10px] font-bold text-blue-700"
+                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white dark:hover:bg-slate-800 transition-colors text-[10px] font-bold text-blue-700"
                       onClick={e => {
                         e.stopPropagation();
                         openRelations('property', prop.id);
@@ -1066,7 +1066,7 @@ export default function Properties() {
                       360°
                     </button>
                     <button
-                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white dark:bg-slate-800 transition-colors"
+                      className="p-1.5 bg-white/90 backdrop-blur rounded-md shadow-sm hover:bg-white dark:hover:bg-slate-800 transition-colors"
                       onClick={e => {
                         e.stopPropagation();
                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -1102,7 +1102,7 @@ export default function Properties() {
                               key={st}
                               className={cn(
                                 "w-full text-left px-3 py-2 text-xs font-medium transition-colors",
-                                prop.status === st ? "bg-blue-50 text-blue-700" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800/50"
+                                prop.status === st ? "bg-blue-50 text-blue-700" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                               )}
                               onClick={e => {
                                 e.stopPropagation();

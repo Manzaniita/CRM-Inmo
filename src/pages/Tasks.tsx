@@ -383,7 +383,7 @@ export default function Tasks() {
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div className="divide-y divide-gray-100">
         {filteredTasks.map((task) => (
-          <div key={task.id} className="p-4 hover:bg-slate-50 dark:bg-slate-800/50 transition-colors flex items-center gap-4 group">
+          <div key={task.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-4 group">
             <button
               onClick={() => completeTask(task.id)}
               className={cn(
@@ -441,12 +441,12 @@ export default function Tasks() {
               <Badge variant={getStatusVariant(task.status)} size="sm">{task.status}</Badge>
               <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                 {task.status !== 'completada' && task.status !== 'cancelada' && (
-                  <button onClick={(e) => { e.stopPropagation(); quickComplete(task); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Completar"><CheckCircle2 size={16} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); quickComplete(task); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Completar"><CheckCircle2 size={16} /></button>
                 )}
                 {task.status !== 'completada' && task.status !== 'cancelada' && (
-                  <button onClick={(e) => { e.stopPropagation(); quickReschedule(task); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Reprogramar"><RotateCcw size={16} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); quickReschedule(task); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Reprogramar"><RotateCcw size={16} /></button>
                 )}
-                <button onClick={() => { if (window.confirm('¿Eliminar esta tarea?')) deleteTask(task.id); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                <button onClick={() => { if (window.confirm('¿Eliminar esta tarea?')) deleteTask(task.id); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-800 rounded-lg transition-colors"><Trash2 size={16} /></button>
                 <button onClick={() => handleOpenForm(task)} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"><MoreVertical size={16} /></button>
               </div>
             </div>
@@ -478,13 +478,13 @@ export default function Tasks() {
           <div className="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 mr-2">
             <button
               onClick={() => setViewMode('list')}
-              className={cn("p-1.5 rounded-md transition-all", viewMode === 'list' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-800/50")}
+              className={cn("p-1.5 rounded-md transition-all", viewMode === 'list' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800")}
             >
               <ListIcon size={18} />
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              className={cn("p-1.5 rounded-md transition-all", viewMode === 'kanban' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-800/50")}
+              className={cn("p-1.5 rounded-md transition-all", viewMode === 'kanban' ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800")}
             >
               <LayoutGrid size={18} />
             </button>

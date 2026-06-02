@@ -602,7 +602,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Sales ---
   const addSale = async (sale: Sale) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('sales').insert({ ...sale, user_id: user.id }).select();
+    const { notes, ...rest } = sale as any;
+    const payload = { ...rest, notas: rest.notas ?? notes ?? '', user_id: user.id };
+    const { data, error } = await supabase.from('sales').insert(payload).select();
     if (error || !data) {
       handleSupabaseError(error, 'addSale');
       return;
@@ -620,7 +622,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateSale = async (sale: Sale) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
-    const { error } = await supabase.from('sales').update(sale).eq('id', sale.id).eq('user_id', user.id);
+    const { notes, ...rest } = sale as any;
+    const payload = { ...rest, notas: rest.notas ?? notes ?? '' };
+    const { error } = await supabase.from('sales').update(payload).eq('id', sale.id).eq('user_id', user.id);
     if (error) {
       handleSupabaseError(error, 'updateSale');
       return;
@@ -868,7 +872,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // --- Utilities ---
   const resetData = () => {
     clearAllState();
-    window.location.reload();
+    if (user) {
+      loadAllFromSupabase(user.id);
+    }
   };
 
   const clearMockData = () => {
