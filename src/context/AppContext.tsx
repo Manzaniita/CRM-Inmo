@@ -3,8 +3,9 @@ import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 import type {
   Client, Property, PropertyStatus, CalendarEvent, Task, Sale, Rental, Document,
-  WaitingRoomEntry, Buyer, ReferredColleague, ActivityLog, Profile
+  WaitingRoomEntry, Buyer, ReferredColleague, ActivityLog, Profile, CustomOptions
 } from '../types';
+import { DEFAULT_CUSTOM_OPTIONS } from '../types';
 import Toast, { ToastType } from '../components/Toast';
 import { generateId } from '../lib/id';
 import { formatCurrency } from '../lib/utils';
@@ -37,6 +38,8 @@ interface AppContextType {
   signOut: () => Promise<void>;
 
   showToast: (message: string, type: ToastType) => void;
+  customOptions: CustomOptions;
+  updateCustomOptions: (opts: CustomOptions) => Promise<void>;
   addClient: (client: Client) => Promise<void>;
   updateClient: (client: Client) => Promise<void>;
   addProperty: (property: Property) => Promise<void>;
@@ -94,6 +97,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [referredColleagues, setReferredColleagues] = useState<ReferredColleague[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [customOptions, setCustomOptions] = useState<CustomOptions>(() => {
+    try {
+      const local = localStorage.getItem('estatecrm_custom_options');
+      return local ? JSON.parse(local) : DEFAULT_CUSTOM_OPTIONS;
+    } catch {
+      return DEFAULT_CUSTOM_OPTIONS;
+    }
+  });
+
   const [profile, setProfile] = useState<Profile>({
     name: '',
     email: '',
@@ -270,6 +282,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           must_change_password: p.must_change_password ?? false,
         }));
       }
+
+      // Load custom options (best-effort Supabase + localStorage fallback)
+      const { data: coRes, error: coErr } = await supabase.from('custom_options').select('*').eq('user_id', uid).single();
+      if (!coErr && coRes && (coRes as any).options) {
+        setCustomOptions((coRes as any).options as CustomOptions);
+      }
+
       setIsCloudReady(true);
     } catch (e) {
       console.error('[EstateCRM] Error loading from Supabase:', e);
@@ -853,6 +872,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showToast('Colega eliminado', 'info');
   };
 
+  const updateCustomOptions = useCallback(async (opts: CustomOptions) => {
+    setCustomOptions(opts);
+    localStorage.setItem('estatecrm_custom_options', JSON.stringify(opts));
+    if (user) {
+      const { error } = await supabase.from('custom_options').upsert({ user_id: user.id, options: opts }, { onConflict: 'user_id' });
+      if (error) {
+        console.error('[EstateCRM] custom_options save error:', error);
+        showToast('Opciones guardadas localmente. Para sincronizar en la nube, creá la tabla custom_options en Supabase.', 'warning');
+      }
+    }
+  }, [user, showToast]);
+
   const updateProfile = async (newProfile: Profile) => {
     if (!user) { showToast('No hay sesión activa', 'error'); return; }
     const payload = {
@@ -1015,6 +1046,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       signOut,
       updateProfile,
       showToast,
+      customOptions,
+      updateCustomOptions,
       addClient,
       updateClient,
       addProperty,

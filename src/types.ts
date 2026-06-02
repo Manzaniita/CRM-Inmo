@@ -2,9 +2,9 @@
  * Types for EstateCRM
  */
 
-export type ClientType = 'comprador' | 'vendedor' | 'inquilino' | 'propietario' | 'inversor' | 'interesado';
-export type ClientStatus = 'nuevo' | 'contactado' | 'interesado' | 'en seguimiento' | 'negociación' | 'cerrado' | 'perdido';
-export type ClientOrigin = 'WhatsApp' | 'Instagram' | 'Web' | 'Referido' | 'Llamada' | 'Oficina' | 'Marketplace' | 'Manual' | 'Otro';
+export type ClientType = string;
+export type ClientStatus = string;
+export type ClientOrigin = string;
 
 export interface EntityNote {
   id: string;
@@ -36,9 +36,9 @@ export interface Client {
   dashboardArchived?: boolean;
 }
 
-export type PropertyType = 'casa' | 'departamento' | 'local' | 'terreno' | 'oficina' | 'galpón' | 'cochera' | 'ph' | 'campos';
-export type PropertyOperation = 'venta' | 'alquiler' | 'ambas';
-export type PropertyStatus = 'disponible' | 'reservada' | 'vendida' | 'alquilada' | 'pausada' | 'vencida' | 'en_seguimiento';
+export type PropertyType = string;
+export type PropertyOperation = string;
+export type PropertyStatus = string;
 
 export interface Property {
   id: string;
@@ -268,6 +268,75 @@ export interface ActivityLog {
   createdAt: string;
   entityId?: string;
 }
+
+export interface CustomOptionItem {
+  id: string;
+  label: string;
+  color?: string;
+}
+
+export interface CustomOptions {
+  clientTypes: CustomOptionItem[];
+  clientStatuses: CustomOptionItem[];
+  clientOrigins: CustomOptionItem[];
+  propertyTypes: CustomOptionItem[];
+  propertyStatuses: CustomOptionItem[];
+  propertyOperations: CustomOptionItem[];
+}
+
+export const DEFAULT_CUSTOM_OPTIONS: CustomOptions = {
+  clientTypes: [
+    { id: 'comprador', label: 'Comprador', color: 'green' },
+    { id: 'vendedor', label: 'Vendedor', color: 'blue' },
+    { id: 'inquilino', label: 'Inquilino', color: 'orange' },
+    { id: 'propietario', label: 'Propietario', color: 'purple' },
+    { id: 'inversor', label: 'Inversor', color: 'yellow' },
+    { id: 'interesado', label: 'Interesado', color: 'gray' },
+  ],
+  clientStatuses: [
+    { id: 'nuevo', label: 'Nuevo', color: 'green' },
+    { id: 'contactado', label: 'Contactado', color: 'blue' },
+    { id: 'interesado', label: 'Interesado', color: 'orange' },
+    { id: 'en seguimiento', label: 'En Seguimiento', color: 'purple' },
+    { id: 'negociación', label: 'Negociación', color: 'yellow' },
+    { id: 'cerrado', label: 'Cerrado', color: 'gray' },
+    { id: 'perdido', label: 'Perdido', color: 'red' },
+  ],
+  clientOrigins: [
+    { id: 'WhatsApp', label: 'WhatsApp' },
+    { id: 'Instagram', label: 'Instagram' },
+    { id: 'Web', label: 'Web' },
+    { id: 'Referido', label: 'Referido' },
+    { id: 'Llamada', label: 'Llamada' },
+    { id: 'Oficina', label: 'Oficina' },
+    { id: 'Marketplace', label: 'Marketplace' },
+    { id: 'Manual', label: 'Manual' },
+    { id: 'Otro', label: 'Otro' },
+  ],
+  propertyTypes: [
+    { id: 'departamento', label: 'Departamento' },
+    { id: 'casa', label: 'Casa' },
+    { id: 'ph', label: 'PH' },
+    { id: 'lote', label: 'Lote' },
+    { id: 'local', label: 'Local' },
+    { id: 'oficina', label: 'Oficina' },
+    { id: 'campos', label: 'Campos' },
+  ],
+  propertyStatuses: [
+    { id: 'disponible', label: 'Disponible', color: 'green' },
+    { id: 'reservada', label: 'Reservada', color: 'orange' },
+    { id: 'vendida', label: 'Vendida', color: 'red' },
+    { id: 'alquilada', label: 'Alquilada', color: 'blue' },
+    { id: 'pausada', label: 'Pausada', color: 'gray' },
+    { id: 'vencida', label: 'Vencida', color: 'purple' },
+    { id: 'en_seguimiento', label: 'En Seguimiento', color: 'purple' },
+  ],
+  propertyOperations: [
+    { id: 'venta', label: 'Venta' },
+    { id: 'alquiler', label: 'Alquiler' },
+    { id: 'ambas', label: 'Ambas' },
+  ],
+};
 
 export interface Profile {
   user_id?: string;

@@ -15,14 +15,16 @@ import {
   X,
   Loader2,
   Key,
-  RefreshCw
+  RefreshCw,
+  List,
+  Tag
 } from 'lucide-react';
 import Button from '../components/Button';
 import { Card } from '../components/Card';
 import Badge from '../components/Badge';
 import { cn } from '../lib/utils';
 import { useAppContext } from '../context/AppContext';
-import type { Profile } from '../types';
+import type { Profile, CustomOptions, CustomOptionItem } from '../types';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -34,10 +36,10 @@ interface UserProfile {
   must_change_password?: boolean;
 }
 
-type ConfigTabId = 'perfil' | 'plantillas' | 'datos' | 'usuarios';
+type ConfigTabId = 'perfil' | 'plantillas' | 'datos' | 'usuarios' | 'listas';
 
 export default function Configuration() {
-  const { profile, updateProfile, resetData, exportData, importData, showToast, clearMockData, signOut } = useAppContext();
+  const { profile, updateProfile, resetData, exportData, importData, showToast, clearMockData, signOut, customOptions, updateCustomOptions } = useAppContext();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<ConfigTabId>('perfil');
   const [saveStatus, setSaveStatus] = useState(false);
@@ -290,6 +292,12 @@ export default function Configuration() {
             active={activeTab === 'datos'}
             onClick={() => setActiveTab('datos')}
           />
+          <ConfigTab
+            icon={List}
+            label="Personalización de Listas"
+            active={activeTab === 'listas'}
+            onClick={() => setActiveTab('listas')}
+          />
           {(profile.role === 'superadmin' || serverRole === 'superadmin') && (
             <ConfigTab
               icon={Users}
@@ -503,6 +511,15 @@ export default function Configuration() {
             </Card>
           )}
 
+          {activeTab === 'listas' && (
+            <Card title="Personalización de Listas" subtitle="Gestioná las opciones disponibles en los formularios de clientes y propiedades.">
+              <CustomOptionsManager
+                options={customOptions}
+                onChange={updateCustomOptions}
+              />
+            </Card>
+          )}
+
           {activeTab === 'usuarios' && serverRole === 'superadmin' && (
             <Card title="Gestión de Usuarios" subtitle="Administra los agentes y superadmins del sistema.">
               <div className="pt-4 space-y-4">
@@ -646,6 +663,107 @@ export default function Configuration() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function CustomOptionsManager({ options, onChange }: { options: CustomOptions; onChange: (opts: CustomOptions) => void }) {
+  const categories: { key: keyof CustomOptions; title: string; icon: React.ElementType }[] = [
+    { key: 'clientTypes', title: 'Tipos de Cliente', icon: Tag },
+    { key: 'clientStatuses', title: 'Estados de Cliente', icon: Tag },
+    { key: 'clientOrigins', title: 'Orígenes de Cliente', icon: Tag },
+    { key: 'propertyTypes', title: 'Tipos de Propiedad', icon: Tag },
+    { key: 'propertyStatuses', title: 'Estados de Propiedad', icon: Tag },
+    { key: 'propertyOperations', title: 'Operaciones de Propiedad', icon: Tag },
+  ];
+
+  const [newLabel, setNewLabel] = useState<Record<string, string>>({});
+  const [newColor, setNewColor] = useState<Record<string, string>>({});
+
+  const colors = ['green', 'blue', 'orange', 'purple', 'yellow', 'gray', 'red'];
+
+  const addOption = (key: keyof CustomOptions) => {
+    const label = newLabel[key]?.trim();
+    if (!label) return;
+    const id = label.toLowerCase().replace(/\s+/g, '_');
+    const list = options[key];
+    if (list.some(i => i.id === id)) {
+      alert('Ya existe una opción con ese identificador.');
+      return;
+    }
+    const item: CustomOptionItem = { id, label, color: newColor[key] || undefined };
+    onChange({ ...options, [key]: [...list, item] });
+    setNewLabel(prev => ({ ...prev, [key]: '' }));
+  };
+
+  const removeOption = (key: keyof CustomOptions, id: string) => {
+    if (!window.confirm('¿Eliminar esta opción?')) return;
+    onChange({ ...options, [key]: options[key].filter(i => i.id !== id) });
+  };
+
+  return (
+    <div className="space-y-6 pt-4">
+      {categories.map(cat => (
+        <div key={cat.key} className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+            <cat.icon size={16} className="text-blue-600" /> {cat.title}
+          </h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {options[cat.key].map(item => (
+              <div key={item.id} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300">
+                {item.color && <span className={cn("w-2 h-2 rounded-full", item.color === 'green' ? "bg-green-500" : item.color === 'blue' ? "bg-blue-500" : item.color === 'orange' ? "bg-orange-500" : item.color === 'purple' ? "bg-purple-500" : item.color === 'yellow' ? "bg-yellow-500" : item.color === 'red' ? "bg-red-500" : "bg-gray-500")} />}
+                {item.label}
+                <button onClick={() => removeOption(cat.key, item.id)} className="ml-1 text-slate-400 hover:text-red-500 transition-colors">
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              placeholder={`Nuevo ${cat.title.toLowerCase()}...`}
+              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+              value={newLabel[cat.key] || ''}
+              onChange={e => setNewLabel(prev => ({ ...prev, [cat.key]: e.target.value }))}
+              onKeyDown={e => { if (e.key === 'Enter') addOption(cat.key); }}
+            />
+            <div className="flex items-center gap-1">
+              {colors.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setNewColor(prev => ({ ...prev, [cat.key]: c }))}
+                  className={cn(
+                    "w-6 h-6 rounded-full border-2 transition-all",
+                    c === 'green' ? "bg-green-500 border-green-500" : c === 'blue' ? "bg-blue-500 border-blue-500" : c === 'orange' ? "bg-orange-500 border-orange-500" : c === 'purple' ? "bg-purple-500 border-purple-500" : c === 'yellow' ? "bg-yellow-500 border-yellow-500" : c === 'red' ? "bg-red-500 border-red-500" : "bg-gray-500 border-gray-500",
+                    newColor[cat.key] === c ? "ring-2 ring-offset-1 ring-slate-400 dark:ring-offset-slate-800" : "opacity-60 hover:opacity-100"
+                  )}
+                  title={c}
+                />
+              ))}
+              <button
+                type="button"
+                onClick={() => setNewColor(prev => ({ ...prev, [cat.key]: '' }))}
+                className={cn(
+                  "w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 bg-transparent text-[8px] font-bold text-slate-500 flex items-center justify-center transition-all",
+                  !newColor[cat.key] ? "ring-2 ring-offset-1 ring-slate-400 dark:ring-offset-slate-800" : "opacity-60 hover:opacity-100"
+                )}
+                title="Sin color"
+              >
+                -
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => addOption(cat.key)}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus size={14} className="inline mr-1" /> Agregar
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

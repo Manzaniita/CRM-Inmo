@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   Plus, 
@@ -69,7 +69,7 @@ export default function Clients() {
   const [searchParams] = useSearchParams();
   const clientIdFromQuery = searchParams.get('clientId');
   const effectiveClientId = id || clientIdFromQuery || undefined;
-  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, profile, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addReferredColleague, updateReferredColleague, addActivityLog } = useAppContext();
+  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, profile, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addReferredColleague, updateReferredColleague, addActivityLog, customOptions, updateCustomOptions } = useAppContext();
   const { openRelations } = useRelationsDrawer();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -147,6 +147,37 @@ export default function Clients() {
   });
 
   const selectedClient = clients.find(c => c.id === effectiveClientId);
+
+  // Detectar query params para crear referido desde colega
+  useEffect(() => {
+    const newReferral = searchParams.get('newReferral');
+    const colleagueId = searchParams.get('colleagueId');
+    if (newReferral === 'true' && colleagueId) {
+      setEditingClient(null);
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        type: 'comprador',
+        types: ['comprador'],
+        status: 'nuevo',
+        origin: 'Referido',
+        lastContact: new Date().toISOString().split('T')[0],
+        notes: '',
+        profession: '',
+        referredBy: '',
+        referredByColleagueId: colleagueId,
+        dashboardPinned: false,
+        dashboardArchived: false,
+      });
+      setSelectedColleagueId(colleagueId);
+      setShowNewColleagueForm(false);
+      setNewColleagueName('');
+      setNewColleagueOffice('');
+      setIsFormModalOpen(true);
+      navigate('/clientes', { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   // Estado de error si el ID de la URL no corresponde a ningún cliente cargado
   if (effectiveClientId && !selectedClient) {
@@ -330,8 +361,10 @@ export default function Clients() {
     setSelectedColleagueId('');
   };
 
-  const getTypeBadgeVariant = (type: ClientType): any => {
-    switch (type) {
+  const getTypeBadgeVariant = (typeId: string): any => {
+    const found = customOptions.clientTypes.find(t => t.id === typeId);
+    if (found?.color) return found.color;
+    switch (typeId) {
       case 'comprador': return 'green';
       case 'vendedor': return 'blue';
       case 'inquilino': return 'orange';
@@ -373,8 +406,10 @@ export default function Clients() {
     });
   };
 
-  const getStatusBadgeVariant = (status: ClientStatus): any => {
-    switch (status) {
+  const getStatusBadgeVariant = (statusId: string): any => {
+    const found = customOptions.clientStatuses.find(s => s.id === statusId);
+    if (found?.color) return found.color;
+    switch (statusId) {
       case 'nuevo': return 'green';
       case 'contactado': return 'blue';
       case 'interesado': return 'orange';
@@ -1101,12 +1136,12 @@ export default function Clients() {
               </div>
                             <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Tipo * (seleccioná uno o más)</label>
-                <div className="flex flex-wrap gap-2">
-                  {(['comprador','vendedor','inquilino','propietario','inversor','interesado'] as ClientType[]).map(t => {
-                    const selected = (formData.types && formData.types.length > 0) ? formData.types.includes(t) : formData.type === t;
+                <div className="flex flex-wrap gap-2 items-center">
+                  {customOptions.clientTypes.map(t => {
+                    const selected = (formData.types && formData.types.length > 0) ? formData.types.includes(t.id) : formData.type === t.id;
                     return (
                       <button
-                        key={t}
+                        key={t.id}
                         type="button"
                         className={cn(
                           "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
@@ -1116,19 +1151,33 @@ export default function Clients() {
                         )}
                         onClick={() => {
                           const currentTypes = (formData.types && formData.types.length > 0) ? [...formData.types] : (formData.type ? [formData.type] : []);
-                          if (currentTypes.includes(t)) {
-                            const next = currentTypes.filter(x => x !== t);
+                          if (currentTypes.includes(t.id)) {
+                            const next = currentTypes.filter(x => x !== t.id);
                             setFormData({...formData, types: next.length > 0 ? next : undefined, type: next.length > 0 ? next[0] : 'comprador'});
                           } else {
-                            const next = [...currentTypes, t];
+                            const next = [...currentTypes, t.id];
                             setFormData({...formData, types: next, type: next[0]});
                           }
                         }}
                       >
-                        {t}
+                        {t.label}
                       </button>
                     );
                   })}
+                  <button
+                    type="button"
+                    className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center text-xs font-bold transition-all"
+                    title="Agregar tipo"
+                    onClick={() => {
+                      const label = prompt('Nombre del nuevo tipo de cliente:');
+                      if (!label?.trim()) return;
+                      const id = label.trim().toLowerCase().replace(/\s+/g, '_');
+                      if (customOptions.clientTypes.some(t => t.id === id)) { showToast('Ya existe esa opción', 'warning'); return; }
+                      updateCustomOptions({ ...customOptions, clientTypes: [...customOptions.clientTypes, { id, label: label.trim() }] });
+                    }}
+                  >
+                    +
+                  </button>
                 </div>
               </div>
               <div>
@@ -1142,37 +1191,59 @@ export default function Clients() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
-                <select 
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.status}
-                  onChange={e => setFormData({...formData, status: e.target.value as ClientStatus})}
-                >
-                  <option value="nuevo">Nuevo</option>
-                  <option value="contactado">Contactado</option>
-                  <option value="interesado">Interesado</option>
-                  <option value="en seguimiento">En Seguimiento</option>
-                  <option value="negociación">Negociación</option>
-                  <option value="cerrado">Cerrado</option>
-                  <option value="perdido">Perdido</option>
-                </select>
+                <div className="flex gap-2">
+                  <select 
+                    className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={formData.status}
+                    onChange={e => setFormData({...formData, status: e.target.value})}
+                  >
+                    {customOptions.clientStatuses.map(s => (
+                      <option key={s.id} value={s.id}>{s.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center text-sm font-bold transition-all"
+                    title="Agregar estado"
+                    onClick={() => {
+                      const label = prompt('Nombre del nuevo estado de cliente:');
+                      if (!label?.trim()) return;
+                      const id = label.trim().toLowerCase().replace(/\s+/g, '_');
+                      if (customOptions.clientStatuses.some(s => s.id === id)) { showToast('Ya existe esa opción', 'warning'); return; }
+                      updateCustomOptions({ ...customOptions, clientStatuses: [...customOptions.clientStatuses, { id, label: label.trim() }] });
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Origen</label>
-                <select 
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.origin}
-                  onChange={e => setFormData({...formData, origin: e.target.value as ClientOrigin})}
-                >
-                  <option value="WhatsApp">WhatsApp</option>
-                  <option value="Instagram">Instagram</option>
-                  <option value="Web">Web</option>
-                  <option value="Referido">Referido</option>
-                  <option value="Llamada">Llamada</option>
-                  <option value="Oficina">Oficina</option>
-                  <option value="Marketplace">Marketplace</option>
-                  <option value="Manual">Manual</option>
-                  <option value="Otro">Otro</option>
-                </select>
+                <div className="flex gap-2">
+                  <select 
+                    className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={formData.origin}
+                    onChange={e => setFormData({...formData, origin: e.target.value})}
+                  >
+                    {customOptions.clientOrigins.map(o => (
+                      <option key={o.id} value={o.id}>{o.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center text-sm font-bold transition-all"
+                    title="Agregar origen"
+                    onClick={() => {
+                      const label = prompt('Nombre del nuevo origen:');
+                      if (!label?.trim()) return;
+                      const id = label.trim().toLowerCase().replace(/\s+/g, '_');
+                      if (customOptions.clientOrigins.some(o => o.id === id)) { showToast('Ya existe esa opción', 'warning'); return; }
+                      updateCustomOptions({ ...customOptions, clientOrigins: [...customOptions.clientOrigins, { id, label: label.trim() }] });
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               {(formData.origin === 'Referido') && (
                 <div className="md:col-span-2 space-y-3">
@@ -1302,12 +1373,9 @@ export default function Clients() {
                   onChange={e => setFilterType(e.target.value)}
                 >
                   <option value="">Todos</option>
-                  <option value="comprador">Comprador</option>
-                  <option value="vendedor">Vendedor</option>
-                  <option value="inquilino">Inquilino</option>
-                  <option value="propietario">Propietario</option>
-                  <option value="inversor">Inversor</option>
-                  <option value="interesado">Interesado</option>
+                  {customOptions.clientTypes.map(t => (
+                    <option key={t.id} value={t.id}>{t.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -1318,13 +1386,9 @@ export default function Clients() {
                   onChange={e => setFilterStatus(e.target.value)}
                 >
                   <option value="">Todos</option>
-                  <option value="nuevo">Nuevo</option>
-                  <option value="contactado">Contactado</option>
-                  <option value="interesado">Interesado</option>
-                  <option value="en seguimiento">En Seguimiento</option>
-                  <option value="negociación">Negociación</option>
-                  <option value="cerrado">Cerrado</option>
-                  <option value="perdido">Perdido</option>
+                  {customOptions.clientStatuses.map(s => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -1335,15 +1399,9 @@ export default function Clients() {
                   onChange={e => setFilterOrigin(e.target.value)}
                 >
                   <option value="">Todos</option>
-                  <option value="WhatsApp">WhatsApp</option>
-                  <option value="Instagram">Instagram</option>
-                  <option value="Web">Web</option>
-                  <option value="Referido">Referido</option>
-                  <option value="Llamada">Llamada</option>
-                  <option value="Oficina">Oficina</option>
-                  <option value="Marketplace">Marketplace</option>
-                  <option value="Manual">Manual</option>
-                  <option value="Otro">Otro</option>
+                  {customOptions.clientOrigins.map(o => (
+                    <option key={o.id} value={o.id}>{o.label}</option>
+                  ))}
                 </select>
               </div>
               <div>

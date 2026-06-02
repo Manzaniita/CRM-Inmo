@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
-  Plus, Search, Briefcase, X, Trash2, Edit3, CheckCircle2, XCircle, Link2, Eye, Phone, Mail, MapPin, Home
+  Plus, Search, Briefcase, X, Trash2, Edit3, CheckCircle2, XCircle, Link2, Eye, Phone, Mail, MapPin, Home, ExternalLink
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import Badge from '../components/Badge';
@@ -15,6 +15,7 @@ import type { ReferredColleague, Client } from '../types';
 export default function ReferredColleagues() {
   const { referredColleagues, clients, properties, sales, rentals, tasks, events, documents, waitingRoom, buyers, activityLogs, addReferredColleague, updateReferredColleague, deleteReferredColleague, showToast, updateClient, addActivityLog } = useAppContext();
   const { openRelations } = useRelationsDrawer();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRespondio, setFilterRespondio] = useState<string>('');
@@ -25,6 +26,7 @@ export default function ReferredColleagues() {
   const [viewingColleague, setViewingColleague] = useState<ReferredColleague | null>(null);
   const [editingReferredClient, setEditingReferredClient] = useState<Client | null>(null);
   const [referredClientForm, setReferredClientForm] = useState<Partial<Client>>({});
+  const [referredClientSearchTerm, setReferredClientSearchTerm] = useState('');
   const [sortReferrals, setSortReferrals] = useState<'default' | 'desc' | 'asc'>('default');
 
   useEffect(() => {
@@ -286,13 +288,48 @@ export default function ReferredColleagues() {
                 <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">{viewingColleague.nombreApellido}</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">{viewingColleague.oficina} · {getReferredClients(viewingColleague).length} clientes referidos</p>
               </div>
-              <button onClick={() => { setViewingColleague(null); setEditingReferredClient(null); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
+              <button onClick={() => { setViewingColleague(null); setEditingReferredClient(null); setReferredClientSearchTerm(''); }} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
             </div>
             <div className="p-6 overflow-y-auto space-y-4">
-              {getReferredClients(viewingColleague).length === 0 ? (
-                <p className="text-slate-500 dark:text-slate-400 text-center py-8">Este colega aún no tiene clientes referidos.</p>
-              ) : (
-                getReferredClients(viewingColleague).map(client => {
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Buscar referido..."
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={referredClientSearchTerm}
+                    onChange={e => setReferredClientSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigate(`/clientes?newReferral=true&colleagueId=${viewingColleague.id}`);
+                    setViewingColleague(null);
+                    setReferredClientSearchTerm('');
+                  }}
+                >
+                  <Plus size={14} className="mr-1" /> Añadir Referido
+                </Button>
+              </div>
+              {(() => {
+                const allReferred = getReferredClients(viewingColleague);
+                const term = normalizeSearchText(referredClientSearchTerm);
+                const filteredReferred = term
+                  ? allReferred.filter(c =>
+                      normalizeSearchText(c.name).includes(term) ||
+                      c.phone.includes(referredClientSearchTerm) ||
+                      normalizeSearchText(c.email).includes(term)
+                    )
+                  : allReferred;
+                if (filteredReferred.length === 0) return (
+                  <p className="text-slate-500 dark:text-slate-400 text-center py-8">
+                    {referredClientSearchTerm ? 'No se encontraron referidos con ese criterio.' : 'Este colega aún no tiene clientes referidos.'}
+                  </p>
+                );
+                return filteredReferred.map(client => {
                   const clientProperties = properties.filter(p => p.ownerId === client.id);
                   return (
                     <div key={client.id} className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:shadow-sm transition-shadow">
@@ -356,6 +393,13 @@ export default function ReferredColleagues() {
                             {client.notes && <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1">{client.notes}</p>}
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                              title="Ver ficha"
+                              onClick={() => navigate(`/clientes/${client.id}`)}
+                            >
+                              <ExternalLink size={14} />
+                            </button>
                             {clientProperties.length > 0 && (
                               <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Ver propiedad" onClick={() => openRelations('property', clientProperties[0].id)}>
                                 <Link2 size={14} />
@@ -370,7 +414,7 @@ export default function ReferredColleagues() {
                     </div>
                   );
                 })
-              )}
+              })()}
             </div>
           </div>
         </div>

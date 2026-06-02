@@ -56,7 +56,7 @@ export default function Properties() {
   const [searchParams] = useSearchParams();
   const propertyIdFromQuery = searchParams.get('propertyId');
   const effectivePropertyId = id || propertyIdFromQuery || undefined;
-  const { properties, clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, profile, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addClient, addActivityLog } = useAppContext();
+  const { properties, clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, profile, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addClient, addActivityLog, customOptions, updateCustomOptions } = useAppContext();
   const { openRelations } = useRelationsDrawer();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -250,8 +250,10 @@ export default function Properties() {
     setNewOwnerNotes('');
   };
 
-  const getStatusVariant = (status: string): any => {
-    switch (status) {
+  const getStatusVariant = (statusId: string): any => {
+    const found = customOptions.propertyStatuses.find(s => s.id === statusId);
+    if (found?.color) return found.color;
+    switch (statusId) {
       case 'disponible': return 'green';
       case 'reservada': return 'orange';
       case 'vendida': return 'red';
@@ -263,17 +265,9 @@ export default function Properties() {
     }
   };
 
-  const getPropertyStatusLabel = (status: string): string => {
-    const labels: Record<string, string> = {
-      disponible: 'Disponible',
-      reservada: 'Reservada',
-      vendida: 'Vendida',
-      alquilada: 'Alquilada',
-      pausada: 'Pausada',
-      vencida: 'Vencida',
-      en_seguimiento: 'En seguimiento'
-    };
-    return labels[status] || status;
+  const getPropertyStatusLabel = (statusId: string): string => {
+    const found = customOptions.propertyStatuses.find(s => s.id === statusId);
+    return found?.label || statusId;
   };
 
   if (selectedProp) {
@@ -691,47 +685,87 @@ export default function Properties() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tipo *</label>
-                <select 
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.type}
-                  onChange={e => setFormData({...formData, type: e.target.value as PropertyType})}
-                >
-                  <option value="departamento">Departamento</option>
-                  <option value="casa">Casa</option>
-                  <option value="ph">PH</option>
-                  <option value="lote">Lote</option>
-                  <option value="local">Local</option>
-                  <option value="oficina">Oficina</option>
-                  <option value="campos">Campos</option>
-                </select>
+                <div className="flex gap-2">
+                  <select 
+                    className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={formData.type}
+                    onChange={e => setFormData({...formData, type: e.target.value})}
+                  >
+                    {customOptions.propertyTypes.map(t => (
+                      <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center text-sm font-bold transition-all"
+                    title="Agregar tipo"
+                    onClick={() => {
+                      const label = prompt('Nombre del nuevo tipo de propiedad:');
+                      if (!label?.trim()) return;
+                      const id = label.trim().toLowerCase().replace(/\s+/g, '_');
+                      if (customOptions.propertyTypes.some(t => t.id === id)) { showToast('Ya existe esa opción', 'warning'); return; }
+                      updateCustomOptions({ ...customOptions, propertyTypes: [...customOptions.propertyTypes, { id, label: label.trim() }] });
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Operación</label>
-                <select 
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.operation}
-                  onChange={e => setFormData({...formData, operation: e.target.value as PropertyOperation})}
-                >
-                  <option value="venta">Venta</option>
-                  <option value="alquiler">Alquiler</option>
-                  <option value="ambas">Ambas</option>
-                </select>
+                <div className="flex gap-2">
+                  <select 
+                    className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={formData.operation}
+                    onChange={e => setFormData({...formData, operation: e.target.value})}
+                  >
+                    {customOptions.propertyOperations.map(o => (
+                      <option key={o.id} value={o.id}>{o.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center text-sm font-bold transition-all"
+                    title="Agregar operación"
+                    onClick={() => {
+                      const label = prompt('Nombre de la nueva operación:');
+                      if (!label?.trim()) return;
+                      const id = label.trim().toLowerCase().replace(/\s+/g, '_');
+                      if (customOptions.propertyOperations.some(o => o.id === id)) { showToast('Ya existe esa opción', 'warning'); return; }
+                      updateCustomOptions({ ...customOptions, propertyOperations: [...customOptions.propertyOperations, { id, label: label.trim() }] });
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
-                <select 
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.status}
-                  onChange={e => setFormData({...formData, status: e.target.value as PropertyStatus})}
-                >
-                  <option value="disponible">Disponible</option>
-                  <option value="reservada">Reservada</option>
-                  <option value="vendida">Vendida</option>
-                  <option value="alquilada">Alquilada</option>
-                  <option value="pausada">Pausada</option>
-                  <option value="vencida">Vencida</option>
-                  <option value="en_seguimiento">En seguimiento</option>
-                </select>
+                <div className="flex gap-2">
+                  <select 
+                    className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={formData.status}
+                    onChange={e => setFormData({...formData, status: e.target.value})}
+                  >
+                    {customOptions.propertyStatuses.map(s => (
+                      <option key={s.id} value={s.id}>{s.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center text-sm font-bold transition-all"
+                    title="Agregar estado"
+                    onClick={() => {
+                      const label = prompt('Nombre del nuevo estado de propiedad:');
+                      if (!label?.trim()) return;
+                      const id = label.trim().toLowerCase().replace(/\s+/g, '_');
+                      if (customOptions.propertyStatuses.some(s => s.id === id)) { showToast('Ya existe esa opción', 'warning'); return; }
+                      updateCustomOptions({ ...customOptions, propertyStatuses: [...customOptions.propertyStatuses, { id, label: label.trim() }] });
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Precio</label>
@@ -940,31 +974,22 @@ export default function Properties() {
             <select
               className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800"
               value={filterOperation}
-              onChange={e => setFilterOperation(e.target.value as 'venta' | 'alquiler' | 'ambas' | '')}
+              onChange={e => setFilterOperation(e.target.value as any)}
             >
               <option value="">Todas las operaciones</option>
-              <option value="venta">Venta</option>
-              <option value="alquiler">Alquiler</option>
-              <option value="ambas">Ambas</option>
+              {customOptions.propertyOperations.map(o => (
+                <option key={o.id} value={o.id}>{o.label}</option>
+              ))}
             </select>
             <div className="flex gap-1 flex-wrap">
-              {[
-                { value: '', label: 'Todas' },
-                { value: 'disponible', label: 'Disponible' },
-                { value: 'reservada', label: 'Reservada' },
-                { value: 'vendida', label: 'Vendida' },
-                { value: 'alquilada', label: 'Alquilada' },
-                { value: 'pausada', label: 'Pausada' },
-                { value: 'vencida', label: 'Vencida' },
-                { value: 'en_seguimiento', label: 'En seguimiento' }
-              ].map(st => (
+              {[{ id: '', label: 'Todas' }, ...customOptions.propertyStatuses].map(st => (
                 <button
-                  key={st.value || 'all'}
+                  key={st.id || 'all'}
                   type="button"
-                  onClick={() => setFilterStatus(st.value)}
+                  onClick={() => setFilterStatus(st.id)}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
-                    filterStatus === st.value
+                    filterStatus === st.id
                       ? "bg-blue-600 text-white border-blue-600"
                       : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300"
                   )}
@@ -1075,30 +1100,30 @@ export default function Properties() {
                           <div className="px-3 py-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-50 sticky top-0 bg-white dark:bg-slate-800">
                             Cambiar estado
                           </div>
-                          {(['disponible','reservada','vendida','alquilada','pausada','vencida','en_seguimiento'] as PropertyStatus[]).map(st => (
+                          {customOptions.propertyStatuses.map(st => (
                             <button
-                              key={st}
+                              key={st.id}
                               className={cn(
                                 "w-full text-left px-3 py-2 text-xs font-medium transition-colors",
-                                prop.status === st ? "bg-blue-50 text-blue-700" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                prop.status === st.id ? "bg-blue-50 text-blue-700" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                               )}
                               onClick={e => {
                                 e.stopPropagation();
-                                if (prop.status !== st) {
-                                  updateProperty({ ...prop, status: st });
+                                if (prop.status !== st.id) {
+                                  updateProperty({ ...prop, status: st.id });
                                   addActivityLog({
                                     type: 'property',
                                     action: 'status_changed',
-                                    title: `Estado cambiado: ${prop.title} pasó a ${getPropertyStatusLabel(st)}`,
+                                    title: `Estado cambiado: ${prop.title} pasó a ${st.label}`,
                                     entityId: prop.id
                                   });
-                                  showToast(`Estado cambiado a ${getPropertyStatusLabel(st)}`, 'success');
+                                  showToast(`Estado cambiado a ${st.label}`, 'success');
                                 }
                                 setOpenMenuPropertyId(null);
                                 setMenuPos(null);
                               }}
                             >
-                              {getPropertyStatusLabel(st)}
+                              {st.label}
                             </button>
                           ))}
                         </div>
@@ -1334,19 +1359,18 @@ export default function Properties() {
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Tipo</label>
-                      <select className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.type || 'departamento'} onChange={e => setCapturePreview({...capturePreview, type: e.target.value as PropertyType})}>
-                        <option value="departamento">Departamento</option>
-                        <option value="casa">Casa</option>
-                        <option value="lote">Lote</option>
-                        <option value="local">Local</option>
-                        <option value="oficina">Oficina</option>
+                      <select className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.type || 'departamento'} onChange={e => setCapturePreview({...capturePreview, type: e.target.value})}>
+                        {customOptions.propertyTypes.map(t => (
+                          <option key={t.id} value={t.id}>{t.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase">Operación</label>
-                      <select className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.operation || 'venta'} onChange={e => setCapturePreview({...capturePreview, operation: e.target.value as PropertyOperation})}>
-                        <option value="venta">Venta</option>
-                        <option value="alquiler">Alquiler</option>
+                      <select className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" value={capturePreview.operation || 'venta'} onChange={e => setCapturePreview({...capturePreview, operation: e.target.value})}>
+                        {customOptions.propertyOperations.map(o => (
+                          <option key={o.id} value={o.id}>{o.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
