@@ -156,7 +156,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ---- Load from Supabase when authenticated ----
   const loadAllFromSupabase = useCallback(async (uid: string) => {
     try {
-      setIsCloudReady(false);
       const [
         clientsRes,
         propertiesRes,
@@ -281,12 +280,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (user) {
-      clearAllState();
       loadAllFromSupabase(user.id);
-    } else {
-      clearAllState();
     }
-  }, [user?.id, loadAllFromSupabase, clearAllState]);
+  }, [user?.id, loadAllFromSupabase]);
 
   // ---- Supabase error helper ----
   const handleSupabaseError = useCallback((error: { message?: string } | null, label: string) => {

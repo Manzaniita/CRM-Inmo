@@ -189,8 +189,14 @@ export default function App() {
     return false;
   });
   const location = useLocation();
-  const { user, session, profile, isCloudReady } = useAppContext();
-  const [authChecking, setAuthChecking] = useState(true);
+  const { user, profile, isCloudReady } = useAppContext();
+
+  // Log de seguridad temporal para detectar recargas involuntarias
+  useEffect(() => {
+    window.onbeforeunload = () => {
+      console.warn('DEBUG: Intento de recarga detectado');
+    };
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -202,17 +208,6 @@ export default function App() {
       localStorage.setItem('estatecrm_theme', 'light');
     }
   }, [isDark]);
-
-  // Esperar a que Supabase termine de verificar la sesión antes de decidir qué mostrar
-  useEffect(() => {
-    const timer = setTimeout(() => setAuthChecking(false), 600);
-    return () => clearTimeout(timer);
-  }, [session]);
-
-  // Splash screen mientras verificamos auth
-  if (authChecking) {
-    return <SplashScreen />;
-  }
 
   // No autenticado: solo login accesible
   if (!user) {
