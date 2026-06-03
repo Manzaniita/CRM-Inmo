@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User,
   Save,
@@ -65,11 +65,11 @@ export default function Configuration() {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     verifyRole();
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (activeTab === 'usuarios' && serverRole === 'superadmin') {
       console.log("AUDITORIA: Cargando usuarios como", serverRole);
       fetchUsers();

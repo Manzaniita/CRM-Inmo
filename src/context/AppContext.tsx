@@ -97,14 +97,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [referredColleagues, setReferredColleagues] = useState<ReferredColleague[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [customOptions, setCustomOptions] = useState<CustomOptions>(() => {
-    try {
-      const local = localStorage.getItem('estatecrm_custom_options');
-      return local ? JSON.parse(local) : DEFAULT_CUSTOM_OPTIONS;
-    } catch {
-      return DEFAULT_CUSTOM_OPTIONS;
-    }
-  });
+  const [customOptions, setCustomOptions] = useState<CustomOptions>(DEFAULT_CUSTOM_OPTIONS);
 
   const [profile, setProfile] = useState<Profile>({
     name: '',
@@ -874,12 +867,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateCustomOptions = useCallback(async (opts: CustomOptions) => {
     setCustomOptions(opts);
-    localStorage.setItem('estatecrm_custom_options', JSON.stringify(opts));
     if (user) {
       const { error } = await supabase.from('custom_options').upsert({ user_id: user.id, options: opts }, { onConflict: 'user_id' });
       if (error) {
         console.error('[EstateCRM] custom_options save error:', error);
-        showToast('Opciones guardadas localmente. Para sincronizar en la nube, creá la tabla custom_options en Supabase.', 'warning');
+        showToast('Error al guardar opciones', 'error');
       }
     }
   }, [user, showToast]);

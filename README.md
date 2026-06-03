@@ -1,97 +1,24 @@
-# ImmoFlow CRM
+# EstateCRM - Plataforma Inmobiliaria Inteligente
 
-CRM inmobiliario diseñado para gestionar clientes, propiedades, operaciones de venta y alquiler, agenda, tareas y documentos desde una única interfaz moderna y rápida.
+EstateCRM es un CRM moderno, rápido y elegante diseñado específicamente para agentes inmobiliarios. Permite gestionar todo el ciclo de vida del negocio: desde la captación de clientes y propiedades, hasta el seguimiento de ventas, alquileres, agenda y gestión documental.
 
-## Stack tecnológico
+## 🚀 Características Principales
+- **Gestión de Propiedades:** Catálogo completo con imágenes, características, precios y links a portales externos.
+- **Gestión de Clientes & Compradores:** Perfiles detallados, historial de notas, presupuestos y zonas de interés.
+- **Panel de Ventas/Operaciones:** Seguimiento de puntas (comprador/vendedor), comisiones, escribanías y estados de operación.
+- **Agenda y Tareas:** Calendario de eventos, recordatorios y tareas asociadas a clientes o propiedades.
+- **Colegas Referidos:** Red de contactos para compartir operaciones de forma colaborativa.
+- **Sala de Espera (Leads):** Ingreso rápido de prospectos interesados en propiedades específicas.
 
-- **React 19** + **TypeScript**
-- **Vite 6**
-- **Tailwind CSS v4**
-- **React Router v7**
-- **Recharts** (reportes)
-- **date-fns** (manejo de fechas)
+## 🛠️ Stack Tecnológico
+- **Frontend:** React 19 + TypeScript + Vite 6
+- **Estilos:** Tailwind CSS v4 + Motion (Animaciones)
+- **Base de Datos & Backend:** Supabase (PostgreSQL + Row Level Security)
+- **Routing:** React Router v7
+- **UI/Gráficos:** Recharts + Lucide React + date-fns
 
-## Requisitos previos
+## ⚙️ Instalación y Configuración Local
 
-- Node.js 18+
-- npm o compatible
-
-## Instalación
-
-```bash
-npm install
-```
-
-## Cómo correr localmente
-
-```bash
-npm run dev
-```
-
-La aplicación se levanta por defecto en `http://localhost:3000`.
-
-## Build de producción
-
-```bash
-npm run build
-```
-
-El resultado se genera en la carpeta `dist/`.
-
-## Persistencia de datos
-
-La aplicación utiliza **localStorage** del navegador para persistir toda la información localmente. Los datos se almacenan bajo el prefijo `immoflow_` y se mantienen entre sesiones mientras no se limpie el almacenamiento del navegador.
-
-> **Nota:** Al ser una aplicación 100% frontend, los datos viven únicamente en el dispositivo donde se ejecuta.
-
-## Exportar e importar backup
-
-Desde la pantalla de **Configuración** podés:
-
-- **Exportar datos:** descarga un archivo JSON con toda la base local (clientes, propiedades, tareas, eventos, ventas, alquileres y documentos).
-- **Importar datos:** seleccioná un backup JSON previamente exportado para restaurar el estado completo de la aplicación.
-
-Esto permite migrar datos entre navegadores o realizar copias de seguridad manuales.
-
-## Deploy en Vercel
-
-### Requisitos previos
-
-- Cuenta en [Vercel](https://vercel.com)
-- CLI de Vercel instalada (opcional): `npm i -g vercel`
-
-### Deploy manual (desde Vercel Dashboard)
-
-1. Ir a [vercel.com/new](https://vercel.com/new) e importar el repositorio de Git.
-2. En la configuración del proyecto dejar:
-   - **Framework Preset:** Vite
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
-3. Agregar variables de entorno si las necesitás (por ejemplo `GEMINI_API_KEY`).
-4. Hacer click en **Deploy**.
-
-### Deploy con Vercel CLI
-
-```bash
-# Login (primera vez)
-vercel login
-
-# Deploy (staging)
-vercel
-
-# Deploy a producción
-vercel --prod
-```
-
-### Notas importantes
-
-- El proyecto ya incluye `vercel.json` con rewrites para que las rutas internas de React Router funcionen al refrescar la página.
-- La app es 100% frontend; los datos se guardan en `localStorage` del navegador. Cada usuario verá sus propios datos locales.
-
-## Próximos pasos recomendados
-
-1. **Backend real** con Supabase / Firebase / API propia para sincronización y persistencia remota.
-2. **Autenticación y roles** (agente, administrador, supervisor) con control de acceso por módulo.
-3. **Subida real de archivos** integrada con servicios de almacenamiento en la nube.
-4. **Historial / auditoría de cambios** para rastrear quién modificó qué y cuándo.
-5. **Sincronización multiusuario** en tiempo real para equipos de ventas colaborativos.
+1. **Clonar el repositorio e instalar dependencias:**
+   ```bash
+   npm install

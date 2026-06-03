@@ -193,9 +193,11 @@ export default function App() {
 
   // Log de seguridad temporal para detectar recargas involuntarias
   useEffect(() => {
-    window.onbeforeunload = () => {
+    const handler = () => {
       console.warn('DEBUG: Intento de recarga detectado');
     };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
   useEffect(() => {
