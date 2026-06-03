@@ -10,10 +10,8 @@ import React, {
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useProperties } from "../hooks/useProperties";
+import { useTasks } from "../hooks/useTasks";
 import type {
-  CalendarEvent,
-  Task,
-  Sale,
   Rental,
   Document,
   WaitingRoomEntry,
@@ -33,9 +31,6 @@ import { formatCurrency } from "../lib/utils";
 interface AppContextType {
   updateProfile: (profile: Profile) => Promise<void>;
   clearMockData: () => void;
-  events: CalendarEvent[];
-  tasks: Task[];
-  sales: Sale[];
   rentals: Rental[];
   documents: Document[];
   waitingRoom: WaitingRoomEntry[];
@@ -48,18 +43,6 @@ interface AppContextType {
 
   customOptions: CustomOptions;
   updateCustomOptions: (opts: CustomOptions) => Promise<void>;
-  addTask: (task: Task) => Promise<void>;
-  updateTask: (task: Task) => Promise<void>;
-  completeTask: (taskId: string) => Promise<void>;
-  deleteTask: (taskId: string) => Promise<void>;
-  addEvent: (event: CalendarEvent) => Promise<void>;
-  updateEvent: (event: CalendarEvent) => Promise<void>;
-  completeEvent: (eventId: string) => Promise<void>;
-  cancelEvent: (eventId: string) => Promise<void>;
-  deleteEvent: (eventId: string) => Promise<void>;
-  addSale: (sale: Sale) => Promise<void>;
-  updateSale: (sale: Sale) => Promise<void>;
-  deleteSale: (saleId: string) => Promise<void>;
   addRental: (rental: Rental) => Promise<void>;
   updateRental: (rental: Rental) => Promise<void>;
   deleteRental: (rentalId: string) => Promise<void>;
@@ -89,9 +72,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isCloudReady, setIsCloudReady] = useState(false);
 
   // ---- Entity state (cloud-only, initialized empty) ----
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [waitingRoom, setWaitingRoom] = useState<WaitingRoomEntry[]>([]);
@@ -107,9 +87,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Auth listener moved to App.tsx
 
   const clearAllState = useCallback(() => {
-    setEvents([]);
-    setTasks([]);
-    setSales([]);
     setRentals([]);
     setDocuments([]);
     setWaitingRoom([]);
@@ -123,9 +100,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const loadAllFromSupabase = useCallback(async (uid: string) => {
     try {
       const [
-        eventsRes,
-        tasksRes,
-        salesRes,
         rentalsRes,
         documentsRes,
         colleaguesRes,
@@ -134,9 +108,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logsRes,
         profileRes,
       ] = await Promise.all([
-        supabase.from("events").select("*").eq("user_id", uid),
-        supabase.from("tasks").select("*").eq("user_id", uid),
-        supabase.from("sales").select("*").eq("user_id", uid),
         supabase.from("rentals").select("*").eq("user_id", uid),
         supabase.from("documents").select("*").eq("user_id", uid),
         supabase.from("referred_colleagues").select("*").eq("user_id", uid),
@@ -150,38 +121,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .order("createdAt", { ascending: false }),
         supabase.from("profiles").select("*").eq("user_id", uid).limit(1),
       ]);
-
-      if (eventsRes.error) {
-        console.error("[EstateCRM] events load error:", eventsRes.error);
-      } else if (eventsRes.data) {
-        setEvents(eventsRes.data as CalendarEvent[]);
-      }
-
-      if (tasksRes.error) {
-        console.error("[EstateCRM] tasks load error:", tasksRes.error);
-      } else if (tasksRes.data) {
-        setTasks(
-          (tasksRes.data as Task[]).map((t) => ({
-            ...t,
-            relatedEntities: t.relatedEntities ?? [],
-          })),
-        );
-      }
-
-      if (salesRes.error) {
-        console.error("[EstateCRM] sales load error:", salesRes.error);
-      } else if (salesRes.data) {
-        setSales(
-          (salesRes.data as Sale[]).map((s) => ({
-            ...s,
-            isCollected: s.isCollected ?? false,
-            montoEscritura:
-              typeof s.montoEscritura === "number"
-                ? String(s.montoEscritura)
-                : s.montoEscritura,
-          })),
-        );
-      }
 
       if (rentalsRes.error) {
         console.error("[EstateCRM] rentals load error:", rentalsRes.error);
@@ -305,6 +244,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // --- Contract expiration automation ---
   const { properties } = useProperties();
+  const { tasks } = useTasks();
   const queryClient = useQueryClient();
   const processedAutoKeys = useRef<Set<string>>(new Set());
 
@@ -327,7 +267,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (!processedAutoKeys.current.has(warningKey)) {
             const exists = tasks.some((t) => t.autoKey === warningKey);
             if (!exists) {
-              const newTask: Task = {
+              const newTask = {
                 id: generateId("t"),
                 title: `Revisar / renovar contrato de ${prop.title}`,
                 description: `El contrato de la propiedad ${prop.title} vence el ${prop.contractEndDate}. Contactar al cliente para revisar renovación.`,
@@ -348,8 +288,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   .insert({ ...rest, user_id: currentUser.id })
                   .select();
                 if (!error && data) {
-                  const inserted = data[0] as Task;
-                  setTasks((prev) => [inserted, ...prev]);
+                  queryClient.invalidateQueries({ queryKey: ["tasks"] });
                   addActivityLog({
                     type: "task",
                     action: "created",
@@ -358,7 +297,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   });
                 }
               } else {
-                setTasks((prev) => [newTask, ...prev]);
+                queryClient.invalidateQueries({ queryKey: ["tasks"] });
               }
             }
             processedAutoKeys.current.add(warningKey);
@@ -371,7 +310,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (!processedAutoKeys.current.has(expiredKey)) {
             const exists = tasks.some((t) => t.autoKey === expiredKey);
             if (!exists) {
-              const newTask: Task = {
+              const newTask = {
                 id: generateId("t"),
                 title: `Revisar / renovar contrato de ${prop.title}`,
                 description: `El contrato de la propiedad ${prop.title} venció el ${prop.contractEndDate}. Contactar al cliente urgentemente.`,
@@ -392,11 +331,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   .insert({ ...rest, user_id: currentUser2.id })
                   .select();
                 if (!error && data) {
-                  const inserted = data[0] as Task;
-                  setTasks((prev) => [inserted, ...prev]);
+                  queryClient.invalidateQueries({ queryKey: ["tasks"] });
                 }
               } else {
-                setTasks((prev) => [newTask, ...prev]);
+                queryClient.invalidateQueries({ queryKey: ["tasks"] });
               }
             }
             processedAutoKeys.current.add(expiredKey);
@@ -426,283 +364,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const interval = setInterval(checkContractExpirations, 60000);
     return () => clearInterval(interval);
   }, [properties, tasks, addActivityLog, queryClient]);
-
-  // --- Tasks ---
-  const addTask = async (task: Task) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { createdAt, ...rest } = task;
-    const { data, error } = await supabase
-      .from("tasks")
-      .insert({ ...rest, user_id: useAuthStore.getState().user!.id })
-      .select();
-    if (error || !data) {
-      handleSupabaseError(error, "addTask");
-      return;
-    }
-    const inserted = data[0] as Task;
-    setTasks((prev) => [inserted, ...prev]);
-    addActivityLog({
-      type: "task",
-      action: "created",
-      title: `Tarea creada: ${inserted.title}`,
-      entityId: inserted.id,
-    });
-    useUIStore.getState().showToast("Tarea creada", "success");
-  };
-
-  const updateTask = async (task: Task) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { error } = await supabase
-      .from("tasks")
-      .update(task)
-      .eq("id", task.id)
-      .eq("user_id", useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, "updateTask");
-      return;
-    }
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)));
-    addActivityLog({
-      type: "task",
-      action: "updated",
-      title: `Tarea actualizada: ${task.title}`,
-      entityId: task.id,
-    });
-    useUIStore.getState().showToast("Tarea actualizada", "success");
-  };
-
-  const completeTask = async (taskId: string) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { error } = await supabase
-      .from("tasks")
-      .update({ status: "completada" })
-      .eq("id", taskId)
-      .eq("user_id", useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, "completeTask");
-      return;
-    }
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: "completada" } : t)),
-    );
-    useUIStore.getState().showToast("Tarea completada ✔️", "success");
-  };
-
-  const deleteTask = async (taskId: string) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { error } = await supabase
-      .from("tasks")
-      .delete()
-      .eq("id", taskId)
-      .eq("user_id", useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, "deleteTask");
-      return;
-    }
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    useUIStore.getState().showToast("Tarea eliminada", "info");
-  };
-
-  // --- Events ---
-  const addEvent = async (event: CalendarEvent) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { createdAt, ...rest } = event;
-    const { data, error } = await supabase
-      .from("events")
-      .insert({ ...rest, user_id: useAuthStore.getState().user!.id })
-      .select();
-    if (error || !data) {
-      handleSupabaseError(error, "addEvent");
-      return;
-    }
-    const inserted = data[0] as CalendarEvent;
-    setEvents((prev) => [inserted, ...prev]);
-    addActivityLog({
-      type: "event",
-      action: "created",
-      title: `Evento creado: ${inserted.title}`,
-      entityId: inserted.id,
-    });
-    useUIStore.getState().showToast("Evento agendado", "success");
-  };
-
-  const updateEvent = async (event: CalendarEvent) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { error } = await supabase
-      .from("events")
-      .update(event)
-      .eq("id", event.id)
-      .eq("user_id", useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, "updateEvent");
-      return;
-    }
-    setEvents((prev) => prev.map((e) => (e.id === event.id ? event : e)));
-    addActivityLog({
-      type: "event",
-      action: "updated",
-      title: `Evento actualizado: ${event.title}`,
-      entityId: event.id,
-    });
-    useUIStore.getState().showToast("Evento actualizado", "success");
-  };
-
-  const completeEvent = async (eventId: string) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { error } = await supabase
-      .from("events")
-      .update({ status: "realizado" })
-      .eq("id", eventId)
-      .eq("user_id", useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, "completeEvent");
-      return;
-    }
-    setEvents((prev) =>
-      prev.map((e) => (e.id === eventId ? { ...e, status: "realizado" } : e)),
-    );
-    useUIStore.getState().showToast("Evento marcado como realizado", "success");
-  };
-
-  const cancelEvent = async (eventId: string) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { error } = await supabase
-      .from("events")
-      .update({ status: "cancelado" })
-      .eq("id", eventId)
-      .eq("user_id", useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, "cancelEvent");
-      return;
-    }
-    setEvents((prev) =>
-      prev.map((e) => (e.id === eventId ? { ...e, status: "cancelado" } : e)),
-    );
-    useUIStore.getState().showToast("Evento cancelado", "warning");
-  };
-
-  const deleteEvent = async (eventId: string) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { error } = await supabase
-      .from("events")
-      .delete()
-      .eq("id", eventId)
-      .eq("user_id", useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, "deleteEvent");
-      return;
-    }
-    setEvents((prev) => prev.filter((e) => e.id !== eventId));
-    useUIStore.getState().showToast("Evento eliminado", "info");
-  };
-
-  // --- Sales ---
-  const addSale = async (sale: Sale) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { data, error } = await supabase
-      .from("sales")
-      .insert({ ...sale, user_id: useAuthStore.getState().user!.id })
-      .select();
-    if (error || !data) {
-      handleSupabaseError(error, "addSale");
-      return;
-    }
-    const inserted = data[0] as Sale;
-    setSales((prev) => [inserted, ...prev]);
-    if (inserted.estado === "vendida") {
-      await supabase
-        .from("properties")
-        .update({ status: "vendida" })
-        .eq("id", inserted.propiedadId)
-        .eq("user_id", useAuthStore.getState().user!.id);
-    }
-    addActivityLog({
-      type: "sale",
-      action: "created",
-      title: `Venta registrada: ${inserted.nombre || inserted.id}`,
-      entityId: inserted.id,
-    });
-    useUIStore.getState().showToast("Operación de venta registrada", "success");
-  };
-
-  const updateSale = async (sale: Sale) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { error } = await supabase
-      .from("sales")
-      .update(sale)
-      .eq("id", sale.id)
-      .eq("user_id", useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, "updateSale");
-      return;
-    }
-    setSales((prev) => prev.map((s) => (s.id === sale.id ? sale : s)));
-    if (sale.estado === "vendida") {
-      await supabase
-        .from("properties")
-        .update({ status: "vendida" })
-        .eq("id", sale.propiedadId)
-        .eq("user_id", useAuthStore.getState().user!.id);
-    }
-    addActivityLog({
-      type: "sale",
-      action: "updated",
-      title: `Venta actualizada: ${sale.nombre || sale.id}`,
-      entityId: sale.id,
-    });
-    useUIStore.getState().showToast("Venta actualizada", "success");
-  };
-
-  const deleteSale = async (saleId: string) => {
-    if (!useAuthStore.getState().user) {
-      useUIStore.getState().showToast("No hay sesión activa", "error");
-      return;
-    }
-    const { error } = await supabase
-      .from("sales")
-      .delete()
-      .eq("id", saleId)
-      .eq("user_id", useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, "deleteSale");
-      return;
-    }
-    setSales((prev) => prev.filter((s) => s.id !== saleId));
-    useUIStore.getState().showToast("Venta eliminada", "info");
-  };
 
   // --- Rentals ---
   const addRental = async (rental: Rental) => {
@@ -1121,9 +782,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const exportData = () => {
     const data = {
-      tasks,
-      events,
-      sales,
       rentals,
       documents,
       waitingRoom,
@@ -1152,11 +810,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const hasData =
         data &&
         typeof data === "object" &&
-        (Array.isArray(data.properties) ||
-          Array.isArray(data.tasks) ||
-          Array.isArray(data.events) ||
-          Array.isArray(data.sales) ||
-          Array.isArray(data.documents));
+        (Array.isArray(data.properties) || Array.isArray(data.documents));
       if (!hasData) {
         useUIStore
           .getState()
@@ -1188,9 +842,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         await Promise.all([
           upsertMany("properties", data.properties ?? []),
-          upsertMany("tasks", data.tasks ?? []),
-          upsertMany("events", data.events ?? []),
-          upsertMany("sales", data.sales ?? []),
           upsertMany("rentals", data.rentals ?? []),
           upsertMany("documents", data.documents ?? []),
           upsertMany("waiting_room", data.waitingRoom ?? []),
@@ -1207,26 +858,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       // Fallback offline
-      // properties no longer managed in AppContext
-      if (data.tasks)
-        setTasks(
-          data.tasks.map((t: Task) => ({
-            ...t,
-            relatedEntities: t.relatedEntities ?? [],
-          })),
-        );
-      if (data.events) setEvents(data.events);
-      if (data.sales)
-        setSales(
-          data.sales.map((s: Sale) => ({
-            ...s,
-            isCollected: s.isCollected ?? false,
-            montoEscritura:
-              typeof s.montoEscritura === "number"
-                ? String(s.montoEscritura)
-                : s.montoEscritura,
-          })),
-        );
       if (data.rentals) setRentals(data.rentals);
       if (data.documents) setDocuments(data.documents);
       if (data.waitingRoom) setWaitingRoom(data.waitingRoom);
@@ -1257,9 +888,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider
       value={{
-        events,
-        tasks,
-        sales,
         rentals,
         documents,
         waitingRoom,
@@ -1270,18 +898,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateProfile,
         customOptions,
         updateCustomOptions,
-        addTask,
-        updateTask,
-        completeTask,
-        deleteTask,
-        addEvent,
-        updateEvent,
-        completeEvent,
-        cancelEvent,
-        deleteEvent,
-        addSale,
-        updateSale,
-        deleteSale,
         addRental,
         updateRental,
         deleteRental,

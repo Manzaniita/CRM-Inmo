@@ -10,6 +10,8 @@ import {
   X,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import { useTasks } from "../hooks/useTasks";
+import { useSales } from "../hooks/useSales";
 import { cn } from "../lib/utils";
 import { searchAll, type SearchResultItem } from "../lib/search";
 import { useProperties } from "../hooks/useProperties";
@@ -50,7 +52,9 @@ const TYPE_CONFIG = {
 
 export default function GlobalSearch() {
   const navigate = useNavigate();
-  const { tasks, sales, referredColleagues, buyers } = useAppContext();
+  const { referredColleagues, buyers } = useAppContext();
+  const { tasks } = useTasks();
+  const { sales } = useSales();
   const { clients } = useClients();
   const { properties } = useProperties();
 

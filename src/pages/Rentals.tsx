@@ -19,6 +19,8 @@ import {
   Activity,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import { useTasks } from "../hooks/useTasks";
+import { useEvents } from "../hooks/useEvents";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { Card, StatCard } from "../components/Card";
@@ -42,8 +44,9 @@ const STAGES: RentalStatus[] = [
 ];
 
 export default function Rentals() {
-  const { rentals, tasks, events, addRental, updateRental, deleteRental } =
-    useAppContext();
+  const { rentals, addRental, updateRental, deleteRental } = useAppContext();
+  const { tasks } = useTasks();
+  const { events } = useEvents();
   const { clients } = useClients();
   const { properties } = useProperties();
   const [view, setView] = useState<"pipeline" | "list">("list");
@@ -444,8 +447,9 @@ function RentalDetailModal({
   onClose: () => void;
   onEdit: () => void;
 }) {
-  const { tasks, events } = useAppContext();
   const { clients } = useClients();
+  const { tasks } = useTasks();
+  const { events } = useEvents();
   const { properties } = useProperties();
   const property = properties.find((p) => p.id === rental.propiedadId);
   const tenant = clients.find((c) => c.id === rental.inquilinoId);

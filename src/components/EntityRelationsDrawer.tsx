@@ -20,6 +20,9 @@ import {
 import { useRelationsDrawer } from "../context/RelationsDrawerContext";
 import { useAppContext } from "../context/AppContext";
 import { useClients } from "../hooks/useClients";
+import { useSales } from "../hooks/useSales";
+import { useTasks } from "../hooks/useTasks";
+import { useEvents } from "../hooks/useEvents";
 import {
   getClientRelations,
   getPropertyRelations,
@@ -134,17 +137,16 @@ function EmptyGroupState({ title }: { title: string }) {
 export default function EntityRelationsDrawer() {
   const { isOpen, entityType, entityId, closeRelations } = useRelationsDrawer();
   const {
-    sales,
-    tasks,
-    events,
     documents,
     referredColleagues,
     waitingRoom,
     buyers,
     activityLogs,
-    addTask,
     addActivityLog,
   } = useAppContext();
+  const { sales } = useSales();
+  const { tasks, addTask } = useTasks();
+  const { events } = useEvents();
   const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);

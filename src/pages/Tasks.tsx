@@ -19,6 +19,7 @@ import {
   ShoppingCart,
   Gauge,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 import {
   useParams,
@@ -38,19 +39,14 @@ import { validateTask } from "../lib/validators";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
 import { useClients } from "../hooks/useClients";
+import { useTasks } from "../hooks/useTasks";
+import { useSales } from "../hooks/useSales";
 
 export default function Tasks() {
-  const {
-    tasks,
-    sales,
-    referredColleagues,
-    buyers,
-    addTask,
-    updateTask,
-    completeTask,
-    deleteTask,
-    addActivityLog,
-  } = useAppContext();
+  const { referredColleagues, buyers, addActivityLog } = useAppContext();
+  const { tasks, isLoading, addTask, updateTask, completeTask, deleteTask } =
+    useTasks();
+  const { sales } = useSales();
   const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
@@ -766,6 +762,14 @@ export default function Tasks() {
       </div>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="animate-spin h-8 w-8 text-slate-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

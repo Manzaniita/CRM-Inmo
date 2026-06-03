@@ -69,6 +69,9 @@ import { useRelationsDrawer } from "../context/RelationsDrawerContext";
 import { useUIStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
 import { useProperties } from "../hooks/useProperties";
+import { useSales } from "../hooks/useSales";
+import { useTasks } from "../hooks/useTasks";
+import { useEvents } from "../hooks/useEvents";
 
 export default function Properties() {
   const { id } = useParams();
@@ -77,18 +80,12 @@ export default function Properties() {
   const propertyIdFromQuery = searchParams.get("propertyId");
   const effectivePropertyId = id || propertyIdFromQuery || undefined;
   const {
-    events,
-    tasks,
-    sales,
     rentals,
     documents,
     referredColleagues,
     waitingRoom,
     buyers,
     activityLogs,
-    addSale,
-    updateSale,
-    deleteSale,
     addRental,
     updateRental,
     deleteRental,
@@ -99,6 +96,9 @@ export default function Properties() {
     customOptions,
     updateCustomOptions,
   } = useAppContext();
+  const { sales, addSale, updateSale, deleteSale } = useSales();
+  const { tasks } = useTasks();
+  const { events } = useEvents();
   const { clients, addClient } = useClients();
   const { properties, isLoading, addProperty, updateProperty } =
     useProperties();

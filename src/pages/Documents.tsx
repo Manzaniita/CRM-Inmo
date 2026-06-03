@@ -26,6 +26,7 @@ import {
   FileCheck,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import { useSales } from "../hooks/useSales";
 import { useUIStore } from "../stores/uiStore";
 import { Document, DocumentType, DocumentStatus } from "../types";
 import Badge from "../components/Badge";
@@ -116,14 +117,9 @@ function formatFileSize(bytes?: number): string {
 }
 
 export default function Documents() {
-  const {
-    documents,
-    sales,
-    rentals,
-    addDocument,
-    updateDocument,
-    deleteDocument,
-  } = useAppContext();
+  const { documents, rentals, addDocument, updateDocument, deleteDocument } =
+    useAppContext();
+  const { sales } = useSales();
   const { clients } = useClients();
   const { properties } = useProperties();
 

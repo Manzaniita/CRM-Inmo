@@ -17,6 +17,7 @@ import {
   Filter,
   ArrowUpDown,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import {
   useParams,
@@ -25,7 +26,8 @@ import {
   Link,
   useSearchParams,
 } from "react-router-dom";
-import { useAppContext } from "../context/AppContext";
+
+import { useEvents } from "../hooks/useEvents";
 import { CalendarEvent, EventType, EventStatus } from "../types";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -40,12 +42,13 @@ import { useClients } from "../hooks/useClients";
 export default function Agenda() {
   const {
     events,
+    isLoading,
     addEvent,
     updateEvent,
     completeEvent,
     cancelEvent,
     deleteEvent,
-  } = useAppContext();
+  } = useEvents();
   const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
@@ -465,6 +468,14 @@ export default function Agenda() {
       </div>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="animate-spin h-8 w-8 text-slate-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

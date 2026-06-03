@@ -66,6 +66,9 @@ import SearchableSelect from "../components/SearchableSelect";
 import { useUIStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
 import { useProperties } from "../hooks/useProperties";
+import { useSales } from "../hooks/useSales";
+import { useTasks } from "../hooks/useTasks";
+import { useEvents } from "../hooks/useEvents";
 import { useClients } from "../hooks/useClients";
 
 function BentoInfoItem({
@@ -108,24 +111,12 @@ export default function Clients() {
   const clientIdFromQuery = searchParams.get("clientId");
   const effectiveClientId = id || clientIdFromQuery || undefined;
   const {
-    events,
-    tasks,
-    sales,
     rentals,
     documents,
     referredColleagues,
     waitingRoom,
     buyers,
     activityLogs,
-    addTask,
-    updateTask,
-    deleteTask,
-    addEvent,
-    updateEvent,
-    deleteEvent,
-    addSale,
-    updateSale,
-    deleteSale,
     addRental,
     updateRental,
     deleteRental,
@@ -138,6 +129,9 @@ export default function Clients() {
     customOptions,
     updateCustomOptions,
   } = useAppContext();
+  const { sales, addSale, updateSale, deleteSale } = useSales();
+  const { tasks, addTask, updateTask, deleteTask } = useTasks();
+  const { events, addEvent, updateEvent, deleteEvent } = useEvents();
   const { clients, isLoading, addClient, updateClient } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);

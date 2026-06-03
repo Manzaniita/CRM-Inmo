@@ -18,6 +18,7 @@ import {
   Calendar,
   Activity,
   ArrowUpDown,
+  Loader2,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import Badge from "../components/Badge";
@@ -36,6 +37,9 @@ import SearchableSelect from "../components/SearchableSelect";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
 import { useClients } from "../hooks/useClients";
+import { useSales } from "../hooks/useSales";
+import { useTasks } from "../hooks/useTasks";
+import { useEvents } from "../hooks/useEvents";
 
 // Helper: get best available date for a sale
 function getBestDate(sale: Sale): string {
@@ -51,8 +55,9 @@ function getBestDate(sale: Sale): string {
 const STAGES: SaleStatus[] = ["activa", "vendida", "caída"];
 
 export default function Sales() {
-  const { sales, tasks, events, addSale, updateSale, deleteSale } =
-    useAppContext();
+  const { sales, isLoading, addSale, updateSale, deleteSale } = useSales();
+  const { tasks } = useTasks();
+  const { events } = useEvents();
   const { clients } = useClients();
   const { properties } = useProperties();
   const [view, setView] = useState<"pipeline" | "list">("list");
@@ -149,6 +154,14 @@ export default function Sales() {
     setEditingSale(sale || null);
     setIsFormOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="animate-spin h-8 w-8 text-slate-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20">

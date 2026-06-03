@@ -18,6 +18,9 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import { useSales } from "../hooks/useSales";
+import { useTasks } from "../hooks/useTasks";
+import { useEvents } from "../hooks/useEvents";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { cn, normalizeSearchText } from "../lib/utils";
@@ -32,10 +35,7 @@ import { useClients } from "../hooks/useClients";
 export default function ReferredColleagues() {
   const {
     referredColleagues,
-    sales,
     rentals,
-    tasks,
-    events,
     documents,
     waitingRoom,
     buyers,
@@ -45,6 +45,9 @@ export default function ReferredColleagues() {
     deleteReferredColleague,
     addActivityLog,
   } = useAppContext();
+  const { sales } = useSales();
+  const { tasks } = useTasks();
+  const { events } = useEvents();
   const { clients, updateClient } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);

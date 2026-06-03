@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Store, Search, Copy, CheckCircle2, X, Tag } from "lucide-react";
-import { useAppContext } from "../context/AppContext";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { Card } from "../components/Card";

@@ -25,16 +25,18 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { useAppContext } from "../context/AppContext";
 import { Card } from "../components/Card";
 import Button from "../components/Button";
 import Badge from "../components/Badge";
 import { cn, formatCurrency } from "../lib/utils";
 import { useProperties } from "../hooks/useProperties";
 import { useClients } from "../hooks/useClients";
+import { useSales } from "../hooks/useSales";
+import { useEvents } from "../hooks/useEvents";
 
 export default function Reports() {
-  const { sales, events } = useAppContext();
+  const { sales } = useSales();
+  const { events } = useEvents();
   const { clients } = useClients();
   const { properties } = useProperties();
 

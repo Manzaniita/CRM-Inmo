@@ -24,6 +24,9 @@ import { StatCard, Card } from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { useAppContext } from "../context/AppContext";
+import { useSales } from "../hooks/useSales";
+import { useTasks } from "../hooks/useTasks";
+import { useEvents } from "../hooks/useEvents";
 import { formatDate, formatCurrency } from "../lib/utils";
 import { cn } from "../lib/utils";
 import { isOverdue, isToday, isWithinNextDays } from "../lib/dates";
@@ -145,7 +148,10 @@ function LinearProgress({
 }
 
 export default function Dashboard() {
-  const { events, tasks, sales, activityLogs, completeTask } = useAppContext();
+  const { activityLogs } = useAppContext();
+  const { sales } = useSales();
+  const { tasks, completeTask } = useTasks();
+  const { events } = useEvents();
   const { clients } = useClients();
   const { properties } = useProperties();
   const profile = useAuthStore((state) => state.profile);
