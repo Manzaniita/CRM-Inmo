@@ -51,6 +51,7 @@ import { getPropertyRelations } from '../lib/relations';
 import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import { useUIStore } from '../stores/uiStore';
 import { useAuthStore } from '../stores/authStore';
+import { useProperties } from '../hooks/useProperties';
 
 export default function Properties() {
   const { id } = useParams();
@@ -58,7 +59,8 @@ export default function Properties() {
   const [searchParams] = useSearchParams();
   const propertyIdFromQuery = searchParams.get('propertyId');
   const effectivePropertyId = id || propertyIdFromQuery || undefined;
-  const { properties, clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, addClient, addActivityLog, customOptions, updateCustomOptions } = useAppContext()
+  const { clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, addClient, addActivityLog, customOptions, updateCustomOptions } = useAppContext()
+  const { properties, isLoading, addProperty, updateProperty } = useProperties();
   const showToast = useUIStore(state => state.showToast);
   const profile = useAuthStore(state => state.profile);
   const { openRelations } = useRelationsDrawer();
@@ -1014,8 +1016,13 @@ export default function Properties() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 p-6">
-          {filteredProps.map((prop) => {
+        {isLoading ? (
+          <div className="flex items-center justify-center p-12">
+            <Loader2 size={32} className="animate-spin text-slate-400" strokeWidth={1.5} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 p-6">
+            {filteredProps.map((prop) => {
             const remaining = contractTimeRemaining(prop.contractEndDate);
             const imgSrc = prop.imageUrl || (prop.images && prop.images[0]) || '';
             return (
@@ -1178,8 +1185,9 @@ export default function Properties() {
             );
           })}
         </div>
+        )}
 
-        {filteredProps.length === 0 && (
+        {!isLoading && filteredProps.length === 0 && (
           <div className="py-20 text-center">
             <Home size={48} className="mx-auto text-gray-200 mb-4" />
             <p className="text-slate-500 dark:text-slate-400 font-medium">

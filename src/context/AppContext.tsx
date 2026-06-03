@@ -111,7 +111,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const [
         clientsRes,
-        propertiesRes,
         eventsRes,
         tasksRes,
         salesRes,
@@ -124,7 +123,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         profileRes,
       ] = await Promise.all([
         supabase.from('clients').select('*').eq('user_id', uid),
-        supabase.from('properties').select('*').eq('user_id', uid),
         supabase.from('events').select('*').eq('user_id', uid),
         supabase.from('tasks').select('*').eq('user_id', uid),
         supabase.from('sales').select('*').eq('user_id', uid),
@@ -142,12 +140,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         useUIStore.getState().showToast('Error al cargar clientes', 'error');
       } else if (clientsRes.data) {
         setClients(clientsRes.data as Client[]);
-      }
-
-      if (propertiesRes.error) {
-        console.error('[EstateCRM] properties load error:', propertiesRes.error);
-      } else if (propertiesRes.data) {
-        setProperties(propertiesRes.data as Property[]);
       }
 
       if (eventsRes.error) {
