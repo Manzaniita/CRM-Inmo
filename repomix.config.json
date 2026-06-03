@@ -1,0 +1,36 @@
+{
+  "ignore": [
+    "node_modules",
+    ".next",
+    "out",
+    "dist",
+    ".git",
+    ".vercel",
+    "*.png",
+    "*.jpg",
+    "*.jpeg",
+    "*.gif",
+    "*.svg",
+    "*.ico",
+    "*.woff",
+    "*.woff2",
+    "*.ttf",
+    "*.eot",
+    "*.mp4",
+    "*.webm",
+    "*.mp3",
+    "*.pdf"
+  ],
+  "include": [
+    "*.ts",
+    "*.tsx",
+    "*.js",
+    "*.jsx",
+    "*.json",
+    "*.sql",
+    "*.css",
+    "*.scss",
+    "*.html",
+    "*.md"
+  ]
+}
