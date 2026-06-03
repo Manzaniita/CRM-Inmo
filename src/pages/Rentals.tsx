@@ -28,6 +28,7 @@ import { validateRental } from "../lib/validators";
 import { Rental, RentalStatus } from "../types";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 const STAGES: RentalStatus[] = [
   "consulta",
@@ -41,15 +42,9 @@ const STAGES: RentalStatus[] = [
 ];
 
 export default function Rentals() {
-  const {
-    rentals,
-    clients,
-    tasks,
-    events,
-    addRental,
-    updateRental,
-    deleteRental,
-  } = useAppContext();
+  const { rentals, tasks, events, addRental, updateRental, deleteRental } =
+    useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const [view, setView] = useState<"pipeline" | "list">("list");
   const [searchTerm, setSearchTerm] = useState("");
@@ -449,7 +444,8 @@ function RentalDetailModal({
   onClose: () => void;
   onEdit: () => void;
 }) {
-  const { clients, tasks, events } = useAppContext();
+  const { tasks, events } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const property = properties.find((p) => p.id === rental.propiedadId);
   const tenant = clients.find((c) => c.id === rental.inquilinoId);
@@ -704,7 +700,8 @@ function RentalFormModal({
   rental: Rental | null;
   onClose: () => void;
 }) {
-  const { clients, addRental, updateRental } = useAppContext();
+  const { addRental, updateRental } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
 

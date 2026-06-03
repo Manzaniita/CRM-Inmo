@@ -27,11 +27,11 @@ import { useRelationsDrawer } from "../context/RelationsDrawerContext";
 import type { ReferredColleague, Client } from "../types";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 export default function ReferredColleagues() {
   const {
     referredColleagues,
-    clients,
     sales,
     rentals,
     tasks,
@@ -43,9 +43,9 @@ export default function ReferredColleagues() {
     addReferredColleague,
     updateReferredColleague,
     deleteReferredColleague,
-    updateClient,
     addActivityLog,
   } = useAppContext();
+  const { clients, updateClient } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
   const { openRelations } = useRelationsDrawer();

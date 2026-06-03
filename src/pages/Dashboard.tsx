@@ -29,6 +29,7 @@ import { cn } from "../lib/utils";
 import { isOverdue, isToday, isWithinNextDays } from "../lib/dates";
 import { useAuthStore } from "../stores/authStore";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 function CircularProgress({
   percentage,
@@ -144,8 +145,8 @@ function LinearProgress({
 }
 
 export default function Dashboard() {
-  const { clients, events, tasks, sales, activityLogs, completeTask } =
-    useAppContext();
+  const { events, tasks, sales, activityLogs, completeTask } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const profile = useAuthStore((state) => state.profile);
   const navigate = useNavigate();

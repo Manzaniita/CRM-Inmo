@@ -36,6 +36,7 @@ import type { Sale, SaleStatus, ActivityLog } from "../types";
 import SearchableSelect from "../components/SearchableSelect";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 const STAGES: SaleStatus[] = ["activa", "vendida", "caída"];
 
@@ -50,8 +51,9 @@ function getBestDate(sale: Sale): string {
 }
 
 export default function Reservometro() {
-  const { sales, clients, addSale, updateSale, deleteSale, addActivityLog } =
+  const { sales, addSale, updateSale, deleteSale, addActivityLog } =
     useAppContext();
+  const { clients, addClient } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
   const { openRelations } = useRelationsDrawer();
@@ -176,7 +178,6 @@ export default function Reservometro() {
     filterAgent,
     sortKey,
     sortDirection,
-    clients,
     properties,
   ]);
 
@@ -831,8 +832,8 @@ function SaleFormModal({
   sale: Sale | null;
   onClose: () => void;
 }) {
-  const { clients, addSale, updateSale, addActivityLog, addClient } =
-    useAppContext();
+  const { addSale, updateSale, addActivityLog } = useAppContext();
+  const { clients, addClient } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
 

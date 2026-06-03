@@ -35,17 +35,18 @@ import { cn, formatDate, normalizeSearchText } from "../lib/utils";
 import { generateId } from "../lib/id";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 export default function Agenda() {
   const {
     events,
-    clients,
     addEvent,
     updateEvent,
     completeEvent,
     cancelEvent,
     deleteEvent,
   } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
   const location = useLocation();

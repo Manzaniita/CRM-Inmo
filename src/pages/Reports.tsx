@@ -31,9 +31,11 @@ import Button from "../components/Button";
 import Badge from "../components/Badge";
 import { cn, formatCurrency } from "../lib/utils";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 export default function Reports() {
-  const { clients, sales, events } = useAppContext();
+  const { sales, events } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
 
   // Calculate Metrics
@@ -92,7 +94,7 @@ export default function Reports() {
     const data = months.map((m) => ({ name: m, value: 0 }));
 
     clients.forEach((c) => {
-      const monthIdx = new Date(c.fechaCreacion).getMonth();
+      const monthIdx = new Date(c.createdAt).getMonth();
       if (!isNaN(monthIdx)) data[monthIdx].value++;
     });
 

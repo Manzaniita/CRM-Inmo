@@ -35,6 +35,7 @@ import { cn, formatDate } from "../lib/utils";
 import { generateId } from "../lib/id";
 import { validateDocument } from "../lib/validators";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 const DOCUMENT_TYPES: DocumentType[] = [
   "DNI",
@@ -117,13 +118,13 @@ function formatFileSize(bytes?: number): string {
 export default function Documents() {
   const {
     documents,
-    clients,
     sales,
     rentals,
     addDocument,
     updateDocument,
     deleteDocument,
   } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
 
   const showToast = useUIStore((state) => state.showToast);

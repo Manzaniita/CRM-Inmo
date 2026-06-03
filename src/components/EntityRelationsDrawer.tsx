@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useRelationsDrawer } from "../context/RelationsDrawerContext";
 import { useAppContext } from "../context/AppContext";
+import { useClients } from "../hooks/useClients";
 import {
   getClientRelations,
   getPropertyRelations,
@@ -133,7 +134,6 @@ function EmptyGroupState({ title }: { title: string }) {
 export default function EntityRelationsDrawer() {
   const { isOpen, entityType, entityId, closeRelations } = useRelationsDrawer();
   const {
-    clients,
     sales,
     tasks,
     events,
@@ -145,6 +145,7 @@ export default function EntityRelationsDrawer() {
     addTask,
     addActivityLog,
   } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
   const [collapsedGroups, setCollapsedGroups] = useState<

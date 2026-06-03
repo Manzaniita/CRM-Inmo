@@ -19,6 +19,7 @@ import {
   Clock,
   ListTodo,
   Link2,
+  Loader2,
 } from "lucide-react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
@@ -65,6 +66,7 @@ import SearchableSelect from "../components/SearchableSelect";
 import { useUIStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 function BentoInfoItem({
   icon: Icon,
@@ -106,7 +108,6 @@ export default function Clients() {
   const clientIdFromQuery = searchParams.get("clientId");
   const effectiveClientId = id || clientIdFromQuery || undefined;
   const {
-    clients,
     events,
     tasks,
     sales,
@@ -116,8 +117,6 @@ export default function Clients() {
     waitingRoom,
     buyers,
     activityLogs,
-    addClient,
-    updateClient,
     addTask,
     updateTask,
     deleteTask,
@@ -139,6 +138,7 @@ export default function Clients() {
     customOptions,
     updateCustomOptions,
   } = useAppContext();
+  const { clients, isLoading, addClient, updateClient } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
   const profile = useAuthStore((state) => state.profile);
@@ -1908,6 +1908,14 @@ export default function Clients() {
             </div>
           </form>
         </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="animate-spin h-8 w-8 text-slate-400" />
       </div>
     );
   }

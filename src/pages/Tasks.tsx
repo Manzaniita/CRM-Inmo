@@ -37,11 +37,11 @@ import { generateId } from "../lib/id";
 import { validateTask } from "../lib/validators";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 export default function Tasks() {
   const {
     tasks,
-    clients,
     sales,
     referredColleagues,
     buyers,
@@ -51,6 +51,7 @@ export default function Tasks() {
     deleteTask,
     addActivityLog,
   } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
   const location = useLocation();

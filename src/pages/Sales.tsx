@@ -35,6 +35,7 @@ import { Sale, SaleStatus } from "../types";
 import SearchableSelect from "../components/SearchableSelect";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 // Helper: get best available date for a sale
 function getBestDate(sale: Sale): string {
@@ -50,8 +51,9 @@ function getBestDate(sale: Sale): string {
 const STAGES: SaleStatus[] = ["activa", "vendida", "caída"];
 
 export default function Sales() {
-  const { sales, clients, tasks, events, addSale, updateSale, deleteSale } =
+  const { sales, tasks, events, addSale, updateSale, deleteSale } =
     useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const [view, setView] = useState<"pipeline" | "list">("list");
   const [searchTerm, setSearchTerm] = useState("");
@@ -111,15 +113,7 @@ export default function Sales() {
     });
 
     return result;
-  }, [
-    sales,
-    lowerSearch,
-    filterStatus,
-    sortKey,
-    sortDirection,
-    clients,
-    properties,
-  ]);
+  }, [sales, lowerSearch, filterStatus, sortKey, sortDirection, properties]);
 
   const stats = {
     active: sales.filter((s) => s.estado === "activa").length,
@@ -496,7 +490,8 @@ function SaleDetailModal({
   onClose: () => void;
   onEdit: () => void;
 }) {
-  const { clients, tasks, events } = useAppContext();
+  const { tasks, events } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const property = properties.find((p) => p.id === sale.propiedadId);
   const buyer = clients.find((c) => c.id === sale.clientCompradorId);
@@ -781,7 +776,8 @@ function SaleFormModal({
   sale: Sale | null;
   onClose: () => void;
 }) {
-  const { clients, addSale, updateSale } = useAppContext();
+  const { addSale, updateSale } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);
 

@@ -13,6 +13,7 @@ import { useAppContext } from "../context/AppContext";
 import { cn } from "../lib/utils";
 import { searchAll, type SearchResultItem } from "../lib/search";
 import { useProperties } from "../hooks/useProperties";
+import { useClients } from "../hooks/useClients";
 
 const TYPE_CONFIG = {
   cliente: {
@@ -49,7 +50,8 @@ const TYPE_CONFIG = {
 
 export default function GlobalSearch() {
   const navigate = useNavigate();
-  const { clients, tasks, sales, referredColleagues, buyers } = useAppContext();
+  const { tasks, sales, referredColleagues, buyers } = useAppContext();
+  const { clients } = useClients();
   const { properties } = useProperties();
 
   const [query, setQuery] = useState("");
