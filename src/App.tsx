@@ -242,105 +242,46 @@ export default function App() {
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: ReturnType<typeof setTimeout>;
 
-    const runAuth = async () => {
-      try {
-        console.log("[Auth Step 1] Iniciando getSession...");
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        console.log("[Auth Step 2] getSession resuelto:", session, "error:", sessionError);
-
-        if (sessionError) throw sessionError;
-
-        const user = session?.user ?? null;
-        const currentUser = useAuthStore.getState().user;
-        if (user?.id !== currentUser?.id) {
-          console.log("[Auth Step 3] Seteando user:", user?.id);
-          useAuthStore.getState().setUser(user);
-        } else {
-          console.log("[Auth Step 3] User sin cambios, skip setUser");
-        }
-
-        if (user) {
-          console.log("[Auth Step 4] Fetching profile para user_id:", user.id);
-          const { data: profileData, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("user_id", user.id)
-            .maybeSingle();
-
-          console.log("[Auth Step 5] Profile fetch resuelto:", profileData, "error:", profileError);
-
-          if (profileError) console.error("[Auth] Profile fetch error:", profileError);
-
-          const currentProfile = useAuthStore.getState().profile;
-          if (profileData && JSON.stringify(currentProfile) !== JSON.stringify(profileData)) {
-            console.log("[Auth Step 6] Seteando profile");
-            useAuthStore.getState().setProfile(profileData as Profile);
-          } else if (!profileData && currentProfile !== null) {
-            console.log("[Auth Step 6] Limpiando profile");
-            useAuthStore.getState().setProfile(null);
-          } else {
-            console.log("[Auth Step 6] Profile sin cambios, skip setProfile");
-          }
-        } else {
-          const currentProfile = useAuthStore.getState().profile;
-          if (currentProfile !== null) {
-            console.log("[Auth Step 4] No hay user, limpiando profile");
-            useAuthStore.getState().setProfile(null);
-          }
-        }
-      } catch (err) {
-        console.error("[Auth] Initialization error:", err);
-        useAuthStore.getState().setUser(null);
-        useAuthStore.getState().setProfile(null);
-        await supabase.auth.signOut().catch(() => {});
-      } finally {
-        console.log("[Auth Step 7] Finalizando, isMounted:", isMounted);
-        if (isMounted) setIsAuthReady(true);
-        clearTimeout(timeoutId);
+    const fetchAndSetProfile = async (user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>) => {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (profileData && isMounted) {
+        useAuthStore.getState().setProfile(profileData as Profile);
       }
     };
 
-    // Failsafe de emergencia: máximo 6 segundos de carga
-    timeoutId = setTimeout(() => {
-      console.warn("[Auth Failsafe] Timeout de 6s alcanzado, forzando isAuthReady=true");
-      setIsAuthReady(true);
-    }, 6000);
-
-    runAuth();
-
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[Auth Event]:", event);
       const user = session?.user ?? null;
-      const currentUser = useAuthStore.getState().user;
-      if (user?.id !== currentUser?.id) {
-        useAuthStore.getState().setUser(user);
-      }
+      useAuthStore.getState().setUser(user);
+
       if (user) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        const currentProfile = useAuthStore.getState().profile;
-        if (profileData && JSON.stringify(currentProfile) !== JSON.stringify(profileData)) {
-          useAuthStore.getState().setProfile(profileData as Profile);
-        } else if (!profileData && currentProfile !== null) {
-          useAuthStore.getState().setProfile(null);
-        }
+        await fetchAndSetProfile(user);
       } else {
-        if (useAuthStore.getState().profile !== null) {
-          useAuthStore.getState().setProfile(null);
-        }
+        useAuthStore.getState().setProfile(null);
+      }
+
+      if (isMounted) {
+        setIsAuthReady(true);
+        console.log("[Auth] App lista");
       }
     });
 
+    // Red de seguridad rápida (2s) por si el evento de Supabase tarda en disparar
+    const backupTimer = setTimeout(() => {
+      if (isMounted) setIsAuthReady(true);
+    }, 2000);
+
     return () => {
       isMounted = false;
-      clearTimeout(timeoutId);
       subscription.unsubscribe();
+      clearTimeout(backupTimer);
     };
   }, []);
 
