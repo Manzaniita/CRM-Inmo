@@ -9,7 +9,8 @@ import {
   Briefcase,
   X,
 } from "lucide-react";
-import { useAppContext } from "../context/AppContext";
+import { useBuyers } from "../hooks/useBuyers";
+import { useReferredColleagues } from "../hooks/useReferredColleagues";
 import { useTasks } from "../hooks/useTasks";
 import { useSales } from "../hooks/useSales";
 import { cn } from "../lib/utils";
@@ -52,7 +53,8 @@ const TYPE_CONFIG = {
 
 export default function GlobalSearch() {
   const navigate = useNavigate();
-  const { referredColleagues, buyers } = useAppContext();
+  const { referredColleagues } = useReferredColleagues();
+  const { buyers } = useBuyers();
   const { tasks } = useTasks();
   const { sales } = useSales();
   const { clients } = useClients();

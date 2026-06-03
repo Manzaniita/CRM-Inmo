@@ -17,7 +17,12 @@ import {
   Home,
   ExternalLink,
 } from "lucide-react";
-import { useAppContext } from "../context/AppContext";
+import { useRentals } from "../hooks/useRentals";
+import { useDocuments } from "../hooks/useDocuments";
+import { useWaitingRoom } from "../hooks/useWaitingRoom";
+import { useBuyers } from "../hooks/useBuyers";
+import { useReferredColleagues } from "../hooks/useReferredColleagues";
+import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useSales } from "../hooks/useSales";
 import { useTasks } from "../hooks/useTasks";
 import { useEvents } from "../hooks/useEvents";
@@ -33,18 +38,18 @@ import { useProperties } from "../hooks/useProperties";
 import { useClients } from "../hooks/useClients";
 
 export default function ReferredColleagues() {
+  const { rentals } = useRentals();
+  const { documents } = useDocuments();
+  const { waitingRoom } = useWaitingRoom();
+  const { buyers } = useBuyers();
+  const { activityLogs, addActivityLog } = useActivityLogs();
   const {
     referredColleagues,
-    rentals,
-    documents,
-    waitingRoom,
-    buyers,
-    activityLogs,
+    isLoading,
     addReferredColleague,
     updateReferredColleague,
     deleteReferredColleague,
-    addActivityLog,
-  } = useAppContext();
+  } = useReferredColleagues();
   const { sales } = useSales();
   const { tasks } = useTasks();
   const { events } = useEvents();

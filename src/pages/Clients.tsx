@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
-import { useAppContext } from "../context/AppContext";
 import {
   Client,
   ClientType,
@@ -66,6 +65,13 @@ import SearchableSelect from "../components/SearchableSelect";
 import { useUIStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
 import { useProperties } from "../hooks/useProperties";
+import { useRentals } from "../hooks/useRentals";
+import { useDocuments } from "../hooks/useDocuments";
+import { useWaitingRoom } from "../hooks/useWaitingRoom";
+import { useBuyers } from "../hooks/useBuyers";
+import { useReferredColleagues } from "../hooks/useReferredColleagues";
+import { useActivityLogs } from "../hooks/useActivityLogs";
+import { useCustomOptions } from "../hooks/useCustomOptions";
 import { useSales } from "../hooks/useSales";
 import { useTasks } from "../hooks/useTasks";
 import { useEvents } from "../hooks/useEvents";
@@ -110,30 +116,29 @@ export default function Clients() {
   const [searchParams] = useSearchParams();
   const clientIdFromQuery = searchParams.get("clientId");
   const effectiveClientId = id || clientIdFromQuery || undefined;
-  const {
-    rentals,
-    documents,
-    referredColleagues,
-    waitingRoom,
-    buyers,
-    activityLogs,
-    addRental,
-    updateRental,
-    deleteRental,
-    addDocument,
-    updateDocument,
-    deleteDocument,
-    addReferredColleague,
-    updateReferredColleague,
-    addActivityLog,
-    customOptions,
-    updateCustomOptions,
-  } = useAppContext();
   const { sales, addSale, updateSale, deleteSale } = useSales();
   const { tasks, addTask, updateTask, deleteTask } = useTasks();
   const { events, addEvent, updateEvent, deleteEvent } = useEvents();
   const { clients, isLoading, addClient, updateClient } = useClients();
   const { properties } = useProperties();
+  const { rentals, addRental, updateRental, deleteRental } = useRentals();
+  const { documents, addDocument, updateDocument, deleteDocument } =
+    useDocuments();
+  const {
+    waitingRoom,
+    addWaitingRoomEntry,
+    updateWaitingRoomEntry,
+    deleteWaitingRoomEntry,
+  } = useWaitingRoom();
+  const { buyers, addBuyer, updateBuyer, deleteBuyer } = useBuyers();
+  const {
+    referredColleagues,
+    addReferredColleague,
+    updateReferredColleague,
+    deleteReferredColleague,
+  } = useReferredColleagues();
+  const { activityLogs, addActivityLog } = useActivityLogs();
+  const { customOptions, updateCustomOptions } = useCustomOptions();
   const showToast = useUIStore((state) => state.showToast);
   const profile = useAuthStore((state) => state.profile);
   const { openRelations } = useRelationsDrawer();

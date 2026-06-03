@@ -18,7 +18,7 @@ import {
   Calendar,
   Activity,
 } from "lucide-react";
-import { useAppContext } from "../context/AppContext";
+import { useRentals } from "../hooks/useRentals";
 import { useTasks } from "../hooks/useTasks";
 import { useEvents } from "../hooks/useEvents";
 import Badge from "../components/Badge";
@@ -44,7 +44,8 @@ const STAGES: RentalStatus[] = [
 ];
 
 export default function Rentals() {
-  const { rentals, addRental, updateRental, deleteRental } = useAppContext();
+  const { rentals, isLoading, addRental, updateRental, deleteRental } =
+    useRentals();
   const { tasks } = useTasks();
   const { events } = useEvents();
   const { clients } = useClients();
@@ -704,7 +705,7 @@ function RentalFormModal({
   rental: Rental | null;
   onClose: () => void;
 }) {
-  const { addRental, updateRental } = useAppContext();
+  const { addRental, updateRental } = useRentals();
   const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);

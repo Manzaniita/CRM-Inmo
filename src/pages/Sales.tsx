@@ -20,7 +20,7 @@ import {
   ArrowUpDown,
   Loader2,
 } from "lucide-react";
-import { useAppContext } from "../context/AppContext";
+
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { Card, StatCard } from "../components/Card";
@@ -503,7 +503,8 @@ function SaleDetailModal({
   onClose: () => void;
   onEdit: () => void;
 }) {
-  const { tasks, events } = useAppContext();
+  const { tasks } = useTasks();
+  const { events } = useEvents();
   const { clients } = useClients();
   const { properties } = useProperties();
   const property = properties.find((p) => p.id === sale.propiedadId);
@@ -789,7 +790,7 @@ function SaleFormModal({
   sale: Sale | null;
   onClose: () => void;
 }) {
-  const { addSale, updateSale } = useAppContext();
+  const { addSale, updateSale } = useSales();
   const { clients } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);

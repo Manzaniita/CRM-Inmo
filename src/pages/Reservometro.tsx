@@ -19,7 +19,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import { useAppContext } from "../context/AppContext";
+
 import { useRelationsDrawer } from "../context/RelationsDrawerContext";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -36,6 +36,7 @@ import type { Sale, SaleStatus, ActivityLog } from "../types";
 import SearchableSelect from "../components/SearchableSelect";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
+import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useSales } from "../hooks/useSales";
 import { useClients } from "../hooks/useClients";
 
@@ -52,7 +53,7 @@ function getBestDate(sale: Sale): string {
 }
 
 export default function Reservometro() {
-  const { addActivityLog } = useAppContext();
+  const { addActivityLog } = useActivityLogs();
   const { sales, addSale, updateSale, deleteSale } = useSales();
   const { clients, addClient } = useClients();
   const { properties } = useProperties();
@@ -833,7 +834,8 @@ function SaleFormModal({
   sale: Sale | null;
   onClose: () => void;
 }) {
-  const { addSale, updateSale, addActivityLog } = useAppContext();
+  const { addSale, updateSale } = useSales();
+  const { addActivityLog } = useActivityLogs();
   const { clients, addClient } = useClients();
   const { properties } = useProperties();
   const showToast = useUIStore((state) => state.showToast);

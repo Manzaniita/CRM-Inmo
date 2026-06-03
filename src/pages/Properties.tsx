@@ -32,7 +32,6 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { useAppContext } from "../context/AppContext";
 import { useClients } from "../hooks/useClients";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -72,6 +71,13 @@ import { useProperties } from "../hooks/useProperties";
 import { useSales } from "../hooks/useSales";
 import { useTasks } from "../hooks/useTasks";
 import { useEvents } from "../hooks/useEvents";
+import { useRentals } from "../hooks/useRentals";
+import { useDocuments } from "../hooks/useDocuments";
+import { useWaitingRoom } from "../hooks/useWaitingRoom";
+import { useBuyers } from "../hooks/useBuyers";
+import { useReferredColleagues } from "../hooks/useReferredColleagues";
+import { useActivityLogs } from "../hooks/useActivityLogs";
+import { useCustomOptions } from "../hooks/useCustomOptions";
 
 export default function Properties() {
   const { id } = useParams();
@@ -79,23 +85,14 @@ export default function Properties() {
   const [searchParams] = useSearchParams();
   const propertyIdFromQuery = searchParams.get("propertyId");
   const effectivePropertyId = id || propertyIdFromQuery || undefined;
-  const {
-    rentals,
-    documents,
-    referredColleagues,
-    waitingRoom,
-    buyers,
-    activityLogs,
-    addRental,
-    updateRental,
-    deleteRental,
-    addDocument,
-    updateDocument,
-    deleteDocument,
-    addActivityLog,
-    customOptions,
-    updateCustomOptions,
-  } = useAppContext();
+  const { rentals, addRental, updateRental, deleteRental } = useRentals();
+  const { documents, addDocument, updateDocument, deleteDocument } =
+    useDocuments();
+  const { waitingRoom } = useWaitingRoom();
+  const { buyers } = useBuyers();
+  const { referredColleagues } = useReferredColleagues();
+  const { activityLogs, addActivityLog } = useActivityLogs();
+  const { customOptions, updateCustomOptions } = useCustomOptions();
   const { sales, addSale, updateSale, deleteSale } = useSales();
   const { tasks } = useTasks();
   const { events } = useEvents();

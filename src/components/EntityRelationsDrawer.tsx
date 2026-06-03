@@ -18,7 +18,11 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useRelationsDrawer } from "../context/RelationsDrawerContext";
-import { useAppContext } from "../context/AppContext";
+import { useDocuments } from "../hooks/useDocuments";
+import { useReferredColleagues } from "../hooks/useReferredColleagues";
+import { useWaitingRoom } from "../hooks/useWaitingRoom";
+import { useBuyers } from "../hooks/useBuyers";
+import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useClients } from "../hooks/useClients";
 import { useSales } from "../hooks/useSales";
 import { useTasks } from "../hooks/useTasks";
@@ -136,14 +140,11 @@ function EmptyGroupState({ title }: { title: string }) {
 
 export default function EntityRelationsDrawer() {
   const { isOpen, entityType, entityId, closeRelations } = useRelationsDrawer();
-  const {
-    documents,
-    referredColleagues,
-    waitingRoom,
-    buyers,
-    activityLogs,
-    addActivityLog,
-  } = useAppContext();
+  const { referredColleagues } = useReferredColleagues();
+  const { documents } = useDocuments();
+  const { waitingRoom } = useWaitingRoom();
+  const { buyers } = useBuyers();
+  const { activityLogs, addActivityLog } = useActivityLogs();
   const { sales } = useSales();
   const { tasks, addTask } = useTasks();
   const { events } = useEvents();

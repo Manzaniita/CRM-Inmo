@@ -28,7 +28,7 @@ import {
   Link,
   useSearchParams,
 } from "react-router-dom";
-import { useAppContext } from "../context/AppContext";
+
 import { Task, TaskPriority, TaskStatus, TaskRelatedEntity } from "../types";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -41,9 +41,14 @@ import { useProperties } from "../hooks/useProperties";
 import { useClients } from "../hooks/useClients";
 import { useTasks } from "../hooks/useTasks";
 import { useSales } from "../hooks/useSales";
+import { useActivityLogs } from "../hooks/useActivityLogs";
+import { useReferredColleagues } from "../hooks/useReferredColleagues";
+import { useBuyers } from "../hooks/useBuyers";
 
 export default function Tasks() {
-  const { referredColleagues, buyers, addActivityLog } = useAppContext();
+  const { referredColleagues } = useReferredColleagues();
+  const { buyers } = useBuyers();
+  const { addActivityLog } = useActivityLogs();
   const { tasks, isLoading, addTask, updateTask, completeTask, deleteTask } =
     useTasks();
   const { sales } = useSales();

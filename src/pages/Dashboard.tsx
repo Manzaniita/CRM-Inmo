@@ -23,7 +23,7 @@ import { motion } from "motion/react";
 import { StatCard, Card } from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
-import { useAppContext } from "../context/AppContext";
+import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useSales } from "../hooks/useSales";
 import { useTasks } from "../hooks/useTasks";
 import { useEvents } from "../hooks/useEvents";
@@ -148,7 +148,7 @@ function LinearProgress({
 }
 
 export default function Dashboard() {
-  const { activityLogs } = useAppContext();
+  const { activityLogs } = useActivityLogs();
   const { sales } = useSales();
   const { tasks, completeTask } = useTasks();
   const { events } = useEvents();
