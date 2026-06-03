@@ -241,21 +241,40 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const user = session?.user ?? null;
-      useAuthStore.getState().setUser(user);
-      if (user) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (profileData) {
-          useAuthStore.getState().setProfile(profileData as Profile);
+    let isMounted = true;
+
+    const initAuth = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        const user = session?.user ?? null;
+        useAuthStore.getState().setUser(user);
+
+        if (user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (profileError) console.error("[Auth] Profile fetch error:", profileError);
+          if (profileData) {
+            useAuthStore.getState().setProfile(profileData as Profile);
+          }
         }
+      } catch (err) {
+        console.error("[Auth] Initialization error:", err);
+        useAuthStore.getState().setUser(null);
+        useAuthStore.getState().setProfile(null);
+        await supabase.auth.signOut().catch(() => {});
+      } finally {
+        if (isMounted) setIsAuthReady(true);
       }
-      setIsAuthReady(true);
-    });
+    };
+
+    initAuth();
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -276,7 +295,11 @@ export default function App() {
         useAuthStore.getState().setProfile(null);
       }
     });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
