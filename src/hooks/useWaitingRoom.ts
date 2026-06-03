@@ -11,7 +11,7 @@ const fetchWaitingRoom = async () => {
     .from("waiting_room")
     .select("*")
     .eq("user_id", user.id)
-    .order("createdAt", { ascending: false });
+    .order("fechaIngreso", { ascending: false });
   if (error) throw error;
   return (data ?? []) as WaitingRoomEntry[];
 };

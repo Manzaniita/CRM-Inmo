@@ -10,8 +10,7 @@ async function fetchProperties(userId: string): Promise<Property[]> {
   const { data, error } = await supabase
     .from('properties')
     .select('*')
-    .eq('user_id', userId)
-    .order('createdAt', { ascending: false });
+    .eq('user_id', userId);
 
   if (error) {
     throw new Error(error.message);

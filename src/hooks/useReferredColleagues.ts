@@ -10,8 +10,7 @@ const fetchReferredColleagues = async () => {
   const { data, error } = await supabase
     .from("referred_colleagues")
     .select("*")
-    .eq("user_id", user.id)
-    .order("createdAt", { ascending: false });
+    .eq("user_id", user.id);
   if (error) throw error;
   return (data ?? []).map((c) => ({
     ...c,

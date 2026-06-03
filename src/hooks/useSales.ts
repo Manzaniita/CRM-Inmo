@@ -11,7 +11,7 @@ const fetchSales = async () => {
     .from("sales")
     .select("*")
     .eq("user_id", user.id)
-    .order("createdAt", { ascending: false });
+    .order("fechaCreacion", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Sale[];
 };
