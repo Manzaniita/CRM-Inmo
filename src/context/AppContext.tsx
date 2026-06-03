@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { useProperties } from '../hooks/useProperties';
 import type {
-  Client, Property, PropertyStatus, CalendarEvent, Task, Sale, Rental, Document,
+  Client, CalendarEvent, Task, Sale, Rental, Document,
   WaitingRoomEntry, Buyer, ReferredColleague, ActivityLog, Profile, CustomOptions
 } from '../types';
 import { DEFAULT_CUSTOM_OPTIONS } from '../types';
@@ -15,7 +17,6 @@ interface AppContextType {
   updateProfile: (profile: Profile) => Promise<void>;
   clearMockData: () => void;
   clients: Client[];
-  properties: Property[];
   events: CalendarEvent[];
   tasks: Task[];
   sales: Sale[];
@@ -33,8 +34,6 @@ interface AppContextType {
   updateCustomOptions: (opts: CustomOptions) => Promise<void>;
   addClient: (client: Client) => Promise<void>;
   updateClient: (client: Client) => Promise<void>;
-  addProperty: (property: Property) => Promise<void>;
-  updateProperty: (property: Property) => Promise<void>;
   addTask: (task: Task) => Promise<void>;
   updateTask: (task: Task) => Promise<void>;
   completeTask: (taskId: string) => Promise<void>;
@@ -77,7 +76,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ---- Entity state (cloud-only, initialized empty) ----
   const [clients, setClients] = useState<Client[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
@@ -93,7 +91,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearAllState = useCallback(() => {
     setClients([]);
-    setProperties([]);
     setEvents([]);
     setTasks([]);
     setSales([]);
@@ -258,7 +255,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // --- Contract expiration automation (cloud-first) ---
+  // --- Contract expiration automation ---
+  const { properties } = useProperties();
+  const queryClient = useQueryClient();
   const processedAutoKeys = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -349,7 +348,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             if (currentUser3) {
               await supabase.from('properties').update({ status: 'vencida' }).eq('id', prop.id).eq('user_id', currentUser3.id);
             }
-            setProperties(prev => prev.map(p => p.id === prop.id ? { ...p, status: 'vencida' as PropertyStatus } : p));
+            queryClient.invalidateQueries({ queryKey: ['properties'] });
             addActivityLog({
               type: 'property',
               action: 'status_changed',
@@ -365,28 +364,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     checkContractExpirations();
     const interval = setInterval(checkContractExpirations, 60000);
     return () => clearInterval(interval);
-  }, [properties, tasks, addActivityLog]);
-
-  // --- Entity relation helpers (local state only, cloud writes happen in CRUD) ---
-  const updatePropertyStatusIfNeeded = useCallback((propertyId: string, newStatus: Property['status'], forbiddenCurrent?: Property['status']) => {
-    setProperties(prev => prev.map(p => {
-      if (p.id !== propertyId) return p;
-      if (forbiddenCurrent && p.status === forbiddenCurrent) return p;
-      return { ...p, status: newStatus };
-    }));
-  }, []);
-
-  const handleSaleStatusChange = useCallback((sale: Sale) => {
-    if (sale.estado === 'vendida') {
-      updatePropertyStatusIfNeeded(sale.propiedadId, 'vendida');
-    }
-  }, [updatePropertyStatusIfNeeded]);
-
-  const handleRentalStatusChange = useCallback((rental: Rental) => {
-    if (rental.estado === 'firmado' || rental.estado === 'en curso') {
-      updatePropertyStatusIfNeeded(rental.propiedadId, 'alquilada', 'vendida');
-    }
-  }, [updatePropertyStatusIfNeeded]);
+  }, [properties, tasks, addActivityLog, queryClient]);
 
   // --- Clients ---
   const addClient = async (client: Client) => {
@@ -418,42 +396,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setClients(prev => prev.map(c => c.id === client.id ? client : c));
     addActivityLog({ type: 'client', action: 'updated', title: `Cliente actualizado: ${client.name}`, description, entityId: client.id });
     useUIStore.getState().showToast('Cliente actualizado', 'success');
-  };
-
-  // --- Properties ---
-  const addProperty = async (property: Property) => {
-    if (!useAuthStore.getState().user) { useUIStore.getState().showToast('No hay sesión activa', 'error'); return; }
-    const { data, error } = await supabase.from('properties').insert({ ...property, user_id: useAuthStore.getState().user!.id }).select();
-    if (error || !data) {
-      handleSupabaseError(error, 'addProperty');
-      return;
-    }
-    const inserted = data[0] as Property;
-    setProperties(prev => [inserted, ...prev]);
-    addActivityLog({ type: 'property', action: 'created', title: `Propiedad creada: ${inserted.title}`, entityId: inserted.id });
-    useUIStore.getState().showToast('Propiedad añadida', 'success');
-  };
-
-  const updateProperty = async (property: Property) => {
-    if (!useAuthStore.getState().user) { useUIStore.getState().showToast('No hay sesión activa', 'error'); return; }
-    const prev = properties.find(p => p.id === property.id);
-    const changes: string[] = [];
-    if (prev) {
-      if (prev.price !== property.price) {
-        changes.push(`Precio: ${formatCurrency(prev.price, prev.currency)} -> ${formatCurrency(property.price, property.currency)}`);
-      }
-      if (prev.status !== property.status) {
-        changes.push(`Estado: ${prev.status} -> ${property.status}`);
-      }
-    }
-    const { error } = await supabase.from('properties').update(property).eq('id', property.id).eq('user_id', useAuthStore.getState().user!.id);
-    if (error) {
-      handleSupabaseError(error, 'updateProperty');
-      return;
-    }
-    setProperties(prev => prev.map(p => p.id === property.id ? property : p));
-    addActivityLog({ type: 'property', action: 'updated', title: `Propiedad actualizada: ${property.title}`, description: changes.length > 0 ? changes.join(' | ') : undefined, entityId: property.id });
-    useUIStore.getState().showToast('Propiedad actualizada', 'success');
   };
 
   // --- Tasks ---
@@ -577,9 +519,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSales(prev => [inserted, ...prev]);
     if (inserted.estado === 'vendida') {
       await supabase.from('properties').update({ status: 'vendida' }).eq('id', inserted.propiedadId).eq('user_id', useAuthStore.getState().user!.id);
-      setProperties(prev => prev.map(p => p.id === inserted.propiedadId ? { ...p, status: 'vendida' } : p));
     }
-    handleSaleStatusChange(inserted);
     addActivityLog({ type: 'sale', action: 'created', title: `Venta registrada: ${inserted.nombre || inserted.id}`, entityId: inserted.id });
     useUIStore.getState().showToast('Operación de venta registrada', 'success');
   };
@@ -594,9 +534,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSales(prev => prev.map(s => s.id === sale.id ? sale : s));
     if (sale.estado === 'vendida') {
       await supabase.from('properties').update({ status: 'vendida' }).eq('id', sale.propiedadId).eq('user_id', useAuthStore.getState().user!.id);
-      setProperties(prev => prev.map(p => p.id === sale.propiedadId ? { ...p, status: 'vendida' } : p));
     }
-    handleSaleStatusChange(sale);
     addActivityLog({ type: 'sale', action: 'updated', title: `Venta actualizada: ${sale.nombre || sale.id}`, entityId: sale.id });
     useUIStore.getState().showToast('Venta actualizada', 'success');
   };
@@ -624,9 +562,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRentals(prev => [inserted, ...prev]);
     if (inserted.estado === 'firmado' || inserted.estado === 'en curso') {
       await supabase.from('properties').update({ status: 'alquilada' }).eq('id', inserted.propiedadId).eq('user_id', useAuthStore.getState().user!.id);
-      setProperties(prev => prev.map(p => p.id === inserted.propiedadId && p.status !== 'vendida' ? { ...p, status: 'alquilada' } : p));
     }
-    handleRentalStatusChange(inserted);
     addActivityLog({ type: 'rental', action: 'created', title: `Alquiler registrado: ${inserted.id}`, entityId: inserted.id });
     useUIStore.getState().showToast('Operación de alquiler registrada', 'success');
   };
@@ -641,9 +577,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRentals(prev => prev.map(r => r.id === rental.id ? rental : r));
     if (rental.estado === 'firmado' || rental.estado === 'en curso') {
       await supabase.from('properties').update({ status: 'alquilada' }).eq('id', rental.propiedadId).eq('user_id', useAuthStore.getState().user!.id);
-      setProperties(prev => prev.map(p => p.id === rental.propiedadId && p.status !== 'vendida' ? { ...p, status: 'alquilada' } : p));
     }
-    handleRentalStatusChange(rental);
     addActivityLog({ type: 'rental', action: 'updated', title: `Alquiler actualizado: ${rental.id}`, entityId: rental.id });
     useUIStore.getState().showToast('Alquiler actualizado', 'success');
   };
@@ -860,7 +794,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const exportData = () => {
     const data = {
       clients,
-      properties,
       tasks,
       events,
       sales,
@@ -936,7 +869,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Fallback offline
       if (data.clients) setClients(data.clients);
-      if (data.properties) setProperties(data.properties);
+      // properties no longer managed in AppContext
       if (data.tasks) setTasks(data.tasks.map((t: Task) => ({ ...t, relatedEntities: t.relatedEntities ?? [] })));
       if (data.events) setEvents(data.events);
       if (data.sales) setSales(data.sales.map((s: Sale) => ({
@@ -967,7 +900,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       clients,
-      properties,
       events,
       tasks,
       sales,
@@ -983,8 +915,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateCustomOptions,
       addClient,
       updateClient,
-      addProperty,
-      updateProperty,
       addTask,
       updateTask,
       completeTask,

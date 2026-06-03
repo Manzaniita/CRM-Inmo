@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  Filter, 
+import React, { useState, useEffect } from "react";
+import {
+  Users,
+  Plus,
+  Search,
+  Filter,
   ArrowLeft,
   ChevronRight,
   Phone,
@@ -18,33 +18,59 @@ import {
   FileText,
   Clock,
   ListTodo,
-  Link2
-} from 'lucide-react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { useAppContext } from '../context/AppContext';
-import { Client, ClientType, ClientStatus, ClientOrigin, EntityNote, Document, Sale, Rental, Task, CalendarEvent, TaskStatus, TaskPriority, EventType, EventStatus, Property, ReferredColleague } from '../types';
-import Badge from '../components/Badge';
-import Button from '../components/Button';
-import { Card } from '../components/Card';
-import { cn, formatCurrency, formatDate, normalizeSearchText, generateWhatsAppLink, formatWhatsAppTemplate, parseRichText } from '../lib/utils';
-import { generateId } from '../lib/id';
-import { validateClient, validateTask } from '../lib/validators';
+  Link2,
+} from "lucide-react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "motion/react";
+import { useAppContext } from "../context/AppContext";
+import {
+  Client,
+  ClientType,
+  ClientStatus,
+  ClientOrigin,
+  EntityNote,
+  Document,
+  Sale,
+  Rental,
+  Task,
+  CalendarEvent,
+  TaskStatus,
+  TaskPriority,
+  EventType,
+  EventStatus,
+  Property,
+  ReferredColleague,
+} from "../types";
+import Badge from "../components/Badge";
+import Button from "../components/Button";
+import { Card } from "../components/Card";
+import {
+  cn,
+  formatCurrency,
+  formatDate,
+  normalizeSearchText,
+  generateWhatsAppLink,
+  formatWhatsAppTemplate,
+  parseRichText,
+} from "../lib/utils";
+import { generateId } from "../lib/id";
+import { validateClient, validateTask } from "../lib/validators";
 
-import { useRelationsDrawer } from '../context/RelationsDrawerContext';
-import EntityNotesPanel from '../components/EntityNotesPanel';
-import DocumentModal from '../components/DocumentModal';
-import SaleModal from '../components/SaleModal';
-import RentalModal from '../components/RentalModal';
-import SearchableSelect from '../components/SearchableSelect';
-import { useUIStore } from '../stores/uiStore';
-import { useAuthStore } from '../stores/authStore';
+import { useRelationsDrawer } from "../context/RelationsDrawerContext";
+import EntityNotesPanel from "../components/EntityNotesPanel";
+import DocumentModal from "../components/DocumentModal";
+import SaleModal from "../components/SaleModal";
+import RentalModal from "../components/RentalModal";
+import SearchableSelect from "../components/SearchableSelect";
+import { useUIStore } from "../stores/uiStore";
+import { useAuthStore } from "../stores/authStore";
+import { useProperties } from "../hooks/useProperties";
 
 function BentoInfoItem({
   icon: Icon,
   label,
   value,
-  action
+  action,
 }: {
   icon: React.ElementType;
   label: string;
@@ -54,11 +80,19 @@ function BentoInfoItem({
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-100/60 dark:border-white/5 hover:border-accent/20 dark:hover:border-dark-accent/20 transition-colors">
       <div className="w-10 h-10 bg-accent/10 dark:bg-dark-accent/15 rounded-lg flex items-center justify-center shrink-0">
-        <Icon size={18} className="text-accent dark:text-dark-accent" strokeWidth={1.5} />
+        <Icon
+          size={18}
+          className="text-accent dark:text-dark-accent"
+          strokeWidth={1.5}
+        />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</p>
-        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{value}</p>
+        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+          {label}
+        </p>
+        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+          {value}
+        </p>
       </div>
       {action}
     </div>
@@ -69,117 +103,167 @@ export default function Clients() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const clientIdFromQuery = searchParams.get('clientId');
+  const clientIdFromQuery = searchParams.get("clientId");
   const effectiveClientId = id || clientIdFromQuery || undefined;
-  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, addReferredColleague, updateReferredColleague, addActivityLog, customOptions, updateCustomOptions } = useAppContext()
-  const showToast = useUIStore(state => state.showToast);
-  const profile = useAuthStore(state => state.profile);
+  const {
+    clients,
+    events,
+    tasks,
+    sales,
+    rentals,
+    documents,
+    referredColleagues,
+    waitingRoom,
+    buyers,
+    activityLogs,
+    addClient,
+    updateClient,
+    addTask,
+    updateTask,
+    deleteTask,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    addSale,
+    updateSale,
+    deleteSale,
+    addRental,
+    updateRental,
+    deleteRental,
+    addDocument,
+    updateDocument,
+    deleteDocument,
+    addReferredColleague,
+    updateReferredColleague,
+    addActivityLog,
+    customOptions,
+    updateCustomOptions,
+  } = useAppContext();
+  const { properties } = useProperties();
+  const showToast = useUIStore((state) => state.showToast);
+  const profile = useAuthStore((state) => state.profile);
   const { openRelations } = useRelationsDrawer();
-  
-  const [searchTerm, setSearchTerm] = useState('');
+
+  const [searchTerm, setSearchTerm] = useState("");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
-  const [docModalMode, setDocModalMode] = useState<'create' | 'edit' | 'view'>('view');
-  const [selectedDocForModal, setSelectedDocForModal] = useState<Document | undefined>(undefined);
-  
+  const [docModalMode, setDocModalMode] = useState<"create" | "edit" | "view">(
+    "view",
+  );
+  const [selectedDocForModal, setSelectedDocForModal] = useState<
+    Document | undefined
+  >(undefined);
+
   // Operation Modals State
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
-  const [saleModalMode, setSaleModalMode] = useState<'create' | 'edit' | 'view'>('create');
-  const [selectedSaleForModal, setSelectedSaleForModal] = useState<Sale | undefined>(undefined);
+  const [saleModalMode, setSaleModalMode] = useState<
+    "create" | "edit" | "view"
+  >("create");
+  const [selectedSaleForModal, setSelectedSaleForModal] = useState<
+    Sale | undefined
+  >(undefined);
   const [isRentalModalOpen, setIsRentalModalOpen] = useState(false);
-  const [rentalModalMode, setRentalModalMode] = useState<'create' | 'edit' | 'view'>('create');
-  const [selectedRentalForModal, setSelectedRentalForModal] = useState<Rental | undefined>(undefined);
+  const [rentalModalMode, setRentalModalMode] = useState<
+    "create" | "edit" | "view"
+  >("create");
+  const [selectedRentalForModal, setSelectedRentalForModal] = useState<
+    Rental | undefined
+  >(undefined);
 
   // Task Modal State
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskFormData, setTaskFormData] = useState({
-    title: '',
-    description: '',
-    priority: 'media' as TaskPriority,
-    status: 'pendiente' as TaskStatus,
-    dueDate: new Date().toISOString().split('T')[0],
-    propertyId: '',
-    notes: ''
+    title: "",
+    description: "",
+    priority: "media" as TaskPriority,
+    status: "pendiente" as TaskStatus,
+    dueDate: new Date().toISOString().split("T")[0],
+    propertyId: "",
+    notes: "",
   });
 
   // Event Modal State
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [eventFormData, setEventFormData] = useState({
-    title: '',
-    description: '',
-    type: 'seguimiento' as EventType,
-    date: new Date().toISOString().split('T')[0],
+    title: "",
+    description: "",
+    type: "seguimiento" as EventType,
+    date: new Date().toISOString().split("T")[0],
     time: new Date().toTimeString().slice(0, 5),
-    propertyId: '',
-    status: 'pendiente' as EventStatus,
-    notes: ''
+    propertyId: "",
+    status: "pendiente" as EventStatus,
+    notes: "",
   });
 
   // Colleague referral mini-form state
   const [showNewColleagueForm, setShowNewColleagueForm] = useState(false);
-  const [newColleagueName, setNewColleagueName] = useState('');
-  const [newColleagueOffice, setNewColleagueOffice] = useState('');
-  const [selectedColleagueId, setSelectedColleagueId] = useState('');
+  const [newColleagueName, setNewColleagueName] = useState("");
+  const [newColleagueOffice, setNewColleagueOffice] = useState("");
+  const [selectedColleagueId, setSelectedColleagueId] = useState("");
 
   // Filter State
-  const [filterType, setFilterType] = useState<string>('');
-  const [filterStatus, setFilterStatus] = useState<string>('');
-  const [filterOrigin, setFilterOrigin] = useState<string>('');
-  const [filterZone, setFilterZone] = useState<string>('');
-  const [filterHasOperation, setFilterHasOperation] = useState<boolean | null>(null);
-  const [filterHasPendingTasks, setFilterHasPendingTasks] = useState<boolean | null>(null);
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filterOrigin, setFilterOrigin] = useState<string>("");
+  const [filterZone, setFilterZone] = useState<string>("");
+  const [filterHasOperation, setFilterHasOperation] = useState<boolean | null>(
+    null,
+  );
+  const [filterHasPendingTasks, setFilterHasPendingTasks] = useState<
+    boolean | null
+  >(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [sortName, setSortName] = useState<'asc' | 'desc'>('asc');
+  const [sortName, setSortName] = useState<"asc" | "desc">("asc");
 
-    // Form State
+  // Form State
   const [formData, setFormData] = useState<Partial<Client>>({
-    name: '',
-    phone: '',
-    email: '',
-    type: 'comprador',
-    types: ['comprador'],
-    status: 'nuevo',
-    origin: 'WhatsApp',
-    lastContact: new Date().toISOString().split('T')[0],
-    notes: '',
-    profession: '',
-    referredBy: '',
-    referredByColleagueId: '',
+    name: "",
+    phone: "",
+    email: "",
+    type: "comprador",
+    types: ["comprador"],
+    status: "nuevo",
+    origin: "WhatsApp",
+    lastContact: new Date().toISOString().split("T")[0],
+    notes: "",
+    profession: "",
+    referredBy: "",
+    referredByColleagueId: "",
     dashboardPinned: false,
     dashboardArchived: false,
   });
 
-  const selectedClient = clients.find(c => c.id === effectiveClientId);
+  const selectedClient = clients.find((c) => c.id === effectiveClientId);
 
   // Detectar query params para crear referido desde colega
   useEffect(() => {
-    const newReferral = searchParams.get('newReferral');
-    const colleagueId = searchParams.get('colleagueId');
-    if (newReferral === 'true' && colleagueId) {
+    const newReferral = searchParams.get("newReferral");
+    const colleagueId = searchParams.get("colleagueId");
+    if (newReferral === "true" && colleagueId) {
       setEditingClient(null);
       setFormData({
-        name: '',
-        phone: '',
-        email: '',
-        type: 'comprador',
-        types: ['comprador'],
-        status: 'nuevo',
-        origin: 'Referido',
-        lastContact: new Date().toISOString().split('T')[0],
-        notes: '',
-        profession: '',
-        referredBy: '',
+        name: "",
+        phone: "",
+        email: "",
+        type: "comprador",
+        types: ["comprador"],
+        status: "nuevo",
+        origin: "Referido",
+        lastContact: new Date().toISOString().split("T")[0],
+        notes: "",
+        profession: "",
+        referredBy: "",
         referredByColleagueId: colleagueId,
         dashboardPinned: false,
         dashboardArchived: false,
       });
       setSelectedColleagueId(colleagueId);
       setShowNewColleagueForm(false);
-      setNewColleagueName('');
-      setNewColleagueOffice('');
+      setNewColleagueName("");
+      setNewColleagueOffice("");
       setIsFormModalOpen(true);
-      navigate('/clientes', { replace: true });
+      navigate("/clientes", { replace: true });
     }
   }, [searchParams, navigate]);
 
@@ -190,9 +274,15 @@ export default function Clients() {
         <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
           <Users size={32} className="text-slate-400" />
         </div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Cliente no encontrado</h2>
-        <p className="text-slate-500 dark:text-slate-400">El cliente que buscás no existe o fue eliminado.</p>
-        <Button variant="outline" onClick={() => navigate('/clientes')}>Volver a la lista</Button>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+          Cliente no encontrado
+        </h2>
+        <p className="text-slate-500 dark:text-slate-400">
+          El cliente que buscás no existe o fue eliminado.
+        </p>
+        <Button variant="outline" onClick={() => navigate("/clientes")}>
+          Volver a la lista
+        </Button>
       </div>
     );
   }
@@ -201,85 +291,106 @@ export default function Clients() {
 
   // Compute client IDs with operations (sales or rentals)
   const clientIdsWithOperations = new Set([
-    ...sales.map(s => s.clientCompradorId),
-    ...rentals.map(r => r.inquilinoId)
+    ...sales.map((s) => s.clientCompradorId),
+    ...rentals.map((r) => r.inquilinoId),
   ]);
 
   // Compute client IDs with pending tasks
   const clientIdsWithPendingTasks = new Set(
     tasks
-      .filter(t => t.clientId && t.status !== 'completada' && t.status !== 'vencida')
-      .map(t => t.clientId)
+      .filter(
+        (t) =>
+          t.clientId && t.status !== "completada" && t.status !== "vencida",
+      )
+      .map((t) => t.clientId),
   );
 
-  const filteredClients = clients.filter(c => {
-    // Text search
-    const matchesSearch = 
-      normalizeSearchText(c.name).includes(lowerSearch) || 
-      c.phone.includes(searchTerm) || 
-      normalizeSearchText(c.email).includes(lowerSearch);
+  const filteredClients = clients
+    .filter((c) => {
+      // Text search
+      const matchesSearch =
+        normalizeSearchText(c.name).includes(lowerSearch) ||
+        c.phone.includes(searchTerm) ||
+        normalizeSearchText(c.email).includes(lowerSearch);
 
-    if (!matchesSearch) return false;
+      if (!matchesSearch) return false;
 
-        // Type filter
-    if (filterType) {
-      const clientTypes = c.types && c.types.length > 0 ? c.types : [c.type];
-      if (!clientTypes.includes(filterType as ClientType)) return false;
-    }
+      // Type filter
+      if (filterType) {
+        const clientTypes = c.types && c.types.length > 0 ? c.types : [c.type];
+        if (!clientTypes.includes(filterType as ClientType)) return false;
+      }
 
-    // Status filter
-    if (filterStatus && c.status !== filterStatus) return false;
+      // Status filter
+      if (filterStatus && c.status !== filterStatus) return false;
 
-    // Origin filter
-    if (filterOrigin && c.origin !== filterOrigin) return false;
+      // Origin filter
+      if (filterOrigin && c.origin !== filterOrigin) return false;
 
-    // Zone filter
-    if (filterZone && !normalizeSearchText(c.interestZone || '').includes(normalizeSearchText(filterZone))) return false;
+      // Zone filter
+      if (
+        filterZone &&
+        !normalizeSearchText(c.interestZone || "").includes(
+          normalizeSearchText(filterZone),
+        )
+      )
+        return false;
 
-    // Has operation filter
-    if (filterHasOperation === true && !clientIdsWithOperations.has(c.id)) return false;
-    if (filterHasOperation === false && clientIdsWithOperations.has(c.id)) return false;
+      // Has operation filter
+      if (filterHasOperation === true && !clientIdsWithOperations.has(c.id))
+        return false;
+      if (filterHasOperation === false && clientIdsWithOperations.has(c.id))
+        return false;
 
-    // Has pending tasks filter
-    if (filterHasPendingTasks === true && !clientIdsWithPendingTasks.has(c.id)) return false;
-    if (filterHasPendingTasks === false && clientIdsWithPendingTasks.has(c.id)) return false;
+      // Has pending tasks filter
+      if (
+        filterHasPendingTasks === true &&
+        !clientIdsWithPendingTasks.has(c.id)
+      )
+        return false;
+      if (
+        filterHasPendingTasks === false &&
+        clientIdsWithPendingTasks.has(c.id)
+      )
+        return false;
 
-    return true;
-  }).sort((a, b) => {
-    const cmp = a.name.localeCompare(b.name);
-    return sortName === 'asc' ? cmp : -cmp;
-  });
+      return true;
+    })
+    .sort((a, b) => {
+      const cmp = a.name.localeCompare(b.name);
+      return sortName === "asc" ? cmp : -cmp;
+    });
 
-    const handleOpenForm = (client?: Client) => {
+  const handleOpenForm = (client?: Client) => {
     if (client) {
       setEditingClient(client);
       setFormData(client);
-      setSelectedColleagueId(client.referredByColleagueId || '');
+      setSelectedColleagueId(client.referredByColleagueId || "");
       setShowNewColleagueForm(false);
-      setNewColleagueName('');
-      setNewColleagueOffice('');
+      setNewColleagueName("");
+      setNewColleagueOffice("");
     } else {
       setEditingClient(null);
       setFormData({
-        name: '',
-        phone: '',
-        email: '',
-        type: 'comprador',
-        types: ['comprador'],
-        status: 'nuevo',
-        origin: 'WhatsApp',
-        lastContact: new Date().toISOString().split('T')[0],
-        notes: '',
-        profession: '',
-        referredBy: '',
-        referredByColleagueId: '',
+        name: "",
+        phone: "",
+        email: "",
+        type: "comprador",
+        types: ["comprador"],
+        status: "nuevo",
+        origin: "WhatsApp",
+        lastContact: new Date().toISOString().split("T")[0],
+        notes: "",
+        profession: "",
+        referredBy: "",
+        referredByColleagueId: "",
         dashboardPinned: false,
         dashboardArchived: false,
       });
-      setSelectedColleagueId('');
+      setSelectedColleagueId("");
       setShowNewColleagueForm(false);
-      setNewColleagueName('');
-      setNewColleagueOffice('');
+      setNewColleagueName("");
+      setNewColleagueOffice("");
     }
     setIsFormModalOpen(true);
   };
@@ -288,57 +399,64 @@ export default function Clients() {
     e.preventDefault();
     const result = validateClient(formData);
     if (!result.valid) {
-      showToast(result.message || 'Error de validación', 'error');
+      showToast(result.message || "Error de validación", "error");
       return;
     }
 
     const clientData: Client = editingClient
       ? { ...(formData as Client) }
-      : { ...(formData as Client), id: generateId('c'), createdAt: new Date().toISOString().split('T')[0] };
+      : {
+          ...(formData as Client),
+          id: generateId("c"),
+          createdAt: new Date().toISOString().split("T")[0],
+        };
 
     // Handle colleague referral logic
     let colleagueToUpdate: { id: string; clientId: string } | null = null;
     let newColleagueId: string | null = null;
 
-    if (clientData.origin === 'Referido') {
+    if (clientData.origin === "Referido") {
       if (showNewColleagueForm && newColleagueName.trim()) {
         const col: ReferredColleague = {
-          id: generateId('col'),
+          id: generateId("col"),
           nombreApellido: newColleagueName.trim(),
           oficina: newColleagueOffice.trim(),
           respondio: false,
           yaRefirio: true,
           referredClientIds: [clientData.id],
-          propertyIds: []
+          propertyIds: [],
         };
         addReferredColleague(col);
         newColleagueId = col.id;
         clientData.referredByColleagueId = col.id;
         addActivityLog({
-          type: 'colleague',
-          action: 'created',
+          type: "colleague",
+          action: "created",
           title: `Colega creado desde cliente: ${col.nombreApellido}`,
-          entityId: col.id
+          entityId: col.id,
         });
         addActivityLog({
-          type: 'client',
-          action: 'updated',
+          type: "client",
+          action: "updated",
           title: `Cliente vinculado con colega: ${clientData.name}`,
           description: `Referido por ${col.nombreApellido}`,
-          entityId: clientData.id
+          entityId: clientData.id,
         });
       } else if (selectedColleagueId) {
         clientData.referredByColleagueId = selectedColleagueId;
-        colleagueToUpdate = { id: selectedColleagueId, clientId: clientData.id };
+        colleagueToUpdate = {
+          id: selectedColleagueId,
+          clientId: clientData.id,
+        };
         addActivityLog({
-          type: 'client',
-          action: 'updated',
+          type: "client",
+          action: "updated",
           title: `Cliente vinculado con colega: ${clientData.name}`,
-          entityId: clientData.id
+          entityId: clientData.id,
         });
       }
     } else {
-      clientData.referredByColleagueId = '';
+      clientData.referredByColleagueId = "";
     }
 
     if (editingClient) {
@@ -348,7 +466,9 @@ export default function Clients() {
     }
 
     if (colleagueToUpdate) {
-      const col = referredColleagues.find(c => c.id === colleagueToUpdate!.id);
+      const col = referredColleagues.find(
+        (c) => c.id === colleagueToUpdate!.id,
+      );
       if (col) {
         const updatedIds = [...(col.referredClientIds || [])];
         if (!updatedIds.includes(colleagueToUpdate.clientId)) {
@@ -360,34 +480,41 @@ export default function Clients() {
 
     setIsFormModalOpen(false);
     setShowNewColleagueForm(false);
-    setNewColleagueName('');
-    setNewColleagueOffice('');
-    setSelectedColleagueId('');
+    setNewColleagueName("");
+    setNewColleagueOffice("");
+    setSelectedColleagueId("");
   };
 
   const getTypeBadgeVariant = (typeId: string): any => {
-    const found = customOptions.clientTypes.find(t => t.id === typeId);
+    const found = customOptions.clientTypes.find((t) => t.id === typeId);
     if (found?.color) return found.color;
     switch (typeId) {
-      case 'comprador': return 'green';
-      case 'vendedor': return 'blue';
-      case 'inquilino': return 'orange';
-      case 'propietario': return 'purple';
-      case 'inversor': return 'yellow';
-      case 'interesado': return 'gray';
-      default: return 'gray';
+      case "comprador":
+        return "green";
+      case "vendedor":
+        return "blue";
+      case "inquilino":
+        return "orange";
+      case "propietario":
+        return "purple";
+      case "inversor":
+        return "yellow";
+      case "interesado":
+        return "gray";
+      default:
+        return "gray";
     }
   };
 
   const handleTextareaFormatKeyDown = (
     e: React.KeyboardEvent<HTMLTextAreaElement>,
-    onChange: (value: string) => void
+    onChange: (value: string) => void,
   ) => {
     if (!e.ctrlKey) return;
     const key = e.key.toLowerCase();
-    let tag = '';
-    if (key === 'b') tag = '**';
-    else if (key === 'u' || key === 's') tag = '__';
+    let tag = "";
+    if (key === "b") tag = "**";
+    else if (key === "u" || key === "s") tag = "__";
     else return;
 
     e.preventDefault();
@@ -411,35 +538,43 @@ export default function Clients() {
   };
 
   const getStatusBadgeVariant = (statusId: string): any => {
-    const found = customOptions.clientStatuses.find(s => s.id === statusId);
+    const found = customOptions.clientStatuses.find((s) => s.id === statusId);
     if (found?.color) return found.color;
     switch (statusId) {
-      case 'nuevo': return 'green';
-      case 'contactado': return 'blue';
-      case 'interesado': return 'orange';
-      case 'en seguimiento': return 'purple';
-      case 'negociación': return 'yellow';
-      case 'cerrado': return 'gray';
-      case 'perdido': return 'red';
-      default: return 'gray';
+      case "nuevo":
+        return "green";
+      case "contactado":
+        return "blue";
+      case "interesado":
+        return "orange";
+      case "en seguimiento":
+        return "purple";
+      case "negociación":
+        return "yellow";
+      case "cerrado":
+        return "gray";
+      case "perdido":
+        return "red";
+      default:
+        return "gray";
     }
   };
 
   function renderTaskModal() {
-    const propertyOptions = properties.map(p => ({
+    const propertyOptions = properties.map((p) => ({
       value: p.id,
       label: p.title,
-      subtitle: `${p.address} - ${p.zone}`
+      subtitle: `${p.address} - ${p.zone}`,
     }));
 
     const handleSaveTask = () => {
       const validation = validateTask({ title: taskFormData.title });
       if (!validation.valid) {
-        showToast(validation.message || 'Error de validación', 'error');
+        showToast(validation.message || "Error de validación", "error");
         return;
       }
       const newTask: Task = {
-        id: generateId('t'),
+        id: generateId("t"),
         title: taskFormData.title,
         description: taskFormData.description,
         dueDate: taskFormData.dueDate,
@@ -448,7 +583,7 @@ export default function Clients() {
         clientId: id,
         propertyId: taskFormData.propertyId || undefined,
         notes: taskFormData.notes,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
       addTask(newTask);
       setIsTaskModalOpen(false);
@@ -456,39 +591,67 @@ export default function Clients() {
 
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsTaskModalOpen(false)}></div>
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+          onClick={() => setIsTaskModalOpen(false)}
+        ></div>
         <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
           <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-800">
-            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">Nueva Tarea para {selectedClient?.name}</h2>
-            <button onClick={() => setIsTaskModalOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
+            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">
+              Nueva Tarea para {selectedClient?.name}
+            </h2>
+            <button
+              onClick={() => setIsTaskModalOpen(false)}
+              className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"
+            >
+              <X size={20} />
+            </button>
           </div>
           <div className="p-6 overflow-y-auto max-h-[70vh]">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Título *</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Título *
+                </label>
                 <input
                   type="text"
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={taskFormData.title}
-                  onChange={e => setTaskFormData({...taskFormData, title: e.target.value})}
+                  onChange={(e) =>
+                    setTaskFormData({ ...taskFormData, title: e.target.value })
+                  }
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Descripción
+                </label>
                 <textarea
                   rows={2}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={taskFormData.description}
-                  onChange={e => setTaskFormData({...taskFormData, description: e.target.value})}
+                  onChange={(e) =>
+                    setTaskFormData({
+                      ...taskFormData,
+                      description: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Prioridad</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Prioridad
+                  </label>
                   <select
                     className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={taskFormData.priority}
-                    onChange={e => setTaskFormData({...taskFormData, priority: e.target.value as TaskPriority})}
+                    onChange={(e) =>
+                      setTaskFormData({
+                        ...taskFormData,
+                        priority: e.target.value as TaskPriority,
+                      })
+                    }
                   >
                     <option value="baja">Baja</option>
                     <option value="media">Media</option>
@@ -497,11 +660,18 @@ export default function Clients() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Estado
+                  </label>
                   <select
                     className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={taskFormData.status}
-                    onChange={e => setTaskFormData({...taskFormData, status: e.target.value as TaskStatus})}
+                    onChange={(e) =>
+                      setTaskFormData({
+                        ...taskFormData,
+                        status: e.target.value as TaskStatus,
+                      })
+                    }
                   >
                     <option value="pendiente">Pendiente</option>
                     <option value="en proceso">En Proceso</option>
@@ -512,38 +682,59 @@ export default function Clients() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha Límite</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Fecha Límite
+                </label>
                 <input
                   type="date"
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={taskFormData.dueDate}
-                  onChange={e => setTaskFormData({...taskFormData, dueDate: e.target.value})}
+                  onChange={(e) =>
+                    setTaskFormData({
+                      ...taskFormData,
+                      dueDate: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div>
                 <SearchableSelect
                   label="Propiedad relacionada"
                   value={taskFormData.propertyId}
-                  onChange={val => setTaskFormData({...taskFormData, propertyId: val})}
+                  onChange={(val) =>
+                    setTaskFormData({ ...taskFormData, propertyId: val })
+                  }
                   options={propertyOptions}
                   placeholder="Seleccionar propiedad..."
                   allowEmpty
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Notas</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Notas
+                </label>
                 <textarea
                   rows={2}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={taskFormData.notes}
-                  onChange={e => setTaskFormData({...taskFormData, notes: e.target.value})}
-                  onKeyDown={e => handleTextareaFormatKeyDown(e, (val) => setTaskFormData({...taskFormData, notes: val}))}
+                  onChange={(e) =>
+                    setTaskFormData({ ...taskFormData, notes: e.target.value })
+                  }
+                  onKeyDown={(e) =>
+                    handleTextareaFormatKeyDown(e, (val) =>
+                      setTaskFormData({ ...taskFormData, notes: val }),
+                    )
+                  }
                 />
               </div>
             </div>
             <div className="mt-8 flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setIsTaskModalOpen(false)}>Cancelar</Button>
-              <Button variant="primary" onClick={handleSaveTask}>Crear Tarea</Button>
+              <Button variant="ghost" onClick={() => setIsTaskModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button variant="primary" onClick={handleSaveTask}>
+                Crear Tarea
+              </Button>
             </div>
           </div>
         </div>
@@ -552,19 +743,19 @@ export default function Clients() {
   }
 
   function renderEventModal() {
-    const propertyOptions = properties.map(p => ({
+    const propertyOptions = properties.map((p) => ({
       value: p.id,
       label: p.title,
-      subtitle: `${p.address} - ${p.zone}`
+      subtitle: `${p.address} - ${p.zone}`,
     }));
 
     const handleSaveEvent = () => {
       if (!eventFormData.title) {
-        showToast('El título es obligatorio', 'error');
+        showToast("El título es obligatorio", "error");
         return;
       }
       const newEvent: CalendarEvent = {
-        id: generateId('e'),
+        id: generateId("e"),
         title: eventFormData.title,
         description: eventFormData.description,
         date: eventFormData.date,
@@ -574,7 +765,7 @@ export default function Clients() {
         clientId: id,
         propertyId: eventFormData.propertyId || undefined,
         notes: eventFormData.notes,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
       addEvent(newEvent);
       setIsEventModalOpen(false);
@@ -582,38 +773,69 @@ export default function Clients() {
 
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsEventModalOpen(false)}></div>
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+          onClick={() => setIsEventModalOpen(false)}
+        ></div>
         <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
           <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-800">
-            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">Nueva Cita con {selectedClient?.name}</h2>
-            <button onClick={() => setIsEventModalOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
+            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">
+              Nueva Cita con {selectedClient?.name}
+            </h2>
+            <button
+              onClick={() => setIsEventModalOpen(false)}
+              className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"
+            >
+              <X size={20} />
+            </button>
           </div>
           <div className="p-6 overflow-y-auto max-h-[70vh]">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Título *</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Título *
+                </label>
                 <input
                   type="text"
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.title}
-                  onChange={e => setEventFormData({...eventFormData, title: e.target.value})}
+                  onChange={(e) =>
+                    setEventFormData({
+                      ...eventFormData,
+                      title: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Descripción
+                </label>
                 <textarea
                   rows={2}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.description}
-                  onChange={e => setEventFormData({...eventFormData, description: e.target.value})}
+                  onChange={(e) =>
+                    setEventFormData({
+                      ...eventFormData,
+                      description: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tipo</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Tipo
+                </label>
                 <select
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.type}
-                  onChange={e => setEventFormData({...eventFormData, type: e.target.value as EventType})}
+                  onChange={(e) =>
+                    setEventFormData({
+                      ...eventFormData,
+                      type: e.target.value as EventType,
+                    })
+                  }
                 >
                   <option value="seguimiento">Seguimiento</option>
                   <option value="visita">Visita</option>
@@ -628,30 +850,51 @@ export default function Clients() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Fecha
+                  </label>
                   <input
                     type="date"
                     className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={eventFormData.date}
-                    onChange={e => setEventFormData({...eventFormData, date: e.target.value})}
+                    onChange={(e) =>
+                      setEventFormData({
+                        ...eventFormData,
+                        date: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Hora</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Hora
+                  </label>
                   <input
                     type="time"
                     className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={eventFormData.time}
-                    onChange={e => setEventFormData({...eventFormData, time: e.target.value})}
+                    onChange={(e) =>
+                      setEventFormData({
+                        ...eventFormData,
+                        time: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Estado
+                </label>
                 <select
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.status}
-                  onChange={e => setEventFormData({...eventFormData, status: e.target.value as EventStatus})}
+                  onChange={(e) =>
+                    setEventFormData({
+                      ...eventFormData,
+                      status: e.target.value as EventStatus,
+                    })
+                  }
                 >
                   <option value="pendiente">Pendiente</option>
                   <option value="realizado">Realizado</option>
@@ -663,26 +906,46 @@ export default function Clients() {
                 <SearchableSelect
                   label="Propiedad relacionada"
                   value={eventFormData.propertyId}
-                  onChange={val => setEventFormData({...eventFormData, propertyId: val})}
+                  onChange={(val) =>
+                    setEventFormData({ ...eventFormData, propertyId: val })
+                  }
                   options={propertyOptions}
                   placeholder="Seleccionar propiedad..."
                   allowEmpty
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Notas</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Notas
+                </label>
                 <textarea
                   rows={2}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={eventFormData.notes}
-                  onChange={e => setEventFormData({...eventFormData, notes: e.target.value})}
-                  onKeyDown={e => handleTextareaFormatKeyDown(e, (val) => setEventFormData({...eventFormData, notes: val}))}
+                  onChange={(e) =>
+                    setEventFormData({
+                      ...eventFormData,
+                      notes: e.target.value,
+                    })
+                  }
+                  onKeyDown={(e) =>
+                    handleTextareaFormatKeyDown(e, (val) =>
+                      setEventFormData({ ...eventFormData, notes: val }),
+                    )
+                  }
                 />
               </div>
             </div>
             <div className="mt-8 flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setIsEventModalOpen(false)}>Cancelar</Button>
-              <Button variant="primary" onClick={handleSaveEvent}>Programar Cita</Button>
+              <Button
+                variant="ghost"
+                onClick={() => setIsEventModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button variant="primary" onClick={handleSaveEvent}>
+                Programar Cita
+              </Button>
             </div>
           </div>
         </div>
@@ -691,7 +954,7 @@ export default function Clients() {
   }
 
   if (selectedClient) {
-    const clientSales = sales.filter(s => s.clientCompradorId === id);
+    const clientSales = sales.filter((s) => s.clientCompradorId === id);
 
     return (
       <div className="page-enter">
@@ -700,13 +963,21 @@ export default function Clients() {
           <motion.button
             whileHover={{ x: -3 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate("/dashboard")}
             title="Volver al Panel Principal"
             className="group flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-accent dark:hover:text-dark-accent hover:bg-accent/10 dark:hover:bg-dark-accent/10 transition-colors"
           >
-            <ArrowLeft size={18} strokeWidth={1.5} className="transition-transform group-hover:-translate-x-0.5" />
+            <ArrowLeft
+              size={18}
+              strokeWidth={1.5}
+              className="transition-transform group-hover:-translate-x-0.5"
+            />
           </motion.button>
-          <Button variant="outline" size="sm" onClick={() => handleOpenForm(selectedClient)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleOpenForm(selectedClient)}
+          >
             <Plus size={16} className="mr-1" strokeWidth={1.5} /> Editar
           </Button>
         </div>
@@ -719,17 +990,26 @@ export default function Clients() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-2xl bg-accent/10 dark:bg-dark-accent/15 border-2 border-accent/20 dark:border-dark-accent/30 flex items-center justify-center text-accent dark:text-dark-accent text-2xl font-extrabold">
-                    {selectedClient.name?.charAt(0) || '?'}
+                    {selectedClient.name?.charAt(0) || "?"}
                   </div>
                   <div>
-                    <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight">{selectedClient.name}</h1>
+                    <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight">
+                      {selectedClient.name}
+                    </h1>
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type || 'interesado']).map(t => (
+                      {(selectedClient.types && selectedClient.types.length > 0
+                        ? selectedClient.types
+                        : [selectedClient.type || "interesado"]
+                      ).map((t) => (
                         <span key={t}>
                           <Badge variant={getTypeBadgeVariant(t)}>{t}</Badge>
                         </span>
                       ))}
-                      <Badge variant={getStatusBadgeVariant(selectedClient.status)}>{selectedClient.status}</Badge>
+                      <Badge
+                        variant={getStatusBadgeVariant(selectedClient.status)}
+                      >
+                        {selectedClient.status}
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -740,18 +1020,27 @@ export default function Clients() {
                 <BentoInfoItem
                   icon={Phone}
                   label="Teléfono"
-                  value={selectedClient.phone || ''}
+                  value={selectedClient.phone || ""}
                   action={
                     <button
                       className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
                       onClick={() => {
-                        const msg = formatWhatsAppTemplate(profile.templateClient, {
-                          name: selectedClient.name,
-                          agentName: profile.name,
-                          title: '', address: '', price: '', link: ''
-                        });
-                        const link = generateWhatsAppLink(selectedClient.phone, msg);
-                        window.open(link, '_blank');
+                        const msg = formatWhatsAppTemplate(
+                          profile.templateClient,
+                          {
+                            name: selectedClient.name,
+                            agentName: profile.name,
+                            title: "",
+                            address: "",
+                            price: "",
+                            link: "",
+                          },
+                        );
+                        const link = generateWhatsAppLink(
+                          selectedClient.phone,
+                          msg,
+                        );
+                        window.open(link, "_blank");
                       }}
                       title="Contactar por WhatsApp"
                     >
@@ -759,17 +1048,40 @@ export default function Clients() {
                     </button>
                   }
                 />
-                <BentoInfoItem icon={Mail} label="Email" value={selectedClient.email || ''} />
-                <BentoInfoItem icon={Globe} label="Origen" value={selectedClient.origin || ''} />
+                <BentoInfoItem
+                  icon={Mail}
+                  label="Email"
+                  value={selectedClient.email || ""}
+                />
+                <BentoInfoItem
+                  icon={Globe}
+                  label="Origen"
+                  value={selectedClient.origin || ""}
+                />
                 <BentoInfoItem
                   icon={DollarSign}
                   label="Presupuesto"
-                  value={selectedClient.budget ? formatCurrency(selectedClient.budget, selectedClient.currency) : 'Sin especificar'}
+                  value={
+                    selectedClient.budget
+                      ? formatCurrency(
+                          selectedClient.budget,
+                          selectedClient.currency,
+                        )
+                      : "Sin especificar"
+                  }
                 />
                 {selectedClient.interestZone && (
-                  <BentoInfoItem icon={MapPin} label="Zona de Interés" value={selectedClient.interestZone} />
+                  <BentoInfoItem
+                    icon={MapPin}
+                    label="Zona de Interés"
+                    value={selectedClient.interestZone}
+                  />
                 )}
-                <BentoInfoItem icon={Calendar} label="Último Contacto" value={formatDate(selectedClient.lastContact || '')} />
+                <BentoInfoItem
+                  icon={Calendar}
+                  label="Último Contacto"
+                  value={formatDate(selectedClient.lastContact || "")}
+                />
               </div>
             </Card>
 
@@ -777,26 +1089,35 @@ export default function Clients() {
             <Card title="Notas Internas" glow>
               <div
                 className="text-slate-600 dark:text-slate-300 leading-relaxed italic border-l-4 border-slate-100 dark:border-slate-700 pl-4"
-                dangerouslySetInnerHTML={{ __html: parseRichText(selectedClient.notes || 'Sin notas adicionales.') }}
+                dangerouslySetInnerHTML={{
+                  __html: parseRichText(
+                    selectedClient.notes || "Sin notas adicionales.",
+                  ),
+                }}
               />
               <div className="mt-6">
                 <EntityNotesPanel
                   notes={selectedClient.historyNotes ?? undefined}
                   onAddNote={(content) => {
                     const newNote: EntityNote = {
-                      id: generateId('n'),
+                      id: generateId("n"),
                       content,
-                      createdAt: new Date().toISOString()
+                      createdAt: new Date().toISOString(),
                     };
                     updateClient({
                       ...selectedClient,
-                      historyNotes: [...(selectedClient.historyNotes || []), newNote]
+                      historyNotes: [
+                        ...(selectedClient.historyNotes || []),
+                        newNote,
+                      ],
                     });
                   }}
                   onDeleteNote={(noteId) => {
                     updateClient({
                       ...selectedClient,
-                      historyNotes: (selectedClient.historyNotes || []).filter(n => n.id !== noteId)
+                      historyNotes: (selectedClient.historyNotes || []).filter(
+                        (n) => n.id !== noteId,
+                      ),
                     });
                   }}
                 />
@@ -806,25 +1127,49 @@ export default function Clients() {
             {/* Properties */}
             <Card title="Propiedades Asociadas" glow>
               {(() => {
-                const clientProperties = properties.filter(p => p.ownerId === id);
-                if (clientProperties.length === 0) return <p className="text-sm text-slate-400 dark:text-slate-500 italic py-2">Sin propiedades asociadas.</p>;
+                const clientProperties = properties.filter(
+                  (p) => p.ownerId === id,
+                );
+                if (clientProperties.length === 0)
+                  return (
+                    <p className="text-sm text-slate-400 dark:text-slate-500 italic py-2">
+                      Sin propiedades asociadas.
+                    </p>
+                  );
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {clientProperties.map(prop => (
+                    {clientProperties.map((prop) => (
                       <motion.div
                         key={prop.id}
                         whileHover={{ y: -2 }}
                         onClick={() => navigate(`/propiedades/${prop.id}`)}
                         className="cursor-pointer"
                       >
-                        <Card className="border-slate-100 dark:border-white/5 hover:shadow-soft-md transition-all" glow={false}>
+                        <Card
+                          className="border-slate-100 dark:border-white/5 hover:shadow-soft-md transition-all"
+                          glow={false}
+                        >
                           <div className="flex items-center justify-between">
                             <div>
-                              <Badge variant={prop.operation === 'venta' ? 'orange' : 'blue'}>{prop.operation}</Badge>
-                              <span className="ml-2 text-sm font-bold text-slate-900 dark:text-slate-100">{prop.title}</span>
-                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{prop.address}, {prop.zone}</p>
+                              <Badge
+                                variant={
+                                  prop.operation === "venta" ? "orange" : "blue"
+                                }
+                              >
+                                {prop.operation}
+                              </Badge>
+                              <span className="ml-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {prop.title}
+                              </span>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                {prop.address}, {prop.zone}
+                              </p>
                             </div>
-                            <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
+                            <ChevronRight
+                              size={16}
+                              className="text-slate-300 dark:text-slate-600"
+                              strokeWidth={1.5}
+                            />
                           </div>
                         </Card>
                       </motion.div>
@@ -835,35 +1180,64 @@ export default function Clients() {
             </Card>
 
             {/* Operations */}
-            <Card title="Operaciones Relacionadas" subtitle="Ventas"
+            <Card
+              title="Operaciones Relacionadas"
+              subtitle="Ventas"
               footer={
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setSaleModalMode('create'); setSelectedSaleForModal(undefined); setIsSaleModalOpen(true); }}>
-                    <Plus size={14} className="mr-1" strokeWidth={1.5} /> Nueva Venta
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSaleModalMode("create");
+                      setSelectedSaleForModal(undefined);
+                      setIsSaleModalOpen(true);
+                    }}
+                  >
+                    <Plus size={14} className="mr-1" strokeWidth={1.5} /> Nueva
+                    Venta
                   </Button>
                 </div>
               }
               glow
             >
               {clientSales.length === 0 ? (
-                <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4">Sin operaciones relacionadas.</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4">
+                  Sin operaciones relacionadas.
+                </p>
               ) : (
                 <div className="space-y-3">
-                  {clientSales.map(sale => (
+                  {clientSales.map((sale) => (
                     <motion.div
                       key={sale.id}
                       whileHover={{ x: 4 }}
-                      onClick={() => { setSelectedSaleForModal(sale); setSaleModalMode('view'); setIsSaleModalOpen(true); }}
+                      onClick={() => {
+                        setSelectedSaleForModal(sale);
+                        setSaleModalMode("view");
+                        setIsSaleModalOpen(true);
+                      }}
                       className="cursor-pointer"
                     >
-                      <Card className="border-blue-100 dark:border-blue-500/20 hover:shadow-soft-md transition-all" glow={false}>
+                      <Card
+                        className="border-blue-100 dark:border-blue-500/20 hover:shadow-soft-md transition-all"
+                        glow={false}
+                      >
                         <div className="flex items-center justify-between">
                           <div>
                             <Badge variant="blue">Venta</Badge>
-                            <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">{sale.estado}</span>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{properties.find(p => p.id === sale.propiedadId)?.title || sale.propiedadId}</p>
+                            <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                              {sale.estado}
+                            </span>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                              {properties.find((p) => p.id === sale.propiedadId)
+                                ?.title || sale.propiedadId}
+                            </p>
                           </div>
-                          <ChevronRight size={16} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
+                          <ChevronRight
+                            size={16}
+                            className="text-slate-300 dark:text-slate-600"
+                            strokeWidth={1.5}
+                          />
                         </div>
                       </Card>
                     </motion.div>
@@ -882,76 +1256,100 @@ export default function Clients() {
                   className="w-full"
                   onClick={() => {
                     setEventFormData({
-                      title: '',
-                      description: '',
-                      type: 'seguimiento',
-                      date: new Date().toISOString().split('T')[0],
+                      title: "",
+                      description: "",
+                      type: "seguimiento",
+                      date: new Date().toISOString().split("T")[0],
                       time: new Date().toTimeString().slice(0, 5),
-                      propertyId: '',
-                      status: 'pendiente',
-                      notes: ''
+                      propertyId: "",
+                      status: "pendiente",
+                      notes: "",
                     });
                     setIsEventModalOpen(true);
                   }}
                 >
-                  <Calendar size={18} className="mr-2" strokeWidth={1.5} /> Programar Cita
+                  <Calendar size={18} className="mr-2" strokeWidth={1.5} />{" "}
+                  Programar Cita
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full"
                   onClick={() => {
                     setTaskFormData({
-                      title: '',
-                      description: '',
-                      priority: 'media',
-                      status: 'pendiente',
-                      dueDate: new Date().toISOString().split('T')[0],
-                      propertyId: '',
-                      notes: ''
+                      title: "",
+                      description: "",
+                      priority: "media",
+                      status: "pendiente",
+                      dueDate: new Date().toISOString().split("T")[0],
+                      propertyId: "",
+                      notes: "",
                     });
                     setIsTaskModalOpen(true);
                   }}
                 >
-                  <ListTodo size={18} className="mr-2" strokeWidth={1.5} /> Crear Tarea
+                  <ListTodo size={18} className="mr-2" strokeWidth={1.5} />{" "}
+                  Crear Tarea
                 </Button>
               </div>
             </Card>
 
-
-
             <Card title="Información del Cliente" glow>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Creado</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100">{formatDate(selectedClient.createdAt || '')}</span>
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Creado
+                  </span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {formatDate(selectedClient.createdAt || "")}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Tipo</span>
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Tipo
+                  </span>
                   <div className="flex gap-1 flex-wrap">
-                    {(selectedClient.types && selectedClient.types.length > 0 ? selectedClient.types : [selectedClient.type || 'interesado']).map(t => (
+                    {(selectedClient.types && selectedClient.types.length > 0
+                      ? selectedClient.types
+                      : [selectedClient.type || "interesado"]
+                    ).map((t) => (
                       <span key={t}>
-                        <Badge variant={getTypeBadgeVariant(t)} size="sm">{t}</Badge>
+                        <Badge variant={getTypeBadgeVariant(t)} size="sm">
+                          {t}
+                        </Badge>
                       </span>
                     ))}
                   </div>
                 </div>
                 {selectedClient.profession && (
                   <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Profesión</span>
-                    <span className="font-medium text-slate-900 dark:text-slate-100">{selectedClient.profession}</span>
+                    <span className="text-slate-500 dark:text-slate-400">
+                      Profesión
+                    </span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">
+                      {selectedClient.profession}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-slate-400">Origen</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100">{selectedClient.origin || 'Otro'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Origen
+                  </span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {selectedClient.origin || "Otro"}
+                  </span>
                 </div>
-                {selectedClient.origin === 'Referido' && (
+                {selectedClient.origin === "Referido" && (
                   <div className="flex justify-between">
-                    <span className="text-slate-500 dark:text-slate-400">Referido por</span>
+                    <span className="text-slate-500 dark:text-slate-400">
+                      Referido por
+                    </span>
                     <span className="font-medium text-slate-900 dark:text-slate-100">
                       {selectedClient.referredByColleagueId
-                        ? referredColleagues.find(c => c.id === selectedClient.referredByColleagueId)?.nombreApellido || 'Colega desconocido'
-                        : selectedClient.referredBy || '—'}
+                        ? referredColleagues.find(
+                            (c) =>
+                              c.id === selectedClient.referredByColleagueId,
+                          )?.nombreApellido || "Colega desconocido"
+                        : selectedClient.referredBy || "—"}
                     </span>
                   </div>
                 )}
@@ -964,7 +1362,10 @@ export default function Clients() {
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      updateClient({...selectedClient, dashboardPinned: false});
+                      updateClient({
+                        ...selectedClient,
+                        dashboardPinned: false,
+                      });
                     }}
                   >
                     Quitar del panel principal
@@ -976,7 +1377,10 @@ export default function Clients() {
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      updateClient({...selectedClient, dashboardPinned: true});
+                      updateClient({
+                        ...selectedClient,
+                        dashboardPinned: true,
+                      });
                     }}
                   >
                     Enviar al panel principal
@@ -989,7 +1393,10 @@ export default function Clients() {
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      updateClient({...selectedClient, dashboardArchived: true});
+                      updateClient({
+                        ...selectedClient,
+                        dashboardArchived: true,
+                      });
                     }}
                   >
                     Archivar del dashboard
@@ -1001,7 +1408,10 @@ export default function Clients() {
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      updateClient({...selectedClient, dashboardArchived: false});
+                      updateClient({
+                        ...selectedClient,
+                        dashboardArchived: false,
+                      });
                     }}
                   >
                     Desarchivar del dashboard
@@ -1010,8 +1420,13 @@ export default function Clients() {
               </div>
             </Card>
 
-            <Button variant="outline" className="w-full" onClick={() => openRelations('client', selectedClient.id)}>
-              <Link2 size={16} className="mr-2" strokeWidth={1.5} /> Ver vínculos (Vista 360°)
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => openRelations("client", selectedClient.id)}
+            >
+              <Link2 size={16} className="mr-2" strokeWidth={1.5} /> Ver
+              vínculos (Vista 360°)
             </Button>
           </div>
         </div>
@@ -1025,9 +1440,12 @@ export default function Clients() {
           sales={sales}
           rentals={rentals}
           defaultClientId={id}
-          onClose={() => { setIsDocModalOpen(false); setSelectedDocForModal(undefined); }}
+          onClose={() => {
+            setIsDocModalOpen(false);
+            setSelectedDocForModal(undefined);
+          }}
           onSave={(doc) => {
-            const existing = documents.find(d => d.id === doc.id);
+            const existing = documents.find((d) => d.id === doc.id);
             if (existing) {
               updateDocument(doc);
             } else {
@@ -1039,13 +1457,21 @@ export default function Clients() {
           }}
           onDownload={(doc) => {
             if (doc.fileName) {
-              showToast('Descarga simulada: "' + doc.fileName + '". La descarga real se implementará cuando exista almacenamiento de archivos.', 'info');
+              showToast(
+                'Descarga simulada: "' +
+                  doc.fileName +
+                  '". La descarga real se implementará cuando exista almacenamiento de archivos.',
+                "info",
+              );
             } else {
-              showToast('Descarga simulada. La descarga real se implementará cuando exista almacenamiento de archivos.', 'info');
+              showToast(
+                "Descarga simulada. La descarga real se implementará cuando exista almacenamiento de archivos.",
+                "info",
+              );
             }
           }}
         />
-        
+
         {/* Sale Modal */}
         <SaleModal
           isOpen={isSaleModalOpen}
@@ -1054,9 +1480,12 @@ export default function Clients() {
           clients={clients}
           properties={properties}
           defaultClientId={id}
-          onClose={() => { setIsSaleModalOpen(false); setSelectedSaleForModal(undefined); }}
+          onClose={() => {
+            setIsSaleModalOpen(false);
+            setSelectedSaleForModal(undefined);
+          }}
           onSave={(sale) => {
-            const existing = sales.find(s => s.id === sale.id);
+            const existing = sales.find((s) => s.id === sale.id);
             if (existing) {
               updateSale(sale);
             } else {
@@ -1076,9 +1505,12 @@ export default function Clients() {
           clients={clients}
           properties={properties}
           defaultClientId={id}
-          onClose={() => { setIsRentalModalOpen(false); setSelectedRentalForModal(undefined); }}
+          onClose={() => {
+            setIsRentalModalOpen(false);
+            setSelectedRentalForModal(undefined);
+          }}
           onSave={(rental) => {
-            const existing = rentals.find(r => r.id === rental.id);
+            const existing = rentals.find((r) => r.id === rental.id);
             if (existing) {
               updateRental(rental);
             } else {
@@ -1102,47 +1534,77 @@ export default function Clients() {
   function renderFormModal() {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsFormModalOpen(false)}></div>
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+          onClick={() => setIsFormModalOpen(false)}
+        ></div>
         <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
           <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-800">
-            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
-            <button onClick={() => setIsFormModalOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"><X size={20} /></button>
+            <h2 className="font-bold text-xl text-slate-900 dark:text-slate-100">
+              {editingClient ? "Editar Cliente" : "Nuevo Cliente"}
+            </h2>
+            <button
+              onClick={() => setIsFormModalOpen(false)}
+              className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-400"
+            >
+              <X size={20} />
+            </button>
           </div>
-          <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[70vh]">
+          <form
+            onSubmit={handleSubmit}
+            className="p-6 overflow-y-auto max-h-[70vh]"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
-                <input 
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Nombre *
+                </label>
+                <input
                   required
-                  type="text" 
+                  type="text"
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
-                <input 
-                  type="text" 
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Teléfono
+                </label>
+                <input
+                  type="text"
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.phone}
-                  onChange={e => setFormData({...formData, phone: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Email</label>
-                <input 
-                  type="email" 
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                   value={formData.email}
-                  onChange={e => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                 />
               </div>
-                            <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Tipo * (seleccioná uno o más)</label>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Tipo * (seleccioná uno o más)
+                </label>
                 <div className="flex flex-wrap gap-2 items-center">
-                  {customOptions.clientTypes.map(t => {
-                    const selected = (formData.types && formData.types.length > 0) ? formData.types.includes(t.id) : formData.type === t.id;
+                  {customOptions.clientTypes.map((t) => {
+                    const selected =
+                      formData.types && formData.types.length > 0
+                        ? formData.types.includes(t.id)
+                        : formData.type === t.id;
                     return (
                       <button
                         key={t.id}
@@ -1151,16 +1613,29 @@ export default function Clients() {
                           "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
                           selected
                             ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300"
+                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300",
                         )}
                         onClick={() => {
-                          const currentTypes = (formData.types && formData.types.length > 0) ? [...formData.types] : (formData.type ? [formData.type] : []);
+                          const currentTypes =
+                            formData.types && formData.types.length > 0
+                              ? [...formData.types]
+                              : formData.type
+                                ? [formData.type]
+                                : [];
                           if (currentTypes.includes(t.id)) {
-                            const next = currentTypes.filter(x => x !== t.id);
-                            setFormData({...formData, types: next.length > 0 ? next : undefined, type: next.length > 0 ? next[0] : 'comprador'});
+                            const next = currentTypes.filter((x) => x !== t.id);
+                            setFormData({
+                              ...formData,
+                              types: next.length > 0 ? next : undefined,
+                              type: next.length > 0 ? next[0] : "comprador",
+                            });
                           } else {
                             const next = [...currentTypes, t.id];
-                            setFormData({...formData, types: next, type: next[0]});
+                            setFormData({
+                              ...formData,
+                              types: next,
+                              type: next[0],
+                            });
                           }
                         }}
                       >
@@ -1173,11 +1648,23 @@ export default function Clients() {
                     className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center text-xs font-bold transition-all"
                     title="Agregar tipo"
                     onClick={() => {
-                      const label = prompt('Nombre del nuevo tipo de cliente:');
+                      const label = prompt("Nombre del nuevo tipo de cliente:");
                       if (!label?.trim()) return;
-                      const id = label.trim().toLowerCase().replace(/\s+/g, '_');
-                      if (customOptions.clientTypes.some(t => t.id === id)) { showToast('Ya existe esa opción', 'warning'); return; }
-                      updateCustomOptions({ ...customOptions, clientTypes: [...customOptions.clientTypes, { id, label: label.trim() }] });
+                      const id = label
+                        .trim()
+                        .toLowerCase()
+                        .replace(/\s+/g, "_");
+                      if (customOptions.clientTypes.some((t) => t.id === id)) {
+                        showToast("Ya existe esa opción", "warning");
+                        return;
+                      }
+                      updateCustomOptions({
+                        ...customOptions,
+                        clientTypes: [
+                          ...customOptions.clientTypes,
+                          { id, label: label.trim() },
+                        ],
+                      });
                     }}
                   >
                     +
@@ -1185,24 +1672,34 @@ export default function Clients() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Profesión</label>
-                <input 
-                  type="text" 
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Profesión
+                </label>
+                <input
+                  type="text"
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.profession || ''}
-                  onChange={e => setFormData({...formData, profession: e.target.value})}
+                  value={formData.profession || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, profession: e.target.value })
+                  }
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Estado</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Estado
+                </label>
                 <div className="flex gap-2">
-                  <select 
+                  <select
                     className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={formData.status}
-                    onChange={e => setFormData({...formData, status: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, status: e.target.value })
+                    }
                   >
-                    {customOptions.clientStatuses.map(s => (
-                      <option key={s.id} value={s.id}>{s.label}</option>
+                    {customOptions.clientStatuses.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
                     ))}
                   </select>
                   <button
@@ -1210,11 +1707,27 @@ export default function Clients() {
                     className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center text-sm font-bold transition-all"
                     title="Agregar estado"
                     onClick={() => {
-                      const label = prompt('Nombre del nuevo estado de cliente:');
+                      const label = prompt(
+                        "Nombre del nuevo estado de cliente:",
+                      );
                       if (!label?.trim()) return;
-                      const id = label.trim().toLowerCase().replace(/\s+/g, '_');
-                      if (customOptions.clientStatuses.some(s => s.id === id)) { showToast('Ya existe esa opción', 'warning'); return; }
-                      updateCustomOptions({ ...customOptions, clientStatuses: [...customOptions.clientStatuses, { id, label: label.trim() }] });
+                      const id = label
+                        .trim()
+                        .toLowerCase()
+                        .replace(/\s+/g, "_");
+                      if (
+                        customOptions.clientStatuses.some((s) => s.id === id)
+                      ) {
+                        showToast("Ya existe esa opción", "warning");
+                        return;
+                      }
+                      updateCustomOptions({
+                        ...customOptions,
+                        clientStatuses: [
+                          ...customOptions.clientStatuses,
+                          { id, label: label.trim() },
+                        ],
+                      });
                     }}
                   >
                     +
@@ -1222,15 +1735,21 @@ export default function Clients() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Origen</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Origen
+                </label>
                 <div className="flex gap-2">
-                  <select 
+                  <select
                     className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     value={formData.origin}
-                    onChange={e => setFormData({...formData, origin: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, origin: e.target.value })
+                    }
                   >
-                    {customOptions.clientOrigins.map(o => (
-                      <option key={o.id} value={o.id}>{o.label}</option>
+                    {customOptions.clientOrigins.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
+                      </option>
                     ))}
                   </select>
                   <button
@@ -1238,27 +1757,47 @@ export default function Clients() {
                     className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center text-sm font-bold transition-all"
                     title="Agregar origen"
                     onClick={() => {
-                      const label = prompt('Nombre del nuevo origen:');
+                      const label = prompt("Nombre del nuevo origen:");
                       if (!label?.trim()) return;
-                      const id = label.trim().toLowerCase().replace(/\s+/g, '_');
-                      if (customOptions.clientOrigins.some(o => o.id === id)) { showToast('Ya existe esa opción', 'warning'); return; }
-                      updateCustomOptions({ ...customOptions, clientOrigins: [...customOptions.clientOrigins, { id, label: label.trim() }] });
+                      const id = label
+                        .trim()
+                        .toLowerCase()
+                        .replace(/\s+/g, "_");
+                      if (
+                        customOptions.clientOrigins.some((o) => o.id === id)
+                      ) {
+                        showToast("Ya existe esa opción", "warning");
+                        return;
+                      }
+                      updateCustomOptions({
+                        ...customOptions,
+                        clientOrigins: [
+                          ...customOptions.clientOrigins,
+                          { id, label: label.trim() },
+                        ],
+                      });
                     }}
                   >
                     +
                   </button>
                 </div>
               </div>
-              {(formData.origin === 'Referido') && (
+              {formData.origin === "Referido" && (
                 <div className="md:col-span-2 space-y-3">
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Referido por colega</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Referido por colega
+                  </label>
                   {!showNewColleagueForm ? (
                     <>
                       <SearchableSelect
                         placeholder="Seleccionar colega..."
                         value={selectedColleagueId}
-                        onChange={val => setSelectedColleagueId(val)}
-                        options={referredColleagues.map(c => ({ value: c.id, label: c.nombreApellido, subtitle: c.oficina }))}
+                        onChange={(val) => setSelectedColleagueId(val)}
+                        options={referredColleagues.map((c) => ({
+                          value: c.id,
+                          label: c.nombreApellido,
+                          subtitle: c.oficina,
+                        }))}
                         emptyLabel="Ninguno"
                         allowEmpty
                       />
@@ -1272,54 +1811,100 @@ export default function Clients() {
                     </>
                   ) : (
                     <div className="p-3 border border-blue-100 rounded-xl bg-blue-50/50 space-y-3">
-                      <p className="text-xs font-bold text-blue-700">Nuevo Colega</p>
+                      <p className="text-xs font-bold text-blue-700">
+                        Nuevo Colega
+                      </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <input
                           type="text"
                           placeholder="Nombre y apellido *"
                           className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                           value={newColleagueName}
-                          onChange={e => setNewColleagueName(e.target.value)}
+                          onChange={(e) => setNewColleagueName(e.target.value)}
                         />
                         <input
                           type="text"
                           placeholder="Oficina"
                           className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                           value={newColleagueOffice}
-                          onChange={e => setNewColleagueOffice(e.target.value)}
+                          onChange={(e) =>
+                            setNewColleagueOffice(e.target.value)
+                          }
                         />
                       </div>
                       <div className="flex gap-2">
-                        <button type="button" className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={() => { if (!newColleagueName.trim()) { showToast('El nombre es obligatorio', 'error'); return; } setShowNewColleagueForm(false); }}>Listo</button>
-                        <button type="button" className="px-3 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300" onClick={() => { setShowNewColleagueForm(false); setNewColleagueName(''); setNewColleagueOffice(''); }}>Cancelar</button>
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          onClick={() => {
+                            if (!newColleagueName.trim()) {
+                              showToast("El nombre es obligatorio", "error");
+                              return;
+                            }
+                            setShowNewColleagueForm(false);
+                          }}
+                        >
+                          Listo
+                        </button>
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300"
+                          onClick={() => {
+                            setShowNewColleagueForm(false);
+                            setNewColleagueName("");
+                            setNewColleagueOffice("");
+                          }}
+                        >
+                          Cancelar
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
               )}
               <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Último Contacto</label>
-                <input 
-                  type="date" 
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Último Contacto
+                </label>
+                <input
+                  type="date"
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.lastContact || ''}
-                  onChange={e => setFormData({...formData, lastContact: e.target.value})}
+                  value={formData.lastContact || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastContact: e.target.value })
+                  }
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Notas</label>
-                <textarea 
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Notas
+                </label>
+                <textarea
                   rows={3}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.notes || ''}
-                  onChange={e => setFormData({...formData, notes: e.target.value})}
-                  onKeyDown={e => handleTextareaFormatKeyDown(e, (val) => setFormData({...formData, notes: val}))}
+                  value={formData.notes || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                  onKeyDown={(e) =>
+                    handleTextareaFormatKeyDown(e, (val) =>
+                      setFormData({ ...formData, notes: val }),
+                    )
+                  }
                 />
               </div>
             </div>
             <div className="mt-8 flex justify-end gap-3">
-              <Button type="button" variant="ghost" onClick={() => setIsFormModalOpen(false)}>Cancelar</Button>
-              <Button type="submit" variant="primary">{editingClient ? 'Guardar Cambios' : 'Crear Cliente'}</Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsFormModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" variant="primary">
+                {editingClient ? "Guardar Cambios" : "Crear Cliente"}
+              </Button>
             </div>
           </form>
         </div>
@@ -1331,7 +1916,9 @@ export default function Clients() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Clientes</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Clientes
+          </h1>
           <p className="text-slate-500">Gestión de la cartera de clientes.</p>
         </div>
         <Button variant="primary" onClick={() => handleOpenForm()}>
@@ -1342,24 +1929,32 @@ export default function Clients() {
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4 justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-            <input 
-              type="text" 
-              placeholder="Buscar por nombre, teléfono o email..." 
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+            />
+            <input
+              type="text"
+              placeholder="Buscar por nombre, teléfono o email..."
               className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant={showFilters ? 'primary' : 'outline'} 
-              size="sm" 
+            <Button
+              variant={showFilters ? "primary" : "outline"}
+              size="sm"
               className="h-10"
               onClick={() => setShowFilters(!showFilters)}
             >
               <Filter size={16} className="mr-2" /> Filtros
-              {(filterType || filterStatus || filterOrigin || filterZone || filterHasOperation !== null || filterHasPendingTasks !== null) && (
+              {(filterType ||
+                filterStatus ||
+                filterOrigin ||
+                filterZone ||
+                filterHasOperation !== null ||
+                filterHasPendingTasks !== null) && (
                 <span className="ml-1 w-2 h-2 rounded-full bg-blue-600" />
               )}
             </Button>
@@ -1370,62 +1965,84 @@ export default function Clients() {
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tipo</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                  Tipo
+                </label>
                 <select
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterType}
-                  onChange={e => setFilterType(e.target.value)}
+                  onChange={(e) => setFilterType(e.target.value)}
                 >
                   <option value="">Todos</option>
-                  {customOptions.clientTypes.map(t => (
-                    <option key={t.id} value={t.id}>{t.label}</option>
+                  {customOptions.clientTypes.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.label}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                  Estado
+                </label>
                 <select
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterStatus}
-                  onChange={e => setFilterStatus(e.target.value)}
+                  onChange={(e) => setFilterStatus(e.target.value)}
                 >
                   <option value="">Todos</option>
-                  {customOptions.clientStatuses.map(s => (
-                    <option key={s.id} value={s.id}>{s.label}</option>
+                  {customOptions.clientStatuses.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Origen</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                  Origen
+                </label>
                 <select
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterOrigin}
-                  onChange={e => setFilterOrigin(e.target.value)}
+                  onChange={(e) => setFilterOrigin(e.target.value)}
                 >
                   <option value="">Todos</option>
-                  {customOptions.clientOrigins.map(o => (
-                    <option key={o.id} value={o.id}>{o.label}</option>
+                  {customOptions.clientOrigins.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Zona de Interés</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                  Zona de Interés
+                </label>
                 <input
                   type="text"
                   placeholder="Filtrar por zona..."
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={filterZone}
-                  onChange={e => setFilterZone(e.target.value)}
+                  onChange={(e) => setFilterZone(e.target.value)}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Operaciones</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                  Operaciones
+                </label>
                 <select
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
-                  value={filterHasOperation === null ? '' : filterHasOperation ? 'si' : 'no'}
-                  onChange={e => {
+                  value={
+                    filterHasOperation === null
+                      ? ""
+                      : filterHasOperation
+                        ? "si"
+                        : "no"
+                  }
+                  onChange={(e) => {
                     const val = e.target.value;
-                    setFilterHasOperation(val === '' ? null : val === 'si');
+                    setFilterHasOperation(val === "" ? null : val === "si");
                   }}
                 >
                   <option value="">Todas</option>
@@ -1434,13 +2051,21 @@ export default function Clients() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tareas Pendientes</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                  Tareas Pendientes
+                </label>
                 <select
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
-                  value={filterHasPendingTasks === null ? '' : filterHasPendingTasks ? 'si' : 'no'}
-                  onChange={e => {
+                  value={
+                    filterHasPendingTasks === null
+                      ? ""
+                      : filterHasPendingTasks
+                        ? "si"
+                        : "no"
+                  }
+                  onChange={(e) => {
                     const val = e.target.value;
-                    setFilterHasPendingTasks(val === '' ? null : val === 'si');
+                    setFilterHasPendingTasks(val === "" ? null : val === "si");
                   }}
                 >
                   <option value="">Todas</option>
@@ -1449,11 +2074,15 @@ export default function Clients() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Orden</label>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                  Orden
+                </label>
                 <select
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
                   value={sortName}
-                  onChange={e => setSortName(e.target.value as 'asc' | 'desc')}
+                  onChange={(e) =>
+                    setSortName(e.target.value as "asc" | "desc")
+                  }
                 >
                   <option value="asc">A-Z</option>
                   <option value="desc">Z-A</option>
@@ -1465,13 +2094,13 @@ export default function Clients() {
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setFilterType('');
-                  setFilterStatus('');
-                  setFilterOrigin('');
-                  setFilterZone('');
+                  setFilterType("");
+                  setFilterStatus("");
+                  setFilterOrigin("");
+                  setFilterZone("");
                   setFilterHasOperation(null);
                   setFilterHasPendingTasks(null);
-                  setSortName('asc');
+                  setSortName("asc");
                 }}
               >
                 Limpiar filtros
@@ -1482,8 +2111,8 @@ export default function Clients() {
 
         <div className="divide-y divide-gray-50">
           {filteredClients.map((client) => (
-            <div 
-              key={client.id} 
+            <div
+              key={client.id}
               className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:bg-slate-800/50 transition-colors cursor-pointer group"
               onClick={() => navigate(`/clientes/${client.id}`)}
             >
@@ -1491,51 +2120,79 @@ export default function Clients() {
                 {client.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 transition-colors">{client.name}</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 transition-colors">
+                  {client.name}
+                </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-3 mt-0.5">
-                  <span className="flex items-center"><Phone size={12} className="mr-1" />{client.phone}</span>
+                  <span className="flex items-center">
+                    <Phone size={12} className="mr-1" />
+                    {client.phone}
+                  </span>
                   <button
                     className="flex items-center text-green-600 hover:text-green-700 hover:bg-green-50 rounded px-1 transition-colors"
-                    onClick={e => {
+                    onClick={(e) => {
                       e.stopPropagation();
-                      const msg = formatWhatsAppTemplate(profile.templateClient, {
-                        name: client.name,
-                        agentName: profile.name,
-                        title: '', address: '', price: '', link: ''
-                      });
+                      const msg = formatWhatsAppTemplate(
+                        profile.templateClient,
+                        {
+                          name: client.name,
+                          agentName: profile.name,
+                          title: "",
+                          address: "",
+                          price: "",
+                          link: "",
+                        },
+                      );
                       const link = generateWhatsAppLink(client.phone, msg);
-                      window.open(link, '_blank');
+                      window.open(link, "_blank");
                     }}
                     title="Contactar por WhatsApp"
                   >
                     <MessageCircle size={12} className="mr-0.5" /> WhatsApp
                   </button>
-                  <span className="flex items-center"><Mail size={12} className="mr-1" />{client.email}</span>
+                  <span className="flex items-center">
+                    <Mail size={12} className="mr-1" />
+                    {client.email}
+                  </span>
                 </p>
               </div>
-                            <div className="flex items-center gap-1">
-                {(client.types && client.types.length > 0 ? client.types : [client.type || 'interesado']).map(t => (
-                                  <span key={t}>
-                                    <Badge variant={getTypeBadgeVariant(t)} size="sm">{t}</Badge>
-                                  </span>
-                                ))}
-                <Badge variant={getStatusBadgeVariant(client.status)} size="sm">{client.status}</Badge>
-                <Badge variant="gray" size="sm">{client.origin}</Badge>
+              <div className="flex items-center gap-1">
+                {(client.types && client.types.length > 0
+                  ? client.types
+                  : [client.type || "interesado"]
+                ).map((t) => (
+                  <span key={t}>
+                    <Badge variant={getTypeBadgeVariant(t)} size="sm">
+                      {t}
+                    </Badge>
+                  </span>
+                ))}
+                <Badge variant={getStatusBadgeVariant(client.status)} size="sm">
+                  {client.status}
+                </Badge>
+                <Badge variant="gray" size="sm">
+                  {client.origin}
+                </Badge>
                 {client.profession && (
-                  <Badge variant="gray" size="sm">{client.profession}</Badge>
+                  <Badge variant="gray" size="sm">
+                    {client.profession}
+                  </Badge>
                 )}
               </div>
               <button
                 className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mr-1"
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
-                  openRelations('client', client.id);
+                  openRelations("client", client.id);
                 }}
                 title="Ver vínculos"
               >
                 <Link2 size={14} />
               </button>
-              <ChevronRight size={16} className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:text-slate-400 transition-colors" />
+              <ChevronRight
+                size={16}
+                className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:text-slate-400 transition-colors"
+              />
             </div>
           ))}
         </div>
@@ -1544,9 +2201,15 @@ export default function Clients() {
           <div className="py-20 text-center">
             <Users size={48} className="mx-auto text-gray-200 mb-4" />
             <p className="text-slate-500 dark:text-slate-400 font-medium">
-              {searchTerm || filterType || filterStatus || filterOrigin || filterZone || filterHasOperation !== null || filterHasPendingTasks !== null
-                ? 'No se encontraron clientes con los filtros actuales.'
-                : 'No hay clientes cargados.'}
+              {searchTerm ||
+              filterType ||
+              filterStatus ||
+              filterOrigin ||
+              filterZone ||
+              filterHasOperation !== null ||
+              filterHasPendingTasks !== null
+                ? "No se encontraron clientes con los filtros actuales."
+                : "No hay clientes cargados."}
             </p>
           </div>
         )}
