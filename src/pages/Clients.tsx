@@ -1025,10 +1025,10 @@ export default function Clients() {
                       className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
                       onClick={() => {
                         const msg = formatWhatsAppTemplate(
-                          profile.templateClient,
+                          profile?.templateClient,
                           {
                             name: selectedClient.name,
-                            agentName: profile.name,
+                            agentName: profile?.name || 'Usuario',
                             title: "",
                             address: "",
                             price: "",
@@ -2140,10 +2140,10 @@ export default function Clients() {
                     onClick={(e) => {
                       e.stopPropagation();
                       const msg = formatWhatsAppTemplate(
-                        profile.templateClient,
+                        profile?.templateClient,
                         {
                           name: client.name,
-                          agentName: profile.name,
+                          agentName: profile?.name || 'Usuario',
                           title: "",
                           address: "",
                           price: "",

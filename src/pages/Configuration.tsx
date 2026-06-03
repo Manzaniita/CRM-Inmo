@@ -50,7 +50,7 @@ export default function Configuration() {
   const [saveStatus, setSaveStatus] = useState(false);
   const { customOptions, updateCustomOptions } = useCustomOptions();
 
-  const [form, setForm] = useState<Profile>(profile);
+  const [form, setForm] = useState<Profile>(profile ?? { name: '', email: '', phone: '', license: '', templateProperty: '', templateClient: '', templateBuyer: '', role: 'agent', must_change_password: false });
 
   // Superadmin state
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
@@ -201,7 +201,7 @@ export default function Configuration() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (userId === profile.user_id) {
+    if (userId === profile?.user_id) {
       showToast("No podés eliminarte a vos mismo.", "warning");
       return;
     }
@@ -224,7 +224,7 @@ export default function Configuration() {
   };
 
   const handleForceReset = async (userId: string) => {
-    if (userId === profile.user_id) {
+    if (userId === profile?.user_id) {
       showToast("No podés restablecer tu propia clave desde aquí.", "warning");
       return;
     }
@@ -290,7 +290,7 @@ export default function Configuration() {
             active={activeTab === "listas"}
             onClick={() => setActiveTab("listas")}
           />
-          {(profile.role === "superadmin" || serverRole === "superadmin") && (
+          {(profile?.role === "superadmin" || serverRole === "superadmin") && (
             <ConfigTab
               icon={Users}
               label="Gestión de Usuarios"

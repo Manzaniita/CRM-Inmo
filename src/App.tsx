@@ -28,6 +28,7 @@ import { useContractExpiration } from "./hooks/useContractExpiration";
 import { useAuthStore } from "./stores/authStore";
 import { useUIStore } from "./stores/uiStore";
 import Toast from "./components/Toast";
+import type { Profile } from "./types";
 
 // Pages
 import GlobalSearch from "./components/GlobalSearch";
@@ -141,7 +142,8 @@ function ThemeToggle() {
 function HeaderProfile() {
   const profile = useAuthStore((state) => state.profile);
   const logout = useAuthStore((state) => state.logout);
-  const initials = profile.name
+  const displayName = profile?.name || "Usuario";
+  const initials = displayName
     .split(" ")
     .map((n) => n[0])
     .slice(0, 2)
@@ -162,7 +164,7 @@ function HeaderProfile() {
       >
         <div className="text-right mr-3 hidden sm:block">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            {profile.name}
+            {displayName}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             Agente Pro
@@ -221,6 +223,7 @@ function GlobalToast() {
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
@@ -238,13 +241,40 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      useAuthStore.getState().setUser(session?.user ?? null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const user = session?.user ?? null;
+      useAuthStore.getState().setUser(user);
+      if (user) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (profileData) {
+          useAuthStore.getState().setProfile(profileData as Profile);
+        }
+      }
+      setIsAuthReady(true);
     });
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      useAuthStore.getState().setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const user = session?.user ?? null;
+      useAuthStore.getState().setUser(user);
+      if (user) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (profileData) {
+          useAuthStore.getState().setProfile(profileData as Profile);
+        } else {
+          useAuthStore.getState().setProfile(null);
+        }
+      } else {
+        useAuthStore.getState().setProfile(null);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -257,6 +287,14 @@ export default function App() {
       root.classList.remove("dark");
     }
   }, [theme]);
+
+  if (!isAuthReady) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-bg-primary dark:bg-dark-bg-primary">
+        <Loader2 className="animate-spin text-accent dark:text-dark-accent" size={32} />
+      </div>
+    );
+  }
 
   // No autenticado: solo login accesible
   if (!user) {

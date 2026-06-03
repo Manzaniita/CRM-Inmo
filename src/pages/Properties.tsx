@@ -609,7 +609,7 @@ export default function Properties() {
                       selectedProp.propertyLink ||
                       "";
                     const msg = formatWhatsAppTemplate(
-                      profile.templateProperty,
+                      profile?.templateProperty,
                       {
                         title: selectedProp.title,
                         address: selectedProp.address,
@@ -619,11 +619,11 @@ export default function Properties() {
                           selectedProp.currency,
                         ),
                         link: propertyLink,
-                        agentName: profile.name,
+                        agentName: profile?.name || 'Usuario',
                         name: "",
                       },
                     );
-                    const link = generateWhatsAppLink(profile.phone, msg);
+                    const link = generateWhatsAppLink(profile?.phone || '', msg);
                     window.open(link, "_blank");
                   }}
                 >
@@ -1583,18 +1583,18 @@ export default function Properties() {
                           const propertyLink =
                             prop.externalLink || prop.propertyLink || "";
                           const msg = formatWhatsAppTemplate(
-                            profile.templateProperty,
+                            profile?.templateProperty,
                             {
                               title: prop.title,
                               address: prop.address,
                               zone: prop.zone,
                               price: formatCurrency(prop.price, prop.currency),
                               link: propertyLink,
-                              agentName: profile.name,
+                              agentName: profile?.name || 'Usuario',
                               name: "",
                             },
                           );
-                          const link = generateWhatsAppLink(profile.phone, msg);
+                          const link = generateWhatsAppLink(profile?.phone || '', msg);
                           window.open(link, "_blank");
                         }}
                         title="Enviar por WhatsApp"

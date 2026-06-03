@@ -50,7 +50,7 @@ export default function ResetPassword() {
       }
 
       // Update local context profile
-      updateProfile({ ...profile, must_change_password: false });
+      updateProfile({ ...(profile || { name: '', email: user?.email || '', phone: '', license: '', templateProperty: '', templateClient: '', templateBuyer: '' }), must_change_password: false });
       showToast("Contraseña actualizada correctamente", "success");
       navigate("/dashboard", { replace: true });
     }

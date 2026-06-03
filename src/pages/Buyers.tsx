@@ -334,10 +334,10 @@ export default function BuyersPage() {
                         onClick={(e) => {
                           e.stopPropagation();
                           const msg = formatWhatsAppTemplate(
-                            profile.templateBuyer,
+                            profile?.templateBuyer,
                             {
                               name: buyer.nombre,
-                              agentName: profile.name,
+                              agentName: profile?.name || 'Usuario',
                               title: "",
                               address: "",
                               price: "",

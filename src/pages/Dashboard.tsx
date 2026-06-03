@@ -227,7 +227,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight">
-            Bienvenido{profile.name ? ", " + profile.name : "/a"}
+            Bienvenido{profile?.name ? ", " + profile?.name : "/a"}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
             Este es el resumen de tu actividad inmobiliaria para hoy.

@@ -27,3 +27,8 @@ repomix-output.*
 session-notes.md
 .vercel
 .claude
+
+# Contexto y prompts locales de IA
+.ai-prompts/
+.cursorrules
+.cline
