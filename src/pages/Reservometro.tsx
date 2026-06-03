@@ -14,6 +14,7 @@ import { generateId } from '../lib/id';
 import { validateSale } from '../lib/validators';
 import type { Sale, SaleStatus, ActivityLog } from '../types';
 import SearchableSelect from '../components/SearchableSelect';
+import { useUIStore } from '../stores/uiStore';
 
 const STAGES: SaleStatus[] = ['activa', 'vendida', 'caída'];
 
@@ -22,7 +23,8 @@ function getBestDate(sale: Sale): string {
 }
 
 export default function Reservometro() {
-  const { sales, clients, properties, addSale, updateSale, deleteSale, showToast, addActivityLog } = useAppContext();
+  const { sales, clients, properties, addSale, updateSale, deleteSale, addActivityLog } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
   const { openRelations } = useRelationsDrawer();
   const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<'pipeline' | 'list'>('list');
@@ -440,7 +442,8 @@ function SaleOperationMenu({ sale, onUpdate, onLog, showToast }: { sale: Sale; o
 }
 
 function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => void }) {
-  const { clients, properties, addSale, updateSale, showToast, addActivityLog, addClient } = useAppContext();
+  const { clients, properties, addSale, updateSale, addActivityLog, addClient } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
 
   const hasManualProperty = !!(sale?.externalPropertyAddress || sale?.externalPropertyLink || sale?.externalPropertyCode);
   const [propertyMode, setPropertyMode] = useState<'existing' | 'manual'>(sale ? (sale.propiedadId ? 'existing' : hasManualProperty ? 'manual' : 'existing') : 'existing');

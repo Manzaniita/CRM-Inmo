@@ -11,9 +11,11 @@ import { generateId } from '../lib/id';
 import { validateReferredColleague } from '../lib/validators';
 import { useRelationsDrawer } from '../context/RelationsDrawerContext';
 import type { ReferredColleague, Client } from '../types';
+import { useUIStore } from '../stores/uiStore';
 
 export default function ReferredColleagues() {
-  const { referredColleagues, clients, properties, sales, rentals, tasks, events, documents, waitingRoom, buyers, activityLogs, addReferredColleague, updateReferredColleague, deleteReferredColleague, showToast, updateClient, addActivityLog } = useAppContext();
+  const { referredColleagues, clients, properties, sales, rentals, tasks, events, documents, waitingRoom, buyers, activityLogs, addReferredColleague, updateReferredColleague, deleteReferredColleague, updateClient, addActivityLog } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
   const { openRelations } = useRelationsDrawer();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

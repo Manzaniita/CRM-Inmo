@@ -5,9 +5,10 @@ import Button from './Button';
 import Badge from './Badge';
 import SearchableSelect from './SearchableSelect';
 import { cn, formatDate } from '../lib/utils';
-import { useAppContext } from '../context/AppContext';
+
 import { generateId } from '../lib/id';
 import { validateDocument } from '../lib/validators';
+import { useUIStore } from '../stores/uiStore';
 
 type ModalMode = 'create' | 'edit' | 'view';
 
@@ -77,7 +78,7 @@ export default function DocumentModal({
   onDelete,
   onDownload
 }: DocumentModalProps) {
-  const { showToast } = useAppContext();
+    const showToast = useUIStore(state => state.showToast);
   const [formData, setFormData] = useState({
     name: document?.name || '',
     type: document?.type || 'Otro' as DocumentType,

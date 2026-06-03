@@ -27,9 +27,11 @@ import { Card } from '../components/Card';
 import SearchableSelect from '../components/SearchableSelect';
 import { cn, formatDate, normalizeSearchText } from '../lib/utils';
 import { generateId } from '../lib/id';
+import { useUIStore } from '../stores/uiStore';
 
 export default function Agenda() {
-  const { events, clients, properties, addEvent, updateEvent, completeEvent, cancelEvent, deleteEvent, showToast } = useAppContext();
+  const { events, clients, properties, addEvent, updateEvent, completeEvent, cancelEvent, deleteEvent } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<'list' | 'week'>('list');

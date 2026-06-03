@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Home, Loader2, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAppContext } from '../context/AppContext';
+import { useUIStore } from '../stores/uiStore';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { showToast } = useAppContext();
+    const showToast = useUIStore(state => state.showToast);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -30,6 +30,7 @@ import { generateId } from '../lib/id';
 import { validateSale } from '../lib/validators';
 import { Sale, SaleStatus } from '../types';
 import SearchableSelect from '../components/SearchableSelect';
+import { useUIStore } from '../stores/uiStore';
 
 // Helper: get best available date for a sale
 function getBestDate(sale: Sale): string {
@@ -532,7 +533,8 @@ function SaleDetailModal({ sale, onClose, onEdit }: { sale: Sale; onClose: () =>
 }
 
 function SaleFormModal({ sale, onClose }: { sale: Sale | null; onClose: () => void }) {
-  const { clients, properties, addSale, updateSale, showToast } = useAppContext();
+  const { clients, properties, addSale, updateSale } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
 
   const [formData, setFormData] = useState<Partial<Sale>>(sale || {
     estado: 'activa',

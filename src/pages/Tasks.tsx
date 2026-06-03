@@ -29,9 +29,11 @@ import SearchableSelect from '../components/SearchableSelect';
 import { cn, formatDate } from '../lib/utils';
 import { generateId } from '../lib/id';
 import { validateTask } from '../lib/validators';
+import { useUIStore } from '../stores/uiStore';
 
 export default function Tasks() {
-  const { tasks, clients, properties, sales, referredColleagues, buyers, addTask, updateTask, completeTask, deleteTask, showToast, addActivityLog } = useAppContext();
+  const { tasks, clients, properties, sales, referredColleagues, buyers, addTask, updateTask, completeTask, deleteTask, addActivityLog } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
   const location = useLocation();
   const [searchParams] = useSearchParams();
 

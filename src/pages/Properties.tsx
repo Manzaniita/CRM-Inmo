@@ -49,6 +49,8 @@ import { Property, PropertyType, PropertyStatus, PropertyOperation, EntityNote, 
 import RelationsPanel from '../components/RelationsPanel';
 import { getPropertyRelations } from '../lib/relations';
 import { useRelationsDrawer } from '../context/RelationsDrawerContext';
+import { useUIStore } from '../stores/uiStore';
+import { useAuthStore } from '../stores/authStore';
 
 export default function Properties() {
   const { id } = useParams();
@@ -56,7 +58,9 @@ export default function Properties() {
   const [searchParams] = useSearchParams();
   const propertyIdFromQuery = searchParams.get('propertyId');
   const effectivePropertyId = id || propertyIdFromQuery || undefined;
-  const { properties, clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, profile, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addClient, addActivityLog, customOptions, updateCustomOptions } = useAppContext();
+  const { properties, clients, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addProperty, updateProperty, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, addClient, addActivityLog, customOptions, updateCustomOptions } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
+  const profile = useAuthStore(state => state.profile);
   const { openRelations } = useRelationsDrawer();
   
   const [searchTerm, setSearchTerm] = useState('');

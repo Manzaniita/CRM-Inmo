@@ -27,6 +27,8 @@ import { useAppContext } from '../context/AppContext';
 import type { Profile, CustomOptions, CustomOptionItem } from '../types';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useUIStore } from '../stores/uiStore';
+import { useAuthStore } from '../stores/authStore';
 
 interface UserProfile {
   user_id: string;
@@ -39,7 +41,10 @@ interface UserProfile {
 type ConfigTabId = 'perfil' | 'plantillas' | 'datos' | 'usuarios' | 'listas';
 
 export default function Configuration() {
-  const { profile, updateProfile, resetData, exportData, importData, showToast, clearMockData, signOut, customOptions, updateCustomOptions } = useAppContext();
+  const { updateProfile, resetData, exportData, importData, clearMockData, customOptions, updateCustomOptions } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
+  const profile = useAuthStore(state => state.profile);
+  const logout = useAuthStore(state => state.logout);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<ConfigTabId>('perfil');
   const [saveStatus, setSaveStatus] = useState(false);
@@ -146,7 +151,7 @@ export default function Configuration() {
         setNewUser({ email: '', password: '', name: '', role: 'agent' });
 
         // Cerramos sesión porque signInWithPassword nos logueó como el usuario existente
-        await signOut();
+        await logout();
         showToast(
           'Perfil creado/actualizado para usuario existente. Por seguridad, re-ingresa como Administrador.',
           'info'
@@ -175,7 +180,7 @@ export default function Configuration() {
       setNewUser({ email: '', password: '', name: '', role: 'agent' });
 
       // Auto-login happens here, so we force sign out and redirect
-      await signOut();
+      await logout();
       showToast('Usuario creado con éxito. Por seguridad del sistema, por favor re-ingresa a tu cuenta de Administrador.', 'info');
       navigate('/login');
     }

@@ -23,7 +23,11 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from './lib/utils';
+import { supabase } from './lib/supabase';
 import { useAppContext } from './context/AppContext';
+import { useAuthStore } from './stores/authStore';
+import { useUIStore } from './stores/uiStore';
+import Toast from './components/Toast';
 
 // Pages
 import GlobalSearch from './components/GlobalSearch';
@@ -58,10 +62,13 @@ const MENU_ITEMS = [
   { id: 'configuracion', label: 'Configuración', icon: Settings, path: '/configuracion' },
 ];
 
-function ThemeToggle({ isDark, toggle }: { isDark: boolean; toggle: () => void }) {
+function ThemeToggle() {
+  const theme = useUIStore(state => state.theme);
+  const toggleTheme = useUIStore(state => state.toggleTheme);
+  const isDark = theme === 'dark';
   return (
     <button
-      onClick={toggle}
+      onClick={toggleTheme}
       className={cn(
         "relative p-2 rounded-xl transition-all duration-300 magnetic-btn",
         "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
@@ -97,7 +104,8 @@ function ThemeToggle({ isDark, toggle }: { isDark: boolean; toggle: () => void }
 }
 
 function HeaderProfile() {
-  const { profile, signOut } = useAppContext();
+  const profile = useAuthStore(state => state.profile);
+  const logout = useAuthStore(state => state.logout);
   const initials = profile.name
     .split(' ')
     .map(n => n[0])
@@ -112,7 +120,7 @@ function HeaderProfile() {
         <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900"></span>
       </button>
       <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2"></div>
-      <button onClick={signOut} className="flex items-center cursor-pointer group" id="user-profile">
+      <button onClick={logout} className="flex items-center cursor-pointer group" id="user-profile">
         <div className="text-right mr-3 hidden sm:block">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{profile.name}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Agente Pro</p>
@@ -139,7 +147,7 @@ function PageTransition({ children }: { children: React.ReactNode }) {
 }
 
 function SidebarFooter({ sidebarOpen }: { sidebarOpen: boolean }) {
-  const { signOut } = useAppContext();
+  const logout = useAuthStore(state => state.logout);
   return (
     <div className="p-4 border-t border-slate-100/60 dark:border-white/5">
       <button
@@ -147,7 +155,7 @@ function SidebarFooter({ sidebarOpen }: { sidebarOpen: boolean }) {
           "flex items-center w-full px-3 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors group magnetic-btn",
           !sidebarOpen && "justify-center"
         )}
-        onClick={signOut}
+        onClick={logout}
         id="nav-logout"
       >
         <LogOut size={20} strokeWidth={1.5} />
@@ -178,18 +186,20 @@ function SplashScreen() {
   );
 }
 
+function GlobalToast() {
+  const toast = useUIStore(state => state.toast);
+  const hideToast = useUIStore(state => state.hideToast);
+  if (!toast.isVisible) return null;
+  return <Toast message={toast.message} type={toast.type} onClose={hideToast} />;
+}
+
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('estatecrm_theme');
-      if (stored) return stored === 'dark';
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
   const location = useLocation();
-  const { user, profile, isCloudReady } = useAppContext();
+  const { isCloudReady } = useAppContext();
+  const user = useAuthStore(state => state.user);
+  const profile = useAuthStore(state => state.profile);
+  const theme = useUIStore(state => state.theme);
 
   // Log de seguridad temporal para detectar recargas involuntarias
   useEffect(() => {
@@ -201,15 +211,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      useAuthStore.getState().setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      useAuthStore.getState().setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
     const root = document.documentElement;
-    if (isDark) {
+    if (theme === 'dark') {
       root.classList.add('dark');
-      localStorage.setItem('estatecrm_theme', 'dark');
     } else {
       root.classList.remove('dark');
-      localStorage.setItem('estatecrm_theme', 'light');
     }
-  }, [isDark]);
+  }, [theme]);
 
   // No autenticado: solo login accesible
   if (!user) {
@@ -347,7 +365,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            <ThemeToggle isDark={isDark} toggle={() => setIsDark(d => !d)} />
+            <ThemeToggle />
             <HeaderProfile />
           </div>
         </header>
@@ -385,6 +403,7 @@ export default function App() {
         </main>
       </div>
       <EntityRelationsDrawer />
+      <GlobalToast />
     </div>
   );
 }

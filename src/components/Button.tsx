@@ -1,12 +1,12 @@
-import { type ButtonHTMLAttributes, type Ref } from 'react';
+import { type ComponentProps, type Ref } from 'react';
 import { cn } from '../lib/utils';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+type ButtonProps = ComponentProps<'button'> & {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
   size?: 'sm' | 'md' | 'lg' | 'icon';
   isLoading?: boolean;
   ref?: Ref<HTMLButtonElement>;
-}
+};
 
 export default function Button({
   className,

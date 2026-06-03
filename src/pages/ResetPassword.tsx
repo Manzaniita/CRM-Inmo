@@ -4,12 +4,17 @@ import { Loader2, Eye, EyeOff, Lock, ShieldCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
+import { useUIStore } from '../stores/uiStore';
+import { useAuthStore } from '../stores/authStore';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { showToast, profile, user, updateProfile } = useAppContext();
+  const { updateProfile } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
+  const profile = useAuthStore(state => state.profile);
+  const user = useAuthStore(state => state.user);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {

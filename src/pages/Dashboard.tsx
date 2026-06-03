@@ -27,6 +27,7 @@ import { useAppContext } from '../context/AppContext';
 import { formatDate, formatCurrency } from '../lib/utils';
 import { cn } from '../lib/utils';
 import { isOverdue, isToday, isWithinNextDays } from '../lib/dates';
+import { useAuthStore } from '../stores/authStore';
 
 function CircularProgress({
   percentage,
@@ -131,7 +132,8 @@ function LinearProgress({
 }
 
 export default function Dashboard() {
-  const { clients, properties, events, tasks, sales, activityLogs, completeTask, profile } = useAppContext();
+  const { clients, properties, events, tasks, sales, activityLogs, completeTask } = useAppContext()
+  const profile = useAuthStore(state => state.profile);
   const navigate = useNavigate();
 
   const today = new Date().toISOString().split('T')[0];

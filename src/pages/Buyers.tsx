@@ -13,6 +13,8 @@ import { cn, normalizeSearchText, formatCurrency, generateWhatsAppLink, formatWh
 import { generateId } from '../lib/id';
 import { validateBuyer } from '../lib/validators';
 import type { Buyer, BuyerStatus } from '../types';
+import { useUIStore } from '../stores/uiStore';
+import { useAuthStore } from '../stores/authStore';
 
 const STATUS_VARIANT: Record<BuyerStatus, string> = {
   activo: 'green',
@@ -110,7 +112,9 @@ function BuyerOperationMenu({ buyer, onUpdate, onLog, showToast }: { buyer: Buye
 }
 
 export default function BuyersPage() {
-  const { buyers, addBuyer, updateBuyer, deleteBuyer, profile, showToast, addActivityLog } = useAppContext();
+  const { buyers, addBuyer, updateBuyer, deleteBuyer, addActivityLog } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
+  const profile = useAuthStore(state => state.profile);
   const { openRelations } = useRelationsDrawer();
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');

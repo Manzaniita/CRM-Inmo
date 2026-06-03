@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { Rental, RentalStatus, Client, Property } from '../types';
-import { useAppContext } from '../context/AppContext';
+
 import Badge from './Badge';
 import Button from './Button';
 import { Card } from './Card';
@@ -9,6 +9,7 @@ import SearchableSelect from './SearchableSelect';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
 import { generateId } from '../lib/id';
 import { validateRental } from '../lib/validators';
+import { useUIStore } from '../stores/uiStore';
 
 const RENTAL_STAGES: RentalStatus[] = [
   'consulta', 'visita', 'documentación', 'aprobado', 'contrato', 'firmado', 'en curso', 'renovación', 'finalizado', 'cancelado'
@@ -39,7 +40,7 @@ export default function RentalModal({
   onSave,
   onDelete
 }: RentalModalProps) {
-  const { showToast } = useAppContext();
+    const showToast = useUIStore(state => state.showToast);
   const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState<Partial<Rental>>(rental || {
     inquilinoId: defaultClientId || '',

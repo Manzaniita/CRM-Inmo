@@ -26,6 +26,7 @@ import { cn, formatCurrency, formatDate } from '../lib/utils';
 import { generateId } from '../lib/id';
 import { validateRental } from '../lib/validators';
 import { Rental, RentalStatus } from '../types';
+import { useUIStore } from '../stores/uiStore';
 
 const STAGES: RentalStatus[] = [
   'consulta', 'visita', 'documentación', 'aprobado', 'contrato', 'firmado', 'en curso', 'renovación'
@@ -453,7 +454,8 @@ function RentalDetailModal({ rental, onClose, onEdit }: { rental: Rental, onClos
 }
 
 function RentalFormModal({ rental, onClose }: { rental: Rental | null, onClose: () => void }) {
-  const { clients, properties, addRental, updateRental, showToast } = useAppContext();
+  const { clients, properties, addRental, updateRental } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
   
   const [formData, setFormData] = useState<Partial<Rental>>(rental || {
     estado: 'consulta',

@@ -26,6 +26,7 @@ import {
   FileCheck
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { useUIStore } from '../stores/uiStore';
 import { Document, DocumentType, DocumentStatus } from '../types';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
@@ -100,9 +101,10 @@ export default function Documents() {
     rentals,
     addDocument,
     updateDocument,
-    deleteDocument,
-    showToast
+    deleteDocument
   } = useAppContext();
+
+  const showToast = useUIStore(state => state.showToast);
 
   const [view, setView] = React.useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = React.useState('');

@@ -37,6 +37,8 @@ import DocumentModal from '../components/DocumentModal';
 import SaleModal from '../components/SaleModal';
 import RentalModal from '../components/RentalModal';
 import SearchableSelect from '../components/SearchableSelect';
+import { useUIStore } from '../stores/uiStore';
+import { useAuthStore } from '../stores/authStore';
 
 function BentoInfoItem({
   icon: Icon,
@@ -69,7 +71,9 @@ export default function Clients() {
   const [searchParams] = useSearchParams();
   const clientIdFromQuery = searchParams.get('clientId');
   const effectiveClientId = id || clientIdFromQuery || undefined;
-  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, profile, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, showToast, addReferredColleague, updateReferredColleague, addActivityLog, customOptions, updateCustomOptions } = useAppContext();
+  const { clients, properties, events, tasks, sales, rentals, documents, referredColleagues, waitingRoom, buyers, activityLogs, addClient, updateClient, addTask, updateTask, deleteTask, addEvent, updateEvent, deleteEvent, addSale, updateSale, deleteSale, addRental, updateRental, deleteRental, addDocument, updateDocument, deleteDocument, addReferredColleague, updateReferredColleague, addActivityLog, customOptions, updateCustomOptions } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
+  const profile = useAuthStore(state => state.profile);
   const { openRelations } = useRelationsDrawer();
   
   const [searchTerm, setSearchTerm] = useState('');

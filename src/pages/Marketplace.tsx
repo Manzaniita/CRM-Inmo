@@ -9,6 +9,7 @@ import { Card } from '../components/Card';
 import { cn, normalizeSearchText, formatCurrency } from '../lib/utils';
 import { generateId } from '../lib/id';
 import type { Property } from '../types';
+import { useUIStore } from '../stores/uiStore';
 
 type MarketplaceStatus = NonNullable<Property['marketplaceStatus']>;
 
@@ -29,7 +30,8 @@ const STATUS_VARIANT: Record<MarketplaceStatus, string> = {
 };
 
 export default function Marketplace() {
-  const { properties, updateProperty, showToast } = useAppContext();
+  const { properties, updateProperty } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);

@@ -10,6 +10,7 @@ import { cn, normalizeSearchText } from '../lib/utils';
 import { generateId } from '../lib/id';
 import { validateWaitingRoom } from '../lib/validators';
 import type { WaitingRoomEntry, WaitingRoomStatus } from '../types';
+import { useUIStore } from '../stores/uiStore';
 
 const STATUS_VARIANT: Record<WaitingRoomStatus, string> = {
   pendiente: 'orange',
@@ -19,7 +20,8 @@ const STATUS_VARIANT: Record<WaitingRoomStatus, string> = {
 };
 
 export default function WaitingRoom() {
-  const { waitingRoom, addWaitingRoomEntry, updateWaitingRoomEntry, deleteWaitingRoomEntry, showToast } = useAppContext();
+  const { waitingRoom, addWaitingRoomEntry, updateWaitingRoomEntry, deleteWaitingRoomEntry } = useAppContext()
+  const showToast = useUIStore(state => state.showToast);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState(false);
