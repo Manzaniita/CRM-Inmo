@@ -20,6 +20,7 @@ import {
   ListTodo,
   Link2,
   Loader2,
+  MoreVertical,
 } from "lucide-react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
@@ -143,6 +144,7 @@ export default function Clients() {
   const profile = useAuthStore((state) => state.profile);
   const { openRelations } = useRelationsDrawer();
 
+  const [openMenuClientId, setOpenMenuClientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -265,6 +267,14 @@ export default function Clients() {
       navigate("/clientes", { replace: true });
     }
   }, [searchParams, navigate]);
+
+  // Cerrar menú de acciones rápidas al hacer clic fuera
+  useEffect(() => {
+    if (!openMenuClientId) return;
+    const handleClickOutside = () => setOpenMenuClientId(null);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openMenuClientId]);
 
   // Estado de error si el ID de la URL no corresponde a ningún cliente cargado
   if (effectiveClientId && !selectedClient) {
@@ -2196,6 +2206,45 @@ export default function Clients() {
               >
                 <Link2 size={14} />
               </button>
+              <div className="relative">
+                <button
+                  className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenuClientId(openMenuClientId === client.id ? null : client.id);
+                  }}
+                  title="Acciones rápidas"
+                >
+                  <MoreVertical size={16} />
+                </button>
+                {openMenuClientId === client.id && (
+                  <div
+                    className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 z-50 py-1 overflow-hidden"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    {[
+                      { label: "Nuevo", value: "nuevo" },
+                      { label: "Contactado", value: "contactado" },
+                      { label: "En seguimiento", value: "en seguimiento" },
+                      { label: "Ganado", value: "cerrado" },
+                      { label: "Perdido", value: "perdido" },
+                    ].map((s) => (
+                      <button
+                        key={s.value}
+                        className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateClient({ ...client, status: s.value });
+                          setOpenMenuClientId(null);
+                        }}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <ChevronRight
                 size={16}
                 className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:text-slate-400 transition-colors"

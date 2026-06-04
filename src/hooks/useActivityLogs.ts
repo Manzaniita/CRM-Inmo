@@ -5,26 +5,33 @@ import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
 import { generateId } from "../lib/id";
 
-const fetchActivityLogs = async () => {
+const fetchActivityLogs = async (entityId?: string) => {
   const user = useAuthStore.getState().user;
   if (!user) throw new Error("No session");
-  const { data, error } = await supabase
+  let query = supabase
     .from("activity_logs")
     .select("*")
     .eq("user_id", user.id)
-    .limit(200)
     .order("createdAt", { ascending: false });
+
+  if (entityId) {
+    query = query.eq("entityId", entityId);
+  } else {
+    query = query.limit(200);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as ActivityLog[];
 };
 
-export function useActivityLogs() {
+export function useActivityLogs(entityId?: string) {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
   const { data: activityLogs = [] } = useQuery({
-    queryKey: ["activity_logs"],
-    queryFn: fetchActivityLogs,
+    queryKey: ["activity_logs", entityId ?? "all"],
+    queryFn: () => fetchActivityLogs(entityId),
     enabled: !!user,
   });
 

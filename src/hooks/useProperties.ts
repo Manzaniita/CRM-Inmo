@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
 import type { Property } from '../types';
+import { useActivityLogs } from './useActivityLogs';
 
 const PROPERTIES_KEY = ['properties'] as const;
 
@@ -23,6 +24,7 @@ export function useProperties() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
   const showToast = useUIStore(state => state.showToast);
+  const { addActivityLog } = useActivityLogs();
 
   const {
     data: properties = [],
@@ -59,16 +61,47 @@ export function useProperties() {
   const updateProperty = useMutation({
     mutationFn: async (property: Property) => {
       if (!user) throw new Error('No hay sesión activa');
+      const previous = queryClient.getQueryData<Property[]>(PROPERTIES_KEY)?.find(p => p.id === property.id);
       const { error } = await supabase
         .from('properties')
         .update(property)
         .eq('id', property.id)
         .eq('user_id', user.id);
       if (error) throw new Error(error.message);
+      return { property, previous };
     },
-    onSuccess: () => {
+    onSuccess: ({ property, previous }) => {
       queryClient.invalidateQueries({ queryKey: PROPERTIES_KEY });
       showToast('Propiedad actualizada', 'success');
+
+      if (previous) {
+        if (previous.price !== property.price) {
+          addActivityLog({
+            type: 'property',
+            action: 'updated',
+            title: `Precio actualizado: ${property.price} ${property.currency}`,
+            description: `Anterior: ${previous.price} ${previous.currency}`,
+            entityId: property.id,
+          });
+        }
+        if (previous.status !== property.status) {
+          addActivityLog({
+            type: 'property',
+            action: 'status_changed',
+            title: `Estado cambiado a ${property.status}`,
+            description: `Anterior: ${previous.status}`,
+            entityId: property.id,
+          });
+        }
+        if (previous.title !== property.title) {
+          addActivityLog({
+            type: 'property',
+            action: 'updated',
+            title: `Título actualizado: ${property.title}`,
+            entityId: property.id,
+          });
+        }
+      }
     },
     onError: (err: Error) => {
       showToast(err.message || 'Error al actualizar propiedad', 'error');

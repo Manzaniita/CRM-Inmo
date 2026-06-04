@@ -18,6 +18,8 @@ import {
   RefreshCw,
   List,
   Tag,
+  Mail,
+  Pencil,
 } from "lucide-react";
 import Button from "../components/Button";
 import { Card } from "../components/Card";
@@ -64,6 +66,12 @@ export default function Configuration() {
   });
   const [creatingUser, setCreatingUser] = useState(false);
   const [serverRole, setServerRole] = useState<string | null>(null);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editUserEmail, setEditUserEmail] = useState("");
+  const [editUserPassword, setEditUserPassword] = useState("");
+  const [savingUserEdit, setSavingUserEdit] = useState(false);
 
   const verifyRole = async () => {
     const { data, error } = await supabase.rpc("get_my_role");
@@ -247,6 +255,65 @@ export default function Configuration() {
         );
         showToast("Reset forzado activado", "success");
       }
+    }
+  };
+
+  const handleSendResetEmail = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      showToast(error.message, "error");
+    } else {
+      showToast("Correo de recuperación enviado", "success");
+    }
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    if (!editUserEmail && !editUserPassword) {
+      showToast("Completá al menos un campo para actualizar", "warning");
+      return;
+    }
+    setSavingUserEdit(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error("No hay sesión activa");
+
+      const res = await fetch("/api/admin-auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: "updateUser",
+          userId: editingUser.user_id,
+          email: editUserEmail || undefined,
+          password: editUserPassword || undefined,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Error al actualizar usuario");
+
+      setUsersList((prev) =>
+        prev.map((u) =>
+          u.user_id === editingUser.user_id
+            ? { ...u, email: editUserEmail || u.email }
+            : u,
+        ),
+      );
+      setShowEditUserModal(false);
+      setEditingUser(null);
+      setEditUserEmail("");
+      setEditUserPassword("");
+      showToast("Usuario actualizado correctamente", "success");
+    } catch (err: any) {
+      showToast(err.message, "error");
+    } finally {
+      setSavingUserEdit(false);
     }
   };
 
@@ -510,16 +577,27 @@ export default function Configuration() {
               subtitle="Administra los agentes y superadmins del sistema."
             >
               <div className="pt-4 space-y-4">
-                <div className="flex justify-end mb-4 gap-2">
-                  <Button variant="outline" onClick={fetchUsers}>
-                    <RefreshCw size={16} className="mr-2" /> Refrescar Lista
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={() => setShowUserModal(true)}
-                  >
-                    <Plus size={18} className="mr-2" /> Crear Nuevo Usuario
-                  </Button>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="relative w-full sm:w-72">
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre o email..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={fetchUsers}>
+                      <RefreshCw size={16} className="mr-2" /> Refrescar Lista
+                    </Button>
+                    <Button
+                      variant="primary"
+                      onClick={() => setShowUserModal(true)}
+                    >
+                      <Plus size={18} className="mr-2" /> Crear Nuevo Usuario
+                    </Button>
+                  </div>
                 </div>
 
                 {loadingUsers ? (
@@ -546,60 +624,99 @@ export default function Configuration() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200/60 dark:divide-white/5">
-                        {usersList.map((u) => (
-                          <tr
-                            key={u.user_id}
-                            className="hover:bg-white/60 dark:hover:bg-white/5 transition-colors"
-                          >
-                            <td className="px-4 py-4 font-medium text-slate-900 dark:text-slate-100">
-                              {u.name}
-                            </td>
-                            <td className="px-4 py-4 text-slate-600 dark:text-slate-400">
-                              {u.email}
-                            </td>
-                            <td className="px-4 py-4">
-                              <Badge
-                                variant={
-                                  u.role === "superadmin" ? "purple" : "blue"
-                                }
-                              >
-                                {u.role === "superadmin"
-                                  ? "Superadmin"
-                                  : "Agent"}
-                              </Badge>
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              {u.must_change_password ? (
-                                <Badge variant="orange" size="sm">
-                                  Reset Pendiente
-                                </Badge>
-                              ) : (
-                                <Badge variant="green" size="sm">
-                                  Actualizada
-                                </Badge>
-                              )}
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => handleForceReset(u.user_id)}
-                                  title="Forzar reseteo de clave"
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                        {usersList
+                          .filter(
+                            (u) =>
+                              u.name
+                                .toLowerCase()
+                                .includes(userSearchTerm.toLowerCase()) ||
+                              u.email
+                                .toLowerCase()
+                                .includes(userSearchTerm.toLowerCase()),
+                          )
+                          .map((u) => (
+                            <tr
+                              key={u.user_id}
+                              className="hover:bg-white/60 dark:hover:bg-white/5 transition-colors"
+                            >
+                              <td className="px-4 py-4 font-medium text-slate-900 dark:text-slate-100">
+                                {u.name}
+                              </td>
+                              <td className="px-4 py-4 text-slate-600 dark:text-slate-400">
+                                {u.email}
+                              </td>
+                              <td className="px-4 py-4">
+                                <Badge
+                                  variant={
+                                    u.role === "superadmin"
+                                      ? "purple"
+                                      : "blue"
+                                  }
                                 >
-                                  <Key size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteUser(u.user_id)}
-                                  title="Eliminar usuario"
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {usersList.length === 0 && (
+                                  {u.role === "superadmin"
+                                    ? "Superadmin"
+                                    : "Agent"}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-4 text-center">
+                                {u.must_change_password ? (
+                                  <Badge variant="orange" size="sm">
+                                    Reset Pendiente
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="green" size="sm">
+                                    Actualizada
+                                  </Badge>
+                                )}
+                              </td>
+                              <td className="px-4 py-4">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleSendResetEmail(u.email)}
+                                    title="Enviar correo de recuperación"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                  >
+                                    <Mail size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingUser(u);
+                                      setEditUserEmail(u.email);
+                                      setEditUserPassword("");
+                                      setShowEditUserModal(true);
+                                    }}
+                                    title="Editar usuario"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+                                  >
+                                    <Pencil size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleForceReset(u.user_id)}
+                                    title="Forzar reseteo de clave"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                                  >
+                                    <Key size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteUser(u.user_id)}
+                                    title="Eliminar usuario"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        {usersList.filter(
+                          (u) =>
+                            u.name
+                              .toLowerCase()
+                              .includes(userSearchTerm.toLowerCase()) ||
+                            u.email
+                              .toLowerCase()
+                              .includes(userSearchTerm.toLowerCase()),
+                        ).length === 0 && (
                           <tr>
                             <td
                               colSpan={5}
@@ -707,6 +824,77 @@ export default function Configuration() {
                   isLoading={creatingUser}
                 >
                   {creatingUser ? "Creando..." : "Crear Usuario"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEditUserModal && editingUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">
+                Editar Usuario
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEditUserModal(false);
+                  setEditingUser(null);
+                  setEditUserEmail("");
+                  setEditUserPassword("");
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateUser} className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Nuevo Email
+                </label>
+                <input
+                  type="email"
+                  value={editUserEmail}
+                  onChange={(e) => setEditUserEmail(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Nueva Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={editUserPassword}
+                  onChange={(e) => setEditUserPassword(e.target.value)}
+                  placeholder="Dejar vacío para no cambiar"
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div className="pt-2 flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowEditUserModal(false);
+                    setEditingUser(null);
+                    setEditUserEmail("");
+                    setEditUserPassword("");
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="flex-1"
+                  isLoading={savingUserEdit}
+                >
+                  {savingUserEdit ? "Guardando..." : "Guardar Cambios"}
                 </Button>
               </div>
             </form>

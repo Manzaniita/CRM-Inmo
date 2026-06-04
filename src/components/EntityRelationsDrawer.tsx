@@ -144,7 +144,7 @@ export default function EntityRelationsDrawer() {
   const { documents } = useDocuments();
   const { waitingRoom } = useWaitingRoom();
   const { buyers } = useBuyers();
-  const { activityLogs, addActivityLog } = useActivityLogs();
+  const { activityLogs, addActivityLog } = useActivityLogs(entityId);
   const { sales } = useSales();
   const { tasks, addTask } = useTasks();
   const { events } = useEvents();
