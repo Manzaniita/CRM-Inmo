@@ -308,7 +308,7 @@ export default function Clients() {
   // Compute client IDs with operations (sales or rentals)
   const clientIdsWithOperations = new Set([
     ...sales.map((s) => s.clientCompradorId),
-    ...rentals.map((r) => r.inquilinoId),
+    ...rentals.map((r) => r.clientId),
   ]);
 
   // Compute client IDs with pending tasks
@@ -1450,17 +1450,17 @@ export default function Clients() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                          {doc.name}
+                          {doc.nombre}
                         </p>
                         <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                          {doc.type} · {(doc.fileSize ? (doc.fileSize / 1024).toFixed(1) + ' KB' : '')}
+                          {doc.tipo} · {(doc.fileSize ? (doc.fileSize / 1024).toFixed(1) + ' KB' : '')}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => {
-                            if (doc.simulatedUrl && doc.simulatedUrl.startsWith('http')) {
-                              window.open(doc.simulatedUrl, '_blank');
+                            if (doc.url && doc.url.startsWith('http')) {
+                              window.open(doc.url, '_blank');
                             } else {
                               showToast('No hay archivo disponible para descargar', 'info');
                             }
@@ -1505,8 +1505,8 @@ export default function Clients() {
                       const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || '' : '';
                       const newDoc: Document = {
                         id: generateId('d'),
-                        name: file.name,
-                        type: 'Otro',
+                        nombre: file.name,
+                        tipo: 'Otro',
                         status: 'cargado',
                         clientId: selectedClient.id,
                         uploadDate: new Date().toISOString(),
@@ -1514,13 +1514,13 @@ export default function Clients() {
                         fileName: file.name,
                         fileSize: file.size,
                         fileExtension: ext,
-                        simulatedUrl: publicUrl,
+                        url: publicUrl,
                       };
                       await addDocument(newDoc);
                       await addActivityLog({
                         type: 'document',
                         action: 'created',
-                        title: `Documento cargado: ${newDoc.name}`,
+                        title: `Documento cargado: ${newDoc.nombre}`,
                         description: `Vinculado a cliente ${selectedClient.name}`,
                         entityId: newDoc.id,
                       });

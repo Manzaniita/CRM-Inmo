@@ -81,13 +81,13 @@ export function validateSale(sale: Partial<Sale>): ValidationResult {
 }
 
 export function validateRental(rental: Partial<Rental>): ValidationResult {
-  if (!rental.inquilinoId) {
+  if (!rental.clientId) {
     return { valid: false, message: 'El inquilino es obligatorio.' };
   }
-  if (!rental.propiedadId) {
+  if (!rental.propertyId) {
     return { valid: false, message: 'La propiedad es obligatoria.' };
   }
-  if (typeof rental.montoMensual === 'number' && rental.montoMensual < 0) {
+  if (typeof rental.monto === 'number' && rental.monto < 0) {
     return { valid: false, message: 'El monto mensual no puede ser negativo.' };
   }
   if (typeof rental.deposito === 'number' && rental.deposito < 0) {
@@ -103,10 +103,10 @@ export function validateRental(rental: Partial<Rental>): ValidationResult {
 }
 
 export function validateDocument(doc: Partial<Document>): ValidationResult {
-  if (!doc.name || !doc.name.trim()) {
+  if (!doc.nombre || !doc.nombre.trim()) {
     return { valid: false, message: 'El nombre del documento es obligatorio.' };
   }
-  if (!doc.type) {
+  if (!doc.tipo) {
     return { valid: false, message: 'El tipo de documento es obligatorio.' };
   }
   if (!doc.status) {

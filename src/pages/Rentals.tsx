@@ -63,8 +63,8 @@ export default function Rentals() {
 
   const filteredRentals = rentals
     .filter((rental) => {
-      const property = properties.find((p) => p.id === rental.propiedadId);
-      const client = clients.find((c) => c.id === rental.inquilinoId);
+      const property = properties.find((p) => p.id === rental.propertyId);
+      const client = clients.find((c) => c.id === rental.clientId);
       const matchesSearch =
         property?.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -260,10 +260,10 @@ export default function Rentals() {
                 <div className="space-y-3">
                   {stageRentals.map((rental) => {
                     const property = properties.find(
-                      (p) => p.id === rental.propiedadId,
+                      (p) => p.id === rental.propertyId,
                     );
                     const client = clients.find(
-                      (c) => c.id === rental.inquilinoId,
+                      (c) => c.id === rental.clientId,
                     );
                     return (
                       <div
@@ -296,7 +296,7 @@ export default function Rentals() {
                           <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
                             <p className="text-sm font-black text-slate-900 dark:text-slate-100">
                               {formatCurrency(
-                                rental.montoMensual,
+                                rental.monto,
                                 rental.moneda,
                               )}
                             </p>
@@ -346,10 +346,10 @@ export default function Rentals() {
               <tbody className="divide-y divide-gray-100">
                 {filteredRentals.map((rental) => {
                   const property = properties.find(
-                    (p) => p.id === rental.propiedadId,
+                    (p) => p.id === rental.propertyId,
                   );
                   const client = clients.find(
-                    (c) => c.id === rental.inquilinoId,
+                    (c) => c.id === rental.clientId,
                   );
                   return (
                     <tr
@@ -377,7 +377,7 @@ export default function Rentals() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center font-bold text-slate-900 dark:text-slate-100 text-sm">
-                          {formatCurrency(rental.montoMensual, rental.moneda)}
+                          {formatCurrency(rental.monto, rental.moneda)}
                         </div>
                         <p className="text-[10px] text-slate-400 dark:text-slate-500">
                           Día de pago: {rental.diaPago}
@@ -452,17 +452,17 @@ function RentalDetailModal({
   const { tasks } = useTasks();
   const { events } = useEvents();
   const { properties } = useProperties();
-  const property = properties.find((p) => p.id === rental.propiedadId);
-  const tenant = clients.find((c) => c.id === rental.inquilinoId);
+  const property = properties.find((p) => p.id === rental.propertyId);
+  const tenant = clients.find((c) => c.id === rental.clientId);
   const owner = clients.find((c) => c.id === rental.propietarioId);
 
   const relatedTasks = tasks.filter(
     (t) =>
-      t.propertyId === rental.propiedadId && t.clientId === rental.inquilinoId,
+      t.propertyId === rental.propertyId && t.clientId === rental.clientId,
   );
   const relatedEvents = events.filter(
     (e) =>
-      e.propertyId === rental.propiedadId && e.clientId === rental.inquilinoId,
+      e.propertyId === rental.propertyId && e.clientId === rental.clientId,
   );
 
   return (
@@ -510,7 +510,7 @@ function RentalDetailModal({
                     Monto Mensual
                   </p>
                   <p className="text-lg font-black text-green-700">
-                    {formatCurrency(rental.montoMensual, rental.moneda)}
+                    {formatCurrency(rental.monto, rental.moneda)}
                   </p>
                 </div>
               </div>
@@ -714,13 +714,13 @@ function RentalFormModal({
     rental || {
       estado: "consulta",
       moneda: "ARS",
-      montoMensual: 0,
+      monto: 0,
       deposito: 0,
       comision: 0,
       diaPago: 1,
       notas: "",
-      inquilinoId: "",
-      propiedadId: "",
+      clientId: "",
+      propertyId: "",
       propietarioId: "",
       locadorId: "",
       fechaInicio: new Date().toISOString().split("T")[0],
@@ -733,7 +733,7 @@ function RentalFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.inquilinoId || !formData.propiedadId || !formData.estado) {
+    if (!formData.clientId || !formData.propertyId || !formData.estado) {
       return showToast(
         "Por favor completa todos los campos obligatorios",
         "error",
@@ -756,7 +756,7 @@ function RentalFormModal({
       const newRental: Rental = {
         ...(formData as Rental),
         id: generateId("r"),
-        fechaCreacion: now,
+        createdAt: now,
         fechaActualizacion: now,
       };
       addRental(newRental);
@@ -817,9 +817,9 @@ function RentalFormModal({
               </label>
               <select
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                value={formData.inquilinoId}
+                value={formData.clientId}
                 onChange={(e) =>
-                  setFormData({ ...formData, inquilinoId: e.target.value })
+                  setFormData({ ...formData, clientId: e.target.value })
                 }
                 required
               >
@@ -838,9 +838,9 @@ function RentalFormModal({
               </label>
               <select
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                value={formData.propiedadId}
+                value={formData.propertyId}
                 onChange={(e) =>
-                  setFormData({ ...formData, propiedadId: e.target.value })
+                  setFormData({ ...formData, propertyId: e.target.value })
                 }
                 required
               >
@@ -924,11 +924,11 @@ function RentalFormModal({
                 <input
                   type="number"
                   className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
-                  value={formData.montoMensual}
+                  value={formData.monto}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      montoMensual: Number(e.target.value),
+                      monto: Number(e.target.value),
                     })
                   }
                 />

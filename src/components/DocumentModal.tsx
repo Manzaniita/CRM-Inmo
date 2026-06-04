@@ -88,8 +88,8 @@ export default function DocumentModal({
   const user = useAuthStore(state => state.user);
 
   const [formData, setFormData] = useState({
-    name: document?.name || '',
-    type: document?.type || 'Otro' as DocumentType,
+    nombre: document?.nombre || '',
+    tipo: document?.tipo || 'Otro' as DocumentType,
     status: document?.status || 'pendiente' as DocumentStatus,
     clientId: document?.clientId || defaultClientId || '',
     propertyId: document?.propertyId || defaultPropertyId || '',
@@ -118,8 +118,8 @@ export default function DocumentModal({
     if (isOpen) {
       if (mode === 'edit' && document) {
         setFormData({
-          name: document.name,
-          type: document.type,
+          nombre: document.nombre,
+          tipo: document.tipo,
           status: document.status,
           clientId: document.clientId || '',
           propertyId: document.propertyId || '',
@@ -129,8 +129,8 @@ export default function DocumentModal({
         });
       } else if (mode === 'create') {
         setFormData({
-          name: '',
-          type: 'Otro',
+          nombre: '',
+          tipo: 'Otro',
           status: 'pendiente',
           clientId: defaultClientId || '',
           propertyId: defaultPropertyId || '',
@@ -172,8 +172,8 @@ export default function DocumentModal({
 
   const handleSubmit = async () => {
     const validation = validateDocument({
-      name: formData.name,
-      type: formData.type,
+      nombre: formData.nombre,
+      tipo: formData.tipo,
       status: formData.status
     });
     if (!validation.valid) {
@@ -184,7 +184,7 @@ export default function DocumentModal({
     const now = new Date().toISOString().split('T')[0];
 
     if (document && (mode === 'edit' || isEditing)) {
-      let publicUrl = document.simulatedUrl;
+      let publicUrl = document.url;
       if (selectedFile) {
         setIsUploadingDoc(true);
         try {
@@ -201,8 +201,8 @@ export default function DocumentModal({
       }
       onSave({
         ...document,
-        name: formData.name.trim(),
-        type: formData.type,
+        nombre: formData.nombre.trim(),
+        tipo: formData.tipo,
         status: formData.status,
         clientId: formData.clientId || undefined,
         propertyId: formData.propertyId || undefined,
@@ -212,7 +212,7 @@ export default function DocumentModal({
         fileName: selectedFile ? selectedFile.name : document.fileName,
         fileSize: selectedFile ? selectedFile.size : document.fileSize,
         fileExtension: selectedFile ? selectedFile.name.split('.').pop() || document.fileExtension : document.fileExtension,
-        simulatedUrl: publicUrl
+        url: publicUrl
       });
     } else {
       let publicUrl: string | undefined;
@@ -234,8 +234,8 @@ export default function DocumentModal({
       const id = generateId('d');
       const newDoc: Document = {
         id,
-        name: formData.name.trim(),
-        type: formData.type,
+        nombre: formData.nombre.trim(),
+        tipo: formData.tipo,
         status: formData.status,
         clientId: formData.clientId || undefined,
         propertyId: formData.propertyId || undefined,
@@ -246,15 +246,15 @@ export default function DocumentModal({
         fileName: selectedFile ? selectedFile.name : undefined,
         fileSize: selectedFile ? selectedFile.size : undefined,
         fileExtension: selectedFile ? selectedFile.name.split('.').pop() || undefined : undefined,
-        simulatedUrl: publicUrl
+        url: publicUrl
       };
       onSave(newDoc);
       if (publicUrl) {
         await addActivityLog({
           type: 'document',
           action: 'created',
-          title: `Documento cargado: ${newDoc.name}`,
-          description: `Tipo: ${newDoc.type}${formData.propertyId ? ' · Vinculado a propiedad' : formData.clientId ? ' · Vinculado a cliente' : ''}`,
+          title: `Documento cargado: ${newDoc.nombre}`,
+          description: `Tipo: ${newDoc.tipo}${formData.propertyId ? ' · Vinculado a propiedad' : formData.clientId ? ' · Vinculado a cliente' : ''}`,
           entityId: newDoc.id,
         });
       }
@@ -273,8 +273,8 @@ export default function DocumentModal({
   };
 
   const handleDownload = () => {
-    if (document?.simulatedUrl && document.simulatedUrl.startsWith('http')) {
-      window.open(document.simulatedUrl, '_blank');
+    if (document?.url && document.url.startsWith('http')) {
+      window.open(document.url, '_blank');
     } else if (document && onDownload) {
       onDownload(document);
     }
@@ -307,9 +307,9 @@ export default function DocumentModal({
                 <StatusBadgeIcon size={32} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{document?.name}</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{document?.nombre}</h3>
                 <div className="flex gap-2 mt-2">
-                  <Badge variant="gray">{document?.type}</Badge>
+                  <Badge variant="gray">{document?.tipo}</Badge>
                   <Badge variant={document ? getStatusVariant(document.status) : 'gray'}>{document?.status}</Badge>
                 </div>
               </div>
@@ -391,7 +391,7 @@ export default function DocumentModal({
                 onClick={handleDownload}
               >
                 <Download size={16} className="mr-2" />
-                {document?.simulatedUrl && document.simulatedUrl.startsWith('http') ? 'Descargar' : 'Descargar (simulado)'}
+                {document?.url && document.url.startsWith('http') ? 'Descargar' : 'Descargar (simulado)'}
               </Button>
               <Button
                 variant="secondary"
@@ -418,8 +418,8 @@ export default function DocumentModal({
               <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Nombre del documento *</label>
               <input
                 type="text"
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                value={formData.nombre}
+                onChange={e => setFormData({ ...formData, nombre: e.target.value })}
                 placeholder="Ej: DNI Juan Pérez"
                 className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
@@ -429,8 +429,8 @@ export default function DocumentModal({
               <div>
                 <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Tipo de documento</label>
                 <select
-                  value={formData.type}
-                  onChange={e => setFormData({ ...formData, type: e.target.value as DocumentType })}
+                  value={formData.tipo}
+                  onChange={e => setFormData({ ...formData, tipo: e.target.value as DocumentType })}
                   className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {DOCUMENT_TYPES.map(t => (
@@ -501,7 +501,7 @@ export default function DocumentModal({
                 >
                   <option value="">Sin alquiler</option>
                   {rentals.map(r => {
-                    const client = clients.find(c => c.id === r.inquilinoId);
+                    const client = clients.find(c => c.id === r.clientId);
                     return (
                       <option key={r.id} value={r.id}>Alquiler {r.id.toUpperCase()} - {client?.name || 'Inquilino'}</option>
                     );

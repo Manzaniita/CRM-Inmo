@@ -63,8 +63,8 @@ const DOCUMENT_STATUSES: DocumentStatus[] = [
 ];
 
 interface FormData {
-  name: string;
-  type: DocumentType;
+  nombre: string;
+  tipo: DocumentType;
   status: DocumentStatus;
   clientId: string;
   propertyId: string;
@@ -74,8 +74,8 @@ interface FormData {
 }
 
 const emptyFormData: FormData = {
-  name: "",
-  type: "Otro",
+  nombre: "",
+  tipo: "Otro",
   status: "pendiente",
   clientId: "",
   propertyId: "",
@@ -150,10 +150,10 @@ export default function Documents() {
 
   // Filtered documents
   const filteredDocs = documents.filter((d) => {
-    const matchesSearch = d.name
+    const matchesSearch = d.nombre
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "todos" || d.type === filterType;
+    const matchesType = filterType === "todos" || d.tipo === filterType;
     const matchesStatus = filterStatus === "todos" || d.status === filterStatus;
     return matchesSearch && matchesType && matchesStatus;
   });
@@ -194,8 +194,8 @@ export default function Documents() {
   const openEditModal = (doc: Document) => {
     setEditingDoc(doc);
     setFormData({
-      name: doc.name,
-      type: doc.type,
+      nombre: doc.nombre,
+      tipo: doc.tipo,
       status: doc.status,
       clientId: doc.clientId || "",
       propertyId: doc.propertyId || "",
@@ -209,8 +209,8 @@ export default function Documents() {
   // Save document (create or update)
   const handleSave = async () => {
     const validation = validateDocument({
-      name: formData.name,
-      type: formData.type,
+      nombre: formData.nombre,
+      tipo: formData.tipo,
       status: formData.status,
     });
     if (!validation.valid) {
@@ -221,7 +221,7 @@ export default function Documents() {
     const now = new Date().toISOString().split("T")[0];
 
     if (editingDoc) {
-      let publicUrl = editingDoc.simulatedUrl;
+      let publicUrl = editingDoc.url;
       if (selectedFile) {
         setIsUploadingDoc(true);
         try {
@@ -237,8 +237,8 @@ export default function Documents() {
       }
       await updateDocument({
         ...editingDoc,
-        name: formData.name.trim(),
-        type: formData.type,
+        nombre: formData.nombre.trim(),
+        tipo: formData.tipo,
         status: formData.status,
         clientId: formData.clientId || undefined,
         propertyId: formData.propertyId || undefined,
@@ -250,7 +250,7 @@ export default function Documents() {
         fileExtension: selectedFile
           ? selectedFile.name.split(".").pop() || editingDoc.fileExtension
           : editingDoc.fileExtension,
-        simulatedUrl: publicUrl,
+        url: publicUrl,
       });
       setIsUploadingDoc(false);
     } else {
@@ -272,8 +272,8 @@ export default function Documents() {
       const newId = generateId("d");
       const newDoc: Document = {
         id: newId,
-        name: formData.name.trim(),
-        type: formData.type,
+        nombre: formData.nombre.trim(),
+        tipo: formData.tipo,
         status: formData.status,
         clientId: formData.clientId || undefined,
         propertyId: formData.propertyId || undefined,
@@ -286,14 +286,14 @@ export default function Documents() {
         fileExtension: selectedFile
           ? selectedFile.name.split(".").pop() || undefined
           : undefined,
-        simulatedUrl: publicUrl,
+        url: publicUrl,
       };
       await addDocument(newDoc);
       await addActivityLog({
         type: 'document',
         action: 'created',
-        title: `Documento cargado: ${newDoc.name}`,
-        description: `Tipo: ${newDoc.type}${formData.propertyId ? ' · Vinculado a propiedad' : formData.clientId ? ' · Vinculado a cliente' : ''}`,
+        title: `Documento cargado: ${newDoc.nombre}`,
+        description: `Tipo: ${newDoc.tipo}${formData.propertyId ? ' · Vinculado a propiedad' : formData.clientId ? ' · Vinculado a cliente' : ''}`,
         entityId: newDoc.id,
       });
       setIsUploadingDoc(false);
@@ -314,8 +314,8 @@ export default function Documents() {
 
   // Download document
   const handleSimulatedDownload = (doc: Document) => {
-    if (doc.simulatedUrl && doc.simulatedUrl.startsWith('http')) {
-      window.open(doc.simulatedUrl, '_blank');
+    if (doc.url && doc.url.startsWith('http')) {
+      window.open(doc.url, '_blank');
     } else if (doc.fileName) {
       showToast(
         'Descarga simulada: "' +
@@ -464,11 +464,11 @@ export default function Documents() {
                     </div>
                   </div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 transition-colors truncate mb-1">
-                    {doc.name}
+                    {doc.nombre}
                   </h4>
                   <div className="flex flex-col gap-2 mb-4">
                     <Badge size="sm" variant="gray" className="w-fit">
-                      {doc.type}
+                      {doc.tipo}
                     </Badge>
                     <Badge
                       size="sm"
@@ -527,11 +527,11 @@ export default function Documents() {
                   onClick={() => setSelectedDoc(doc)}
                 >
                   <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600">
-                    {doc.name}
+                    {doc.nombre}
                   </td>
                   <td className="px-6 py-4">
                     <Badge size="sm" variant="gray">
-                      {doc.type}
+                      {doc.tipo}
                     </Badge>
                   </td>
                   <td className="px-6 py-4">
@@ -642,10 +642,10 @@ export default function Documents() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">
-                    {selectedDoc.name}
+                    {selectedDoc.nombre}
                   </h3>
                   <div className="flex gap-2 mt-2">
-                    <Badge variant="gray">{selectedDoc.type}</Badge>
+                    <Badge variant="gray">{selectedDoc.tipo}</Badge>
                     <Badge variant={getStatusVariant(selectedDoc.status)}>
                       {selectedDoc.status}
                     </Badge>
@@ -834,9 +834,9 @@ export default function Documents() {
                 </label>
                 <input
                   type="text"
-                  value={formData.name}
+                  value={formData.nombre}
                   onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
+                    setFormData({ ...formData, nombre: e.target.value })
                   }
                   placeholder="Ej: DNI Juan Pérez"
                   className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -850,11 +850,11 @@ export default function Documents() {
                     Tipo de documento
                   </label>
                   <select
-                    value={formData.type}
+                    value={formData.tipo}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        type: e.target.value as DocumentType,
+                        tipo: e.target.value as DocumentType,
                       })
                     }
                     className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -969,7 +969,7 @@ export default function Documents() {
                     <option value="">Sin alquiler</option>
                     {rentals.map((r) => {
                       const clientName =
-                        getClientName(r.inquilinoId) || "Inquilino";
+                        getClientName(r.clientId) || "Inquilino";
                       return (
                         <option key={r.id} value={r.id}>
                           Alquiler {r.id.toUpperCase()} - {clientName}

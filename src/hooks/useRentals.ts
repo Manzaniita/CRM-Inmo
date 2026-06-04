@@ -7,11 +7,11 @@ import { useUIStore } from "../stores/uiStore";
 // Mapeo DB → Tipo (la tabla usa nombres en inglés / createdAt)
 const fromDbRental = (db: any): Rental => ({
   id: db.id,
-  inquilinoId: db.clientId,
-  propiedadId: db.propertyId,
+  clientId: db.clientId,
+  propertyId: db.propertyId,
   propietarioId: db.ownerId,
   locadorId: db.locadorId,
-  montoMensual: db.montoMensual ?? db.monto,
+  monto: db.monto,
   deposito: db.deposito,
   comision: db.comision,
   moneda: db.moneda,
@@ -20,26 +20,22 @@ const fromDbRental = (db: any): Rental => ({
   diaPago: db.diaPago,
   estado: db.estado,
   notas: db.notas,
-  fechaCreacion: db.createdAt,
+  createdAt: db.createdAt,
   fechaActualizacion: db.updatedAt,
 });
 
 // Mapeo Tipo → DB
 const toDbRental = (rental: Rental): any => {
   const {
-    fechaCreacion,
+    createdAt,
     fechaActualizacion,
-    inquilinoId,
-    propiedadId,
     propietarioId,
     ...rest
   } = rental;
   return {
     ...rest,
-    clientId: inquilinoId,
-    propertyId: propiedadId,
     ownerId: propietarioId,
-    createdAt: fechaCreacion,
+    createdAt,
     updatedAt: fechaActualizacion,
   };
 };
@@ -79,7 +75,7 @@ export function useRentals() {
         await supabase
           .from("properties")
           .update({ status: "alquilada" })
-          .eq("id", inserted.propiedadId)
+          .eq("id", inserted.propertyId)
           .eq("user_id", user!.id);
       }
       return inserted;
@@ -107,7 +103,7 @@ export function useRentals() {
         await supabase
           .from("properties")
           .update({ status: "alquilada" })
-          .eq("id", rental.propiedadId)
+          .eq("id", rental.propertyId)
           .eq("user_id", user!.id);
       }
       return rental;

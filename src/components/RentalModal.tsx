@@ -43,12 +43,12 @@ export default function RentalModal({
     const showToast = useUIStore(state => state.showToast);
   const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState<Partial<Rental>>(rental || {
-    inquilinoId: defaultClientId || '',
-    propiedadId: defaultPropertyId || '',
+    clientId: defaultClientId || '',
+    propertyId: defaultPropertyId || '',
     propietarioId: '',
     locadorId: '',
     estado: 'consulta',
-    montoMensual: 0,
+    monto: 0,
     deposito: 0,
     comision: 0,
     moneda: 'ARS',
@@ -70,8 +70,8 @@ export default function RentalModal({
     subtitle: [p.address, p.zone].filter(Boolean).join(', ') || `Código: ${p.code}`
   }));
 
-  const inquilino = clients.find(c => c.id === (formData.inquilinoId || rental?.inquilinoId));
-  const propiedad = properties.find(p => p.id === (formData.propiedadId || rental?.propiedadId));
+  const inquilino = clients.find(c => c.id === (formData.clientId || rental?.clientId));
+  const propiedad = properties.find(p => p.id === (formData.propertyId || rental?.propertyId));
   const locador = clients.find(c => c.id === (formData.locadorId || rental?.locadorId));
 
   const getStatusVariant = (status: string): any => {
@@ -84,8 +84,8 @@ export default function RentalModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.inquilinoId) return showToast('Debes seleccionar un inquilino', 'error');
-    if (!formData.propiedadId) return showToast('Debes seleccionar una propiedad', 'error');
+    if (!formData.clientId) return showToast('Debes seleccionar un inquilino', 'error');
+    if (!formData.propertyId) return showToast('Debes seleccionar una propiedad', 'error');
     const validation = validateRental(formData);
     if (!validation.valid) {
       showToast(validation.message || 'Error de validación', 'error');
@@ -95,7 +95,7 @@ export default function RentalModal({
     if (rental) {
       onSave({ ...rental, ...(formData as Rental), fechaActualizacion: now });
     } else {
-      onSave({ ...(formData as Rental), id: generateId('r'), fechaCreacion: now, fechaActualizacion: now });
+      onSave({ ...(formData as Rental), id: generateId('r'), createdAt: now, fechaActualizacion: now });
     }
     onClose();
   };
@@ -129,7 +129,7 @@ export default function RentalModal({
               <div className="grid grid-cols-2 gap-6">
                 <div className="p-5 bg-green-50/50 rounded-2xl border border-green-100">
                   <p className="text-[10px] font-black text-green-600/60 uppercase tracking-widest mb-1">Monto Mensual</p>
-                  <p className="text-lg font-black text-green-700">{formatCurrency(rental.montoMensual, rental.moneda)}</p>
+                  <p className="text-lg font-black text-green-700">{formatCurrency(rental.monto, rental.moneda)}</p>
                 </div>
                 <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
                   <p className="text-[10px] font-black text-blue-600/60 uppercase tracking-widest mb-1">Deposito</p>
@@ -202,8 +202,8 @@ export default function RentalModal({
                 <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Inquilino *</label>
                 <SearchableSelect
                   placeholder="Seleccionar inquilino..."
-                  value={formData.inquilinoId}
-                  onChange={value => setFormData({...formData, inquilinoId: value})}
+                  value={formData.clientId}
+                  onChange={value => setFormData({...formData, clientId: value})}
                   options={clientOptions}
                   emptyLabel="Seleccionar Cliente"
                 />
@@ -212,8 +212,8 @@ export default function RentalModal({
                 <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Propiedad *</label>
                 <SearchableSelect
                   placeholder="Seleccionar propiedad..."
-                  value={formData.propiedadId}
-                  onChange={value => setFormData({...formData, propiedadId: value})}
+                  value={formData.propertyId}
+                  onChange={value => setFormData({...formData, propertyId: value})}
                   options={propertyOptions}
                   emptyLabel="Seleccionar Propiedad"
                 />
@@ -246,7 +246,7 @@ export default function RentalModal({
               <div>
                 <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Monto Mensual</label>
                 <input type="number" className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
-                  value={formData.montoMensual} onChange={e => setFormData({...formData, montoMensual: Number(e.target.value)})} />
+                  value={formData.monto} onChange={e => setFormData({...formData, monto: Number(e.target.value)})} />
               </div>
               <div>
                 <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Deposito</label>

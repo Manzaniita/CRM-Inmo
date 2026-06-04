@@ -168,11 +168,11 @@ export type RentalStatus = 'consulta' | 'visita' | 'documentación' | 'aprobado'
 
 export interface Rental {
   id: string;
-  inquilinoId: string;
-  propiedadId: string;
+  clientId: string;
+  propertyId: string;
   propietarioId?: string;
   locadorId?: string;
-  montoMensual: number;
+  monto: number;
   deposito: number;
   comision: number;
   moneda: 'USD' | 'ARS';
@@ -181,7 +181,7 @@ export interface Rental {
   diaPago: number;
   estado: RentalStatus;
   notas: string;
-  fechaCreacion: string;
+  createdAt: string;
   fechaActualizacion: string;
 }
 
@@ -190,8 +190,8 @@ export type DocumentStatus = 'pendiente' | 'cargado' | 'revisado' | 'vencido';
 
 export interface Document {
   id: string;
-  name: string;
-  type: DocumentType;
+  nombre: string;
+  tipo: DocumentType;
   status: DocumentStatus;
   clientId?: string;
   propertyId?: string;
@@ -202,7 +202,7 @@ export interface Document {
   fileName?: string;
   fileSize?: number;
   fileExtension?: string;
-  simulatedUrl?: string;
+  url?: string;
 }
 
 export type WaitingRoomStatus = 'pendiente' | 'contactado' | 'descartado' | 'convertido';
