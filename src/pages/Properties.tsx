@@ -74,6 +74,8 @@ import { useBuyers } from "../hooks/useBuyers";
 import { useReferredColleagues } from "../hooks/useReferredColleagues";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useCustomOptions } from "../hooks/useCustomOptions";
+import { useStorage } from "../hooks/useStorage";
+import FileUpload from "../components/FileUpload";
 
 export default function Properties() {
   const { id } = useParams();
@@ -89,6 +91,7 @@ export default function Properties() {
   const { referredColleagues } = useReferredColleagues();
   const { activityLogs, addActivityLog } = useActivityLogs();
   const { customOptions, updateCustomOptions } = useCustomOptions();
+  const { uploadFile: uploadStorageFile, uploading: isUploadingImage } = useStorage();
   const { sales, addSale, updateSale, deleteSale } = useSales();
   const { tasks } = useTasks();
   const { events } = useEvents();
@@ -134,6 +137,7 @@ export default function Properties() {
   const [isQuickUploadOpen, setIsQuickUploadOpen] = useState(false);
   const [quickUploadTitle, setQuickUploadTitle] = useState("");
   const [quickUploadFile, setQuickUploadFile] = useState<File | null>(null);
+  const [isUploadingQuickDoc, setIsUploadingQuickDoc] = useState(false);
   const [openMenuPropertyId, setOpenMenuPropertyId] = useState<string | null>(
     null,
   );
@@ -857,24 +861,15 @@ export default function Properties() {
                     placeholder="Ej: Escritura, Contrato..."
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Archivo *
-                  </label>
-                  <input
-                    type="file"
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    onChange={(e) =>
-                      setQuickUploadFile(e.target.files?.[0] || null)
-                    }
-                  />
-                  {quickUploadFile && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {quickUploadFile.name} (
-                      {(quickUploadFile.size / 1024).toFixed(1)} KB)
-                    </p>
-                  )}
-                </div>
+                <FileUpload
+                  label="Archivo *"
+                  value={quickUploadFile}
+                  onFileSelect={setQuickUploadFile}
+                  maxSizeMB={10}
+                  preview={false}
+                  uploading={isUploadingQuickDoc}
+                  helperText="Máximo 10 MB."
+                />
               </div>
               <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
                 <Button
@@ -889,7 +884,8 @@ export default function Properties() {
                 </Button>
                 <Button
                   variant="primary"
-                  onClick={() => {
+                  disabled={isUploadingQuickDoc}
+                  onClick={async () => {
                     if (!quickUploadTitle.trim()) {
                       showToast(
                         "El título del documento es obligatorio",
@@ -908,30 +904,47 @@ export default function Properties() {
                       );
                       return;
                     }
-                    const ext = quickUploadFile.name.includes(".")
-                      ? quickUploadFile.name.split(".").pop()?.toLowerCase() ||
-                        ""
-                      : "";
-                    const newDoc: Document = {
-                      id: generateId("d"),
-                      name: quickUploadTitle.trim(),
-                      type: "Otro",
-                      status: "cargado",
-                      propertyId: selectedProp.id,
-                      uploadDate: new Date().toISOString(),
-                      notes: "",
-                      fileName: quickUploadFile.name,
-                      fileSize: quickUploadFile.size,
-                      fileExtension: ext,
-                    };
-                    addDocument(newDoc);
-                    showToast("Documento subido correctamente", "success");
-                    setQuickUploadTitle("");
-                    setQuickUploadFile(null);
-                    setIsQuickUploadOpen(false);
+                    setIsUploadingQuickDoc(true);
+                    try {
+                      const user = useAuthStore.getState().user;
+                      const path = `${user?.id}/properties/${selectedProp.id}/${Date.now()}_${quickUploadFile.name}`;
+                      const { publicUrl } = await uploadStorageFile('documents', path, quickUploadFile);
+                      const ext = quickUploadFile.name.includes(".")
+                        ? quickUploadFile.name.split(".").pop()?.toLowerCase() || ""
+                        : "";
+                      const newDoc: Document = {
+                        id: generateId("d"),
+                        name: quickUploadTitle.trim(),
+                        type: "Otro",
+                        status: "cargado",
+                        propertyId: selectedProp.id,
+                        uploadDate: new Date().toISOString(),
+                        notes: "",
+                        fileName: quickUploadFile.name,
+                        fileSize: quickUploadFile.size,
+                        fileExtension: ext,
+                        simulatedUrl: publicUrl,
+                      };
+                      await addDocument(newDoc);
+                      await addActivityLog({
+                        type: 'document',
+                        action: 'created',
+                        title: `Documento cargado: ${newDoc.name}`,
+                        description: `Vinculado a propiedad ${selectedProp.title || selectedProp.code}`,
+                        entityId: newDoc.id,
+                      });
+                      showToast("Documento subido correctamente", "success");
+                      setQuickUploadTitle("");
+                      setQuickUploadFile(null);
+                      setIsQuickUploadOpen(false);
+                    } catch (err: any) {
+                      showToast(err.message || 'Error al subir documento', 'error');
+                    } finally {
+                      setIsUploadingQuickDoc(false);
+                    }
                   }}
                 >
-                  Guardar
+                  {isUploadingQuickDoc ? 'Subiendo...' : 'Guardar'}
                 </Button>
               </div>
             </div>
@@ -1171,8 +1184,8 @@ export default function Properties() {
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Imagen principal
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center overflow-hidden">
+                <div className="flex items-start gap-4">
+                  <div className="w-20 h-20 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center overflow-hidden shrink-0">
                     {formData.imageUrl ||
                     (formData.images && formData.images[0]) ? (
                       <img
@@ -1187,50 +1200,31 @@ export default function Properties() {
                       />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <input
-                      type="file"
+                  <div className="flex-1 min-w-0">
+                    <FileUpload
                       accept="image/*"
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.size > 2 * 1024 * 1024) {
-                          showToast(
-                            "La imagen es demasiado pesada. Máximo 2 MB.",
-                            "error",
-                          );
+                      maxSizeMB={5}
+                      preview={false}
+                      uploading={isUploadingImage}
+                      helperText="Máximo 5 MB. Formatos: JPG, PNG, WEBP."
+                      onFileSelect={async (file) => {
+                        if (!file) {
+                          setFormData({ ...formData, imageUrl: undefined, images: [] });
                           return;
                         }
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          setFormData({
-                            ...formData,
-                            imageUrl: reader.result as string,
-                          });
-                        };
-                        reader.readAsDataURL(file);
+                        try {
+                          const user = useAuthStore.getState().user;
+                          const prefix = editingProperty ? editingProperty.id : 'new';
+                          const path = `${user?.id}/${prefix}/${Date.now()}_${file.name}`;
+                          const { publicUrl } = await uploadStorageFile('property-images', path, file);
+                          setFormData({ ...formData, imageUrl: undefined, images: [publicUrl] });
+                          showToast('Imagen subida correctamente', 'success');
+                        } catch (err: any) {
+                          showToast(err.message || 'Error al subir imagen', 'error');
+                        }
                       }}
                     />
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                      Máximo 2 MB. Se guarda como base64.
-                    </p>
                   </div>
-                  {(formData.imageUrl || formData.images?.[0]) && (
-                    <button
-                      type="button"
-                      className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          imageUrl: undefined,
-                          images: [],
-                        })
-                      }
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
                 </div>
               </div>
               <div>

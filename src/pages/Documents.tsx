@@ -38,6 +38,10 @@ import { generateId } from "../lib/id";
 import { validateDocument } from "../lib/validators";
 import { useProperties } from "../hooks/useProperties";
 import { useClients } from "../hooks/useClients";
+import { useStorage } from "../hooks/useStorage";
+import { useAuthStore } from "../stores/authStore";
+import { useActivityLogs } from "../hooks/useActivityLogs";
+import FileUpload from "../components/FileUpload";
 
 const DOCUMENT_TYPES: DocumentType[] = [
   "DNI",
@@ -126,6 +130,9 @@ export default function Documents() {
   const { properties } = useProperties();
 
   const showToast = useUIStore((state) => state.showToast);
+  const { uploadFile: uploadStorageFile } = useStorage();
+  const { addActivityLog } = useActivityLogs();
+  const user = useAuthStore((state) => state.user);
 
   const [view, setView] = React.useState<"grid" | "list">("grid");
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -136,6 +143,7 @@ export default function Documents() {
   const [formData, setFormData] = React.useState<FormData>(emptyFormData);
   const [selectedDoc, setSelectedDoc] = React.useState<Document | null>(null);
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [isUploadingDoc, setIsUploadingDoc] = React.useState(false);
   const [deleteConfirmDocId, setDeleteConfirmDocId] = React.useState<
     string | null
   >(null);
@@ -199,7 +207,7 @@ export default function Documents() {
   };
 
   // Save document (create or update)
-  const handleSave = () => {
+  const handleSave = async () => {
     const validation = validateDocument({
       name: formData.name,
       type: formData.type,
@@ -213,7 +221,21 @@ export default function Documents() {
     const now = new Date().toISOString().split("T")[0];
 
     if (editingDoc) {
-      updateDocument({
+      let publicUrl = editingDoc.simulatedUrl;
+      if (selectedFile) {
+        setIsUploadingDoc(true);
+        try {
+          const entityId = formData.propertyId || formData.clientId || editingDoc.id;
+          const path = `${user?.id}/${entityId}/${Date.now()}_${selectedFile.name}`;
+          const result = await uploadStorageFile('documents', path, selectedFile);
+          publicUrl = result.publicUrl;
+        } catch (err: any) {
+          showToast(err.message || 'Error al subir archivo', 'error');
+          setIsUploadingDoc(false);
+          return;
+        }
+      }
+      await updateDocument({
         ...editingDoc,
         name: formData.name.trim(),
         type: formData.type,
@@ -223,8 +245,30 @@ export default function Documents() {
         saleId: formData.saleId || undefined,
         rentalId: formData.rentalId || undefined,
         notes: formData.notes || undefined,
+        fileName: selectedFile ? selectedFile.name : editingDoc.fileName,
+        fileSize: selectedFile ? selectedFile.size : editingDoc.fileSize,
+        fileExtension: selectedFile
+          ? selectedFile.name.split(".").pop() || editingDoc.fileExtension
+          : editingDoc.fileExtension,
+        simulatedUrl: publicUrl,
       });
+      setIsUploadingDoc(false);
     } else {
+      let publicUrl: string | undefined;
+      if (selectedFile) {
+        setIsUploadingDoc(true);
+        try {
+          const newId = generateId("d");
+          const entityId = formData.propertyId || formData.clientId || newId;
+          const path = `${user?.id}/${entityId}/${Date.now()}_${selectedFile.name}`;
+          const result = await uploadStorageFile('documents', path, selectedFile);
+          publicUrl = result.publicUrl;
+        } catch (err: any) {
+          showToast(err.message || 'Error al subir archivo', 'error');
+          setIsUploadingDoc(false);
+          return;
+        }
+      }
       const newId = generateId("d");
       const newDoc: Document = {
         id: newId,
@@ -242,9 +286,17 @@ export default function Documents() {
         fileExtension: selectedFile
           ? selectedFile.name.split(".").pop() || undefined
           : undefined,
-        simulatedUrl: selectedFile ? "/documents/" + newId : undefined,
+        simulatedUrl: publicUrl,
       };
-      addDocument(newDoc);
+      await addDocument(newDoc);
+      await addActivityLog({
+        type: 'document',
+        action: 'created',
+        title: `Documento cargado: ${newDoc.name}`,
+        description: `Tipo: ${newDoc.type}${formData.propertyId ? ' · Vinculado a propiedad' : formData.clientId ? ' · Vinculado a cliente' : ''}`,
+        entityId: newDoc.id,
+      });
+      setIsUploadingDoc(false);
     }
 
     setIsFormModalOpen(false);
@@ -260,20 +312,22 @@ export default function Documents() {
     if (selectedDoc?.id === docId) setSelectedDoc(null);
   };
 
-  // Simulated download
+  // Download document
   const handleSimulatedDownload = (doc: Document) => {
-    if (doc.fileName) {
+    if (doc.simulatedUrl && doc.simulatedUrl.startsWith('http')) {
+      window.open(doc.simulatedUrl, '_blank');
+    } else if (doc.fileName) {
       showToast(
         'Descarga simulada: "' +
           doc.fileName +
           '" (' +
           formatFileSize(doc.fileSize) +
-          "). La descarga real se implementará cuando exista almacenamiento de archivos.",
+          "). El archivo aún no fue cargado al almacenamiento.",
         "info",
       );
     } else {
       showToast(
-        "Descarga simulada. La descarga real se implementará cuando exista almacenamiento de archivos.",
+        "No hay archivo disponible para descargar.",
         "info",
       );
     }
@@ -926,71 +980,16 @@ export default function Documents() {
                 </div>
               </div>
 
-              {/* File selection (simulated) */}
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Archivo (simulado)
-                </label>
-                <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-6 text-center hover:border-blue-300 transition-colors">
-                  {selectedFile ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <Paperclip size={20} className="text-blue-600" />
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                          {selectedFile.name}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {formatFileSize(selectedFile.size)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setSelectedFile(null)}
-                        className="p-1 ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-                      >
-                        <X
-                          size={16}
-                          className="text-slate-400 dark:text-slate-500"
-                        />
-                      </button>
-                    </div>
-                  ) : (
-                    <React.Fragment>
-                      <Paperclip
-                        size={24}
-                        className="mx-auto text-slate-300 dark:text-slate-600 mb-2"
-                      />
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
-                        <span className="text-blue-600 font-semibold cursor-pointer hover:underline">
-                          Seleccionar archivo
-                        </span>{" "}
-                        o arrastrar aquí
-                      </p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500">
-                        Solo metadatos simulados - sin almacenamiento real
-                      </p>
-                      <input
-                        type="file"
-                        className="hidden"
-                        id="fileInput"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) setSelectedFile(file);
-                        }}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-3"
-                        onClick={() =>
-                          document.getElementById("fileInput")?.click()
-                        }
-                      >
-                        Elegir archivo
-                      </Button>
-                    </React.Fragment>
-                  )}
-                </div>
-              </div>
+              {/* File upload */}
+              <FileUpload
+                label="Archivo"
+                value={selectedFile}
+                onFileSelect={setSelectedFile}
+                maxSizeMB={10}
+                preview={false}
+                uploading={isUploadingDoc}
+                helperText="Máximo 10 MB."
+              />
 
               {/* Notes */}
               <div>

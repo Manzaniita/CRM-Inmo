@@ -4,11 +4,15 @@ import { Document, DocumentType, DocumentStatus, Client, Property, Sale, Rental 
 import Button from './Button';
 import Badge from './Badge';
 import SearchableSelect from './SearchableSelect';
+import FileUpload from './FileUpload';
 import { cn, formatDate } from '../lib/utils';
 
 import { generateId } from '../lib/id';
 import { validateDocument } from '../lib/validators';
 import { useUIStore } from '../stores/uiStore';
+import { useStorage } from '../hooks/useStorage';
+import { useAuthStore } from '../stores/authStore';
+import { useActivityLogs } from '../hooks/useActivityLogs';
 
 type ModalMode = 'create' | 'edit' | 'view';
 
@@ -79,6 +83,10 @@ export default function DocumentModal({
   onDownload
 }: DocumentModalProps) {
     const showToast = useUIStore(state => state.showToast);
+  const { uploadFile: uploadStorageFile } = useStorage();
+  const { addActivityLog } = useActivityLogs();
+  const user = useAuthStore(state => state.user);
+
   const [formData, setFormData] = useState({
     name: document?.name || '',
     type: document?.type || 'Otro' as DocumentType,
@@ -91,6 +99,7 @@ export default function DocumentModal({
   });
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [isEditing, setIsEditing] = useState(mode === 'edit');
 
   const clientOptions = clients.map(c => ({
@@ -161,7 +170,7 @@ export default function DocumentModal({
     return null;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const validation = validateDocument({
       name: formData.name,
       type: formData.type,
@@ -175,6 +184,21 @@ export default function DocumentModal({
     const now = new Date().toISOString().split('T')[0];
 
     if (document && (mode === 'edit' || isEditing)) {
+      let publicUrl = document.simulatedUrl;
+      if (selectedFile) {
+        setIsUploadingDoc(true);
+        try {
+          const entityId = formData.propertyId || formData.clientId || document.id;
+          const path = `${user?.id}/${entityId}/${Date.now()}_${selectedFile.name}`;
+          const result = await uploadStorageFile('documents', path, selectedFile);
+          publicUrl = result.publicUrl;
+        } catch (err: any) {
+          showToast(err.message || 'Error al subir archivo', 'error');
+          setIsUploadingDoc(false);
+          return;
+        }
+        setIsUploadingDoc(false);
+      }
       onSave({
         ...document,
         name: formData.name.trim(),
@@ -188,9 +212,25 @@ export default function DocumentModal({
         fileName: selectedFile ? selectedFile.name : document.fileName,
         fileSize: selectedFile ? selectedFile.size : document.fileSize,
         fileExtension: selectedFile ? selectedFile.name.split('.').pop() || document.fileExtension : document.fileExtension,
-        simulatedUrl: selectedFile ? '/documents/' + document.id : document.simulatedUrl
+        simulatedUrl: publicUrl
       });
     } else {
+      let publicUrl: string | undefined;
+      if (selectedFile) {
+        setIsUploadingDoc(true);
+        try {
+          const id = generateId('d');
+          const entityId = formData.propertyId || formData.clientId || id;
+          const path = `${user?.id}/${entityId}/${Date.now()}_${selectedFile.name}`;
+          const result = await uploadStorageFile('documents', path, selectedFile);
+          publicUrl = result.publicUrl;
+        } catch (err: any) {
+          showToast(err.message || 'Error al subir archivo', 'error');
+          setIsUploadingDoc(false);
+          return;
+        }
+        setIsUploadingDoc(false);
+      }
       const id = generateId('d');
       const newDoc: Document = {
         id,
@@ -206,9 +246,18 @@ export default function DocumentModal({
         fileName: selectedFile ? selectedFile.name : undefined,
         fileSize: selectedFile ? selectedFile.size : undefined,
         fileExtension: selectedFile ? selectedFile.name.split('.').pop() || undefined : undefined,
-        simulatedUrl: selectedFile ? '/documents/' + id : undefined
+        simulatedUrl: publicUrl
       };
       onSave(newDoc);
+      if (publicUrl) {
+        await addActivityLog({
+          type: 'document',
+          action: 'created',
+          title: `Documento cargado: ${newDoc.name}`,
+          description: `Tipo: ${newDoc.type}${formData.propertyId ? ' · Vinculado a propiedad' : formData.clientId ? ' · Vinculado a cliente' : ''}`,
+          entityId: newDoc.id,
+        });
+      }
     }
 
     onClose();
@@ -224,7 +273,9 @@ export default function DocumentModal({
   };
 
   const handleDownload = () => {
-    if (document && onDownload) {
+    if (document?.simulatedUrl && document.simulatedUrl.startsWith('http')) {
+      window.open(document.simulatedUrl, '_blank');
+    } else if (document && onDownload) {
       onDownload(document);
     }
   };
@@ -340,7 +391,7 @@ export default function DocumentModal({
                 onClick={handleDownload}
               >
                 <Download size={16} className="mr-2" />
-                Descargar (simulado)
+                {document?.simulatedUrl && document.simulatedUrl.startsWith('http') ? 'Descargar' : 'Descargar (simulado)'}
               </Button>
               <Button
                 variant="secondary"
@@ -459,51 +510,15 @@ export default function DocumentModal({
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Archivo (simulado)</label>
-              <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-6 text-center hover:border-blue-300 transition-colors">
-                {selectedFile ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <Paperclip size={20} className="text-blue-600" />
-                    <div className="text-left">
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedFile.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{formatFileSize(selectedFile.size)}</p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedFile(null)}
-                      className="p-1 ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-                    >
-                      <X size={16} className="text-slate-400 dark:text-slate-500" />
-                    </button>
-                  </div>
-                ) : (
-                  <React.Fragment>
-                    <Paperclip size={24} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
-                      <span className="text-blue-600 font-semibold cursor-pointer hover:underline">Seleccionar archivo</span> o arrastrar aquí
-                    </p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">Solo metadatos simulados - sin almacenamiento real</p>
-                    <input
-                      type="file"
-                      className="hidden"
-                      id="fileInputModal"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setSelectedFile(file);
-                      }}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3"
-                      onClick={() => window.document.getElementById('fileInputModal')?.click()}
-                    >
-                      Elegir archivo
-                    </Button>
-                  </React.Fragment>
-                )}
-              </div>
-            </div>
+            <FileUpload
+              label="Archivo"
+              value={selectedFile}
+              onFileSelect={setSelectedFile}
+              maxSizeMB={10}
+              preview={false}
+              uploading={isUploadingDoc}
+              helperText="Máximo 10 MB."
+            />
 
             <div>
               <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Notas</label>
