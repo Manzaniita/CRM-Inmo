@@ -7,11 +7,7 @@ import {
   PlusCircle,
   Search,
   Filter,
-  Maximize2,
   MapPin,
-  BedDouble,
-  Bath,
-  Square,
   ExternalLink,
   ArrowLeft,
   ChevronRight,
@@ -441,53 +437,6 @@ export default function Properties() {
                   </p>
                   <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider font-black">
                     Ref: {selectedProp.code}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-4 mt-8 py-6 border-y border-slate-100 dark:border-slate-800">
-                <div className="text-center">
-                  <div className="flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1">
-                    <BedDouble size={20} />
-                  </div>
-                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                    {selectedProp.bedrooms}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Dormitorios
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1">
-                    <Bath size={20} />
-                  </div>
-                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                    {selectedProp.bathrooms}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Baños
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1">
-                    <Maximize2 size={20} />
-                  </div>
-                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                    {selectedProp.rooms}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Ambientes
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1">
-                    <Square size={20} />
-                  </div>
-                  <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                    {selectedProp.surface} m²
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Superficie
                   </p>
                 </div>
               </div>
@@ -1453,7 +1402,7 @@ export default function Properties() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             Propiedades
@@ -1472,8 +1421,8 @@ export default function Properties() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4 justify-between">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden mb-6">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
           <div className="relative flex-1 max-w-md">
             <Search
               size={18}
