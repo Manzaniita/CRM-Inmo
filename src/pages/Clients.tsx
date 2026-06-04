@@ -21,6 +21,8 @@ import {
   Link2,
   Loader2,
   MoreVertical,
+  Download,
+  Trash2,
 } from "lucide-react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
@@ -73,6 +75,8 @@ import { useBuyers } from "../hooks/useBuyers";
 import { useReferredColleagues } from "../hooks/useReferredColleagues";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useCustomOptions } from "../hooks/useCustomOptions";
+import { useStorage } from "../hooks/useStorage";
+import FileUpload from "../components/FileUpload";
 import { useSales } from "../hooks/useSales";
 import { useTasks } from "../hooks/useTasks";
 import { useEvents } from "../hooks/useEvents";
@@ -140,6 +144,7 @@ export default function Clients() {
   } = useReferredColleagues();
   const { activityLogs, addActivityLog } = useActivityLogs();
   const { customOptions, updateCustomOptions } = useCustomOptions();
+  const { uploadFile: uploadStorageFile } = useStorage();
   const showToast = useUIStore((state) => state.showToast);
   const profile = useAuthStore((state) => state.profile);
   const { openRelations } = useRelationsDrawer();
@@ -155,6 +160,8 @@ export default function Clients() {
   const [selectedDocForModal, setSelectedDocForModal] = useState<
     Document | undefined
   >(undefined);
+  const [clientDocFile, setClientDocFile] = useState<File | null>(null);
+  const [isUploadingClientDoc, setIsUploadingClientDoc] = useState(false);
 
   // Operation Modals State
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
@@ -1426,6 +1433,110 @@ export default function Clients() {
                     Desarchivar del dashboard
                   </Button>
                 )}
+              </div>
+            </Card>
+
+            <Card title="Documentos Adjuntos">
+              <div className="space-y-3">
+                {documents
+                  .filter((d) => d.clientId === selectedClient.id)
+                  .map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-sm transition-all"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
+                        <FileText size={16} className="text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                          {doc.name}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {doc.type} · {(doc.fileSize ? (doc.fileSize / 1024).toFixed(1) + ' KB' : '')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            if (doc.simulatedUrl && doc.simulatedUrl.startsWith('http')) {
+                              window.open(doc.simulatedUrl, '_blank');
+                            } else {
+                              showToast('No hay archivo disponible para descargar', 'info');
+                            }
+                          }}
+                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                          title="Descargar"
+                        >
+                          <Download size={14} className="text-slate-500 dark:text-slate-400" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('¿Eliminar este documento?')) {
+                              deleteDocument(doc.id);
+                            }
+                          }}
+                          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 size={14} className="text-slate-500 dark:text-slate-400 hover:text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                {documents.filter((d) => d.clientId === selectedClient.id).length === 0 && (
+                  <p className="text-xs text-center text-slate-400 dark:text-slate-500 italic py-2">
+                    Sin documentos adjuntos.
+                  </p>
+                )}
+                <FileUpload
+                  value={clientDocFile}
+                  onFileSelect={async (file) => {
+                    if (!file) {
+                      setClientDocFile(null);
+                      return;
+                    }
+                    setClientDocFile(file);
+                    setIsUploadingClientDoc(true);
+                    try {
+                      const user = useAuthStore.getState().user;
+                      const path = `${user?.id}/clients/${selectedClient.id}/${Date.now()}_${file.name}`;
+                      const { publicUrl } = await uploadStorageFile('documents', path, file);
+                      const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || '' : '';
+                      const newDoc: Document = {
+                        id: generateId('d'),
+                        name: file.name,
+                        type: 'Otro',
+                        status: 'cargado',
+                        clientId: selectedClient.id,
+                        uploadDate: new Date().toISOString(),
+                        notes: '',
+                        fileName: file.name,
+                        fileSize: file.size,
+                        fileExtension: ext,
+                        simulatedUrl: publicUrl,
+                      };
+                      await addDocument(newDoc);
+                      await addActivityLog({
+                        type: 'document',
+                        action: 'created',
+                        title: `Documento cargado: ${newDoc.name}`,
+                        description: `Vinculado a cliente ${selectedClient.name}`,
+                        entityId: newDoc.id,
+                      });
+                      showToast('Documento subido correctamente', 'success');
+                      setClientDocFile(null);
+                    } catch (err: any) {
+                      showToast(err.message || 'Error al subir documento', 'error');
+                    } finally {
+                      setIsUploadingClientDoc(false);
+                    }
+                  }}
+                  maxSizeMB={10}
+                  preview={false}
+                  uploading={isUploadingClientDoc}
+                  helperText="Soltar PDF o imagen aquí"
+                />
               </div>
             </Card>
 

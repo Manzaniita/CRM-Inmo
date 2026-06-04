@@ -26,6 +26,8 @@ import {
   Clock,
   Link2,
   MessageCircle,
+  Download,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useClients } from "../hooks/useClients";
@@ -138,6 +140,9 @@ export default function Properties() {
   const [quickUploadTitle, setQuickUploadTitle] = useState("");
   const [quickUploadFile, setQuickUploadFile] = useState<File | null>(null);
   const [isUploadingQuickDoc, setIsUploadingQuickDoc] = useState(false);
+  const [activeImage, setActiveImage] = useState<string>("");
+  const [propDocFile, setPropDocFile] = useState<File | null>(null);
+  const [isUploadingPropDoc, setIsUploadingPropDoc] = useState(false);
   const [openMenuPropertyId, setOpenMenuPropertyId] = useState<string | null>(
     null,
   );
@@ -204,6 +209,12 @@ export default function Properties() {
   );
 
   const selectedProp = properties.find((p) => p.id === effectivePropertyId);
+
+  useEffect(() => {
+    if (selectedProp) {
+      setActiveImage(selectedProp.imageUrl || selectedProp.images?.[0] || "");
+    }
+  }, [selectedProp]);
 
   const filteredProps = properties
     .filter((p) => {
@@ -386,9 +397,9 @@ export default function Properties() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="relative group rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-              {selectedProp.imageUrl || selectedProp.images?.[0] ? (
+              {activeImage ? (
                 <img
-                  src={selectedProp.imageUrl || selectedProp.images?.[0]}
+                  src={activeImage}
                   alt={selectedProp.title}
                   className="w-full h-[400px] object-cover"
                 />
@@ -412,6 +423,31 @@ export default function Properties() {
                 </Badge>
               </div>
             </div>
+
+            {/* Gallery Thumbnails */}
+            {selectedProp.images && selectedProp.images.length > 0 && (
+              <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                {selectedProp.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveImage(img)}
+                    className={cn(
+                      "relative rounded-xl overflow-hidden border-2 aspect-square transition-all",
+                      activeImage === img
+                        ? "border-blue-500 ring-2 ring-blue-500/20"
+                        : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600"
+                    )}
+                  >
+                    <img
+                      src={img}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm">
               <div className="flex items-start justify-between">
@@ -703,6 +739,111 @@ export default function Properties() {
                     No hay clientes que coincidan con el perfil.
                   </p>
                 )}
+              </div>
+            </Card>
+
+            <Card title="Documentos Adjuntos">
+              <div className="space-y-3">
+                {documents
+                  .filter((d) => d.propertyId === selectedProp.id)
+                  .map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-sm transition-all"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
+                        <FileText size={16} className="text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                          {doc.name}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {doc.type} · {(doc.fileSize ? (doc.fileSize / 1024).toFixed(1) + ' KB' : '')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            if (doc.simulatedUrl && doc.simulatedUrl.startsWith('http')) {
+                              window.open(doc.simulatedUrl, '_blank');
+                            } else {
+                              showToast('No hay archivo disponible para descargar', 'info');
+                            }
+                          }}
+                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                          title="Descargar"
+                        >
+                          <Download size={14} className="text-slate-500 dark:text-slate-400" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('¿Eliminar este documento?')) {
+                              deleteDocument(doc.id);
+                            }
+                          }}
+                          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 size={14} className="text-slate-500 dark:text-slate-400 hover:text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                {documents.filter((d) => d.propertyId === selectedProp.id).length === 0 && (
+                  <p className="text-xs text-center text-slate-400 dark:text-slate-500 italic py-2">
+                    Sin documentos adjuntos.
+                  </p>
+                )}
+                <FileUpload
+                  value={propDocFile}
+                  onFileSelect={async (file) => {
+                    if (!file) {
+                      setPropDocFile(null);
+                      return;
+                    }
+                    setPropDocFile(file);
+                    if (!selectedProp) return;
+                    setIsUploadingPropDoc(true);
+                    try {
+                      const user = useAuthStore.getState().user;
+                      const path = `${user?.id}/properties/${selectedProp.id}/${Date.now()}_${file.name}`;
+                      const { publicUrl } = await uploadStorageFile('documents', path, file);
+                      const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || '' : '';
+                      const newDoc: Document = {
+                        id: generateId('d'),
+                        name: file.name,
+                        type: 'Otro',
+                        status: 'cargado',
+                        propertyId: selectedProp.id,
+                        uploadDate: new Date().toISOString(),
+                        notes: '',
+                        fileName: file.name,
+                        fileSize: file.size,
+                        fileExtension: ext,
+                        simulatedUrl: publicUrl,
+                      };
+                      await addDocument(newDoc);
+                      await addActivityLog({
+                        type: 'document',
+                        action: 'created',
+                        title: `Documento cargado: ${newDoc.name}`,
+                        description: `Vinculado a propiedad ${selectedProp.title || selectedProp.code}`,
+                        entityId: newDoc.id,
+                      });
+                      showToast('Documento subido correctamente', 'success');
+                      setPropDocFile(null);
+                    } catch (err: any) {
+                      showToast(err.message || 'Error al subir documento', 'error');
+                    } finally {
+                      setIsUploadingPropDoc(false);
+                    }
+                  }}
+                  maxSizeMB={10}
+                  preview={false}
+                  uploading={isUploadingPropDoc}
+                  helperText="Soltar PDF o imagen aquí"
+                />
               </div>
             </Card>
 

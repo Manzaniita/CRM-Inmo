@@ -4,25 +4,33 @@ import type { Document } from "../types";
 import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
 
-const fetchDocuments = async () => {
+const fetchDocuments = async (relatedId?: string) => {
   const user = useAuthStore.getState().user;
   if (!user) throw new Error("No session");
-  const { data, error } = await supabase
+  let query = supabase
     .from("documents")
     .select("*")
     .eq("user_id", user.id)
     .order("createdAt", { ascending: false });
+
+  if (relatedId) {
+    query = query.or(
+      `propertyId.eq.${relatedId},clientId.eq.${relatedId},saleId.eq.${relatedId},rentalId.eq.${relatedId}`
+    );
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as Document[];
 };
 
-export function useDocuments() {
+export function useDocuments(relatedId?: string) {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ["documents"],
-    queryFn: fetchDocuments,
+    queryKey: ["documents", relatedId ?? "all"],
+    queryFn: () => fetchDocuments(relatedId),
     enabled: !!user,
   });
 
