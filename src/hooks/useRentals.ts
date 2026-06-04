@@ -4,6 +4,46 @@ import type { Rental } from "../types";
 import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
 
+// Mapeo DB → Tipo (la tabla usa nombres en inglés / createdAt)
+const fromDbRental = (db: any): Rental => ({
+  id: db.id,
+  inquilinoId: db.clientId,
+  propiedadId: db.propertyId,
+  propietarioId: db.ownerId,
+  locadorId: db.locadorId,
+  montoMensual: db.montoMensual ?? db.monto,
+  deposito: db.deposito,
+  comision: db.comision,
+  moneda: db.moneda,
+  fechaInicio: db.fechaInicio,
+  fechaFin: db.fechaFin,
+  diaPago: db.diaPago,
+  estado: db.estado,
+  notas: db.notas,
+  fechaCreacion: db.createdAt,
+  fechaActualizacion: db.updatedAt,
+});
+
+// Mapeo Tipo → DB
+const toDbRental = (rental: Rental): any => {
+  const {
+    fechaCreacion,
+    fechaActualizacion,
+    inquilinoId,
+    propiedadId,
+    propietarioId,
+    ...rest
+  } = rental;
+  return {
+    ...rest,
+    clientId: inquilinoId,
+    propertyId: propiedadId,
+    ownerId: propietarioId,
+    createdAt: fechaCreacion,
+    updatedAt: fechaActualizacion,
+  };
+};
+
 const fetchRentals = async () => {
   const user = useAuthStore.getState().user;
   if (!user) throw new Error("No session");
@@ -13,7 +53,7 @@ const fetchRentals = async () => {
     .eq("user_id", user.id)
     .order("createdAt", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as Rental[];
+  return (data ?? []).map(fromDbRental);
 };
 
 export function useRentals() {
@@ -28,12 +68,13 @@ export function useRentals() {
 
   const addRental = useMutation({
     mutationFn: async (rental: Rental) => {
+      const payload = toDbRental(rental);
       const { data, error } = await supabase
         .from("rentals")
-        .insert({ ...rental, user_id: user!.id })
+        .insert({ ...payload, user_id: user!.id })
         .select();
       if (error) throw error;
-      const inserted = data![0] as Rental;
+      const inserted = fromDbRental(data![0]);
       if (inserted.estado === "firmado" || inserted.estado === "en curso") {
         await supabase
           .from("properties")
@@ -55,9 +96,10 @@ export function useRentals() {
 
   const updateRental = useMutation({
     mutationFn: async (rental: Rental) => {
+      const { id, ...payload } = toDbRental(rental);
       const { error } = await supabase
         .from("rentals")
-        .update(rental)
+        .update(payload)
         .eq("id", rental.id)
         .eq("user_id", user!.id);
       if (error) throw error;

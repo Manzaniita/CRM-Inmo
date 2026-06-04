@@ -242,41 +242,82 @@ export default function App() {
 
   useEffect(() => {
     let isMounted = true;
+    let authReady = false;
 
-    const fetchAndSetProfile = async (user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>) => {
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (profileData && isMounted) {
-        useAuthStore.getState().setProfile(profileData as Profile);
+    const markReady = () => {
+      if (!authReady && isMounted) {
+        authReady = true;
+        setIsAuthReady(true);
       }
     };
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[Auth Event]:", event);
-      const user = session?.user ?? null;
-      useAuthStore.getState().setUser(user);
+    const fetchAndSetProfile = async (user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>) => {
+      try {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (profileData && isMounted) {
+          useAuthStore.getState().setProfile(profileData as Profile);
+        }
+      } catch (e) {
+        console.error("[Auth] fetchAndSetProfile error:", e);
+      }
+    };
 
-      if (user) {
-        await fetchAndSetProfile(user);
-      } else {
+    const processSession = async (session: any) => {
+      try {
+        const user = session?.user ?? null;
+        useAuthStore.getState().setUser(user);
+        if (user) {
+          await fetchAndSetProfile(user);
+        } else {
+          useAuthStore.getState().setProfile(null);
+        }
+      } catch (e) {
+        console.error("[Auth] processSession error:", e);
         useAuthStore.getState().setProfile(null);
       }
+    };
 
-      if (isMounted) {
-        setIsAuthReady(true);
-        console.log("[Auth] App lista");
+    // 1. Fuente de verdad inicial: getSession antes de escuchar eventos
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("[Auth] getSession error:", error);
       }
+      if (!isMounted) return;
+      processSession(session).then(() => {
+        markReady();
+      });
     });
 
-    // Red de seguridad rápida (2s) por si el evento de Supabase tarda en disparar
+    // 2. Listener para cambios de auth posteriores
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[Auth Event]:", event);
+      if (!isMounted) return;
+
+      if (authReady) {
+        // Ya estamos listos; solo sincronizar estado sin tocar el flag de ready
+        processSession(session);
+        return;
+      }
+
+      // Si getSession aún no resolvió, procesamos aquí y marcamos ready
+      processSession(session).then(() => {
+        markReady();
+      });
+    });
+
+    // 3. Backup timer: última línea de defensa
     const backupTimer = setTimeout(() => {
-      if (isMounted) setIsAuthReady(true);
-    }, 2000);
+      if (!authReady && isMounted) {
+        console.warn("[Auth] Backup timer triggered");
+        markReady();
+      }
+    }, 3000);
 
     return () => {
       isMounted = false;
