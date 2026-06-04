@@ -289,10 +289,11 @@ export default function Configuration() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          action: "updateUser",
           userId: editingUser.user_id,
-          email: editUserEmail || undefined,
-          password: editUserPassword || undefined,
+          updates: {
+            ...(editUserEmail && { email: editUserEmail }),
+            ...(editUserPassword && { password: editUserPassword }),
+          },
         }),
       });
       const result = await res.json();

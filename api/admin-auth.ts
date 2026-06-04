@@ -26,10 +26,23 @@ export default async function handler(req, res) {
     const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('user_id', caller.id).single();
     if (profile?.role !== 'superadmin') throw new Error("Prohibido: Solo superadmins");
 
-    console.log(`Ejecutando update para usuario: ${userId}`, updates);
+    const filteredUpdates: Record<string, any> = {};
+    if (updates && typeof updates === 'object') {
+      for (const [key, value] of Object.entries(updates)) {
+        if (value !== "" && value !== null && value !== undefined) {
+          filteredUpdates[key] = value;
+        }
+      }
+    }
+
+    console.log("Enviando a Supabase Admin:", JSON.stringify(filteredUpdates));
+
+    if (Object.keys(filteredUpdates).length === 0) {
+      return res.status(400).json({ error: "No hay cambios para aplicar" });
+    }
 
     // 3. Ejecutar Cambio
-    const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, updates);
+    const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, filteredUpdates);
     
     if (updateError) {
       console.error("Error de Supabase Auth Admin:", updateError);
