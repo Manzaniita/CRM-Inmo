@@ -32,6 +32,7 @@ export interface Client {
   profession?: string;
   referredBy?: string;
   referredByColleagueId?: string;
+  referredByClientId?: string;
   dashboardPinned?: boolean;
   dashboardArchived?: boolean;
 }

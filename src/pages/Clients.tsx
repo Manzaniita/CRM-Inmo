@@ -210,6 +210,10 @@ export default function Clients() {
   const [newColleagueOffice, setNewColleagueOffice] = useState("");
   const [selectedColleagueId, setSelectedColleagueId] = useState("");
 
+  // Client referral state
+  const [referralType, setReferralType] = useState<"none" | "colleague" | "client">("none");
+  const [selectedClientReferrerId, setSelectedClientReferrerId] = useState("");
+
   // Filter State
   const [filterType, setFilterType] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
@@ -238,6 +242,7 @@ export default function Clients() {
     profession: "",
     referredBy: "",
     referredByColleagueId: "",
+    referredByClientId: "",
     dashboardPinned: false,
     dashboardArchived: false,
   });
@@ -263,10 +268,13 @@ export default function Clients() {
         profession: "",
         referredBy: "",
         referredByColleagueId: colleagueId,
+        referredByClientId: "",
         dashboardPinned: false,
         dashboardArchived: false,
       });
       setSelectedColleagueId(colleagueId);
+      setReferralType("colleague");
+      setSelectedClientReferrerId("");
       setShowNewColleagueForm(false);
       setNewColleagueName("");
       setNewColleagueOffice("");
@@ -381,7 +389,19 @@ export default function Clients() {
     if (client) {
       setEditingClient(client);
       setFormData(client);
-      setSelectedColleagueId(client.referredByColleagueId || "");
+      if (client.referredByColleagueId) {
+        setReferralType("colleague");
+        setSelectedColleagueId(client.referredByColleagueId);
+        setSelectedClientReferrerId("");
+      } else if (client.referredByClientId) {
+        setReferralType("client");
+        setSelectedClientReferrerId(client.referredByClientId);
+        setSelectedColleagueId("");
+      } else {
+        setReferralType("none");
+        setSelectedColleagueId("");
+        setSelectedClientReferrerId("");
+      }
       setShowNewColleagueForm(false);
       setNewColleagueName("");
       setNewColleagueOffice("");
@@ -400,10 +420,13 @@ export default function Clients() {
         profession: "",
         referredBy: "",
         referredByColleagueId: "",
+        referredByClientId: "",
         dashboardPinned: false,
         dashboardArchived: false,
       });
       setSelectedColleagueId("");
+      setSelectedClientReferrerId("");
+      setReferralType("none");
       setShowNewColleagueForm(false);
       setNewColleagueName("");
       setNewColleagueOffice("");
@@ -427,52 +450,74 @@ export default function Clients() {
           createdAt: new Date().toISOString().split("T")[0],
         };
 
-    // Handle colleague referral logic
+    // Handle referral logic
     let colleagueToUpdate: { id: string; clientId: string } | null = null;
     let newColleagueId: string | null = null;
 
     if (clientData.origin === "Referido") {
-      if (showNewColleagueForm && newColleagueName.trim()) {
-        const col: ReferredColleague = {
-          id: generateId("col"),
-          nombreApellido: newColleagueName.trim(),
-          oficina: newColleagueOffice.trim(),
-          respondio: false,
-          yaRefirio: true,
-          referredClientIds: [clientData.id],
-          propertyIds: [],
-        };
-        addReferredColleague(col);
-        newColleagueId = col.id;
-        clientData.referredByColleagueId = col.id;
-        addActivityLog({
-          type: "colleague",
-          action: "created",
-          title: `Colega creado desde cliente: ${col.nombreApellido}`,
-          entityId: col.id,
-        });
+      if (referralType === "colleague") {
+        if (showNewColleagueForm && newColleagueName.trim()) {
+          const col: ReferredColleague = {
+            id: generateId("col"),
+            nombreApellido: newColleagueName.trim(),
+            oficina: newColleagueOffice.trim(),
+            respondio: false,
+            yaRefirio: true,
+            referredClientIds: [clientData.id],
+            propertyIds: [],
+          };
+          addReferredColleague(col);
+          newColleagueId = col.id;
+          clientData.referredByColleagueId = col.id;
+          clientData.referredByClientId = "";
+          addActivityLog({
+            type: "colleague",
+            action: "created",
+            title: `Colega creado desde cliente: ${col.nombreApellido}`,
+            entityId: col.id,
+          });
+          addActivityLog({
+            type: "client",
+            action: "updated",
+            title: `Cliente vinculado con colega: ${clientData.name}`,
+            description: `Referido por ${col.nombreApellido}`,
+            entityId: clientData.id,
+          });
+        } else if (selectedColleagueId) {
+          clientData.referredByColleagueId = selectedColleagueId;
+          clientData.referredByClientId = "";
+          colleagueToUpdate = {
+            id: selectedColleagueId,
+            clientId: clientData.id,
+          };
+          addActivityLog({
+            type: "client",
+            action: "updated",
+            title: `Cliente vinculado con colega: ${clientData.name}`,
+            entityId: clientData.id,
+          });
+        }
+      } else if (referralType === "client" && selectedClientReferrerId) {
+        const referrer = clients.find((c) => c.id === selectedClientReferrerId);
+        clientData.referredByClientId = selectedClientReferrerId;
+        clientData.referredBy = referrer ? referrer.name : "";
+        clientData.referredByColleagueId = "";
         addActivityLog({
           type: "client",
           action: "updated",
-          title: `Cliente vinculado con colega: ${clientData.name}`,
-          description: `Referido por ${col.nombreApellido}`,
+          title: `Cliente referido por otro cliente: ${clientData.name}`,
+          description: referrer ? `Referido por ${referrer.name}` : undefined,
           entityId: clientData.id,
         });
-      } else if (selectedColleagueId) {
-        clientData.referredByColleagueId = selectedColleagueId;
-        colleagueToUpdate = {
-          id: selectedColleagueId,
-          clientId: clientData.id,
-        };
-        addActivityLog({
-          type: "client",
-          action: "updated",
-          title: `Cliente vinculado con colega: ${clientData.name}`,
-          entityId: clientData.id,
-        });
+      } else {
+        clientData.referredByColleagueId = "";
+        clientData.referredByClientId = "";
+        clientData.referredBy = "";
       }
     } else {
       clientData.referredByColleagueId = "";
+      clientData.referredByClientId = "";
+      clientData.referredBy = "";
     }
 
     if (editingClient) {
@@ -1261,6 +1306,54 @@ export default function Clients() {
                 </div>
               )}
             </Card>
+
+            {/* Referred Clients */}
+            {(() => {
+              const referredClients = clients.filter(
+                (c) => c.referredByClientId === selectedClient.id,
+              );
+              if (referredClients.length === 0) return null;
+              return (
+                <Card title="Clientes Referidos por esta persona" glow>
+                  <div className="space-y-3">
+                    {referredClients.map((client) => (
+                      <motion.div
+                        key={client.id}
+                        whileHover={{ x: 4 }}
+                        onClick={() => navigate(`/clientes/${client.id}`)}
+                        className="cursor-pointer"
+                      >
+                        <Card
+                          className="border-slate-100 dark:border-white/5 hover:shadow-soft-md transition-all"
+                          glow={false}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Badge
+                                variant={getStatusBadgeVariant(client.status)}
+                              >
+                                {client.status}
+                              </Badge>
+                              <span className="ml-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {client.name}
+                              </span>
+                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                {client.phone}
+                              </p>
+                            </div>
+                            <ChevronRight
+                              size={16}
+                              className="text-slate-300 dark:text-slate-600"
+                              strokeWidth={1.5}
+                            />
+                          </div>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                </Card>
+              );
+            })()}
           </div>
 
           {/* Sidebar Blocks - Compact */}
@@ -1360,12 +1453,26 @@ export default function Clients() {
                       Referido por
                     </span>
                     <span className="font-medium text-slate-900 dark:text-slate-100">
-                      {selectedClient.referredByColleagueId
-                        ? referredColleagues.find(
-                            (c) =>
-                              c.id === selectedClient.referredByColleagueId,
-                          )?.nombreApellido || "Colega desconocido"
-                        : selectedClient.referredBy || "—"}
+                      {selectedClient.referredByColleagueId ? (
+                        referredColleagues.find(
+                          (c) =>
+                            c.id === selectedClient.referredByColleagueId,
+                        )?.nombreApellido || "Colega desconocido"
+                      ) : selectedClient.referredByClientId ? (
+                        <button
+                          type="button"
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2"
+                          onClick={() =>
+                            navigate(`/clientes/${selectedClient.referredByClientId}`)
+                          }
+                        >
+                          {clients.find(
+                            (c) => c.id === selectedClient.referredByClientId,
+                          )?.name || "Cliente desconocido"}
+                        </button>
+                      ) : (
+                        selectedClient.referredBy || "—"
+                      )}
                     </span>
                   </div>
                 )}
@@ -1905,79 +2012,124 @@ export default function Clients() {
               {formData.origin === "Referido" && (
                 <div className="md:col-span-2 space-y-3">
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Referido por colega
+                    Tipo de Referido
                   </label>
-                  {!showNewColleagueForm ? (
-                    <>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: "none" as const, label: "Sin Referido" },
+                      { id: "colleague" as const, label: "Colega" },
+                      { id: "client" as const, label: "Cliente" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
+                          referralType === opt.id
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300",
+                        )}
+                        onClick={() => setReferralType(opt.id)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {referralType === "colleague" && (
+                    <div className="space-y-3 pt-2">
+                      {!showNewColleagueForm ? (
+                        <>
+                          <SearchableSelect
+                            placeholder="Seleccionar colega..."
+                            value={selectedColleagueId}
+                            onChange={(val) => setSelectedColleagueId(val)}
+                            options={referredColleagues.map((c) => ({
+                              value: c.id,
+                              label: c.nombreApellido,
+                              subtitle: c.oficina,
+                            }))}
+                            emptyLabel="Ninguno"
+                            allowEmpty
+                          />
+                          <button
+                            type="button"
+                            className="text-xs font-bold text-blue-600 hover:text-blue-800"
+                            onClick={() => setShowNewColleagueForm(true)}
+                          >
+                            + Crear nuevo colega
+                          </button>
+                        </>
+                      ) : (
+                        <div className="p-3 border border-blue-100 rounded-xl bg-blue-50/50 space-y-3">
+                          <p className="text-xs font-bold text-blue-700">
+                            Nuevo Colega
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input
+                              type="text"
+                              placeholder="Nombre y apellido *"
+                              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                              value={newColleagueName}
+                              onChange={(e) => setNewColleagueName(e.target.value)}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Oficina"
+                              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                              value={newColleagueOffice}
+                              onChange={(e) =>
+                                setNewColleagueOffice(e.target.value)
+                              }
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                              onClick={() => {
+                                if (!newColleagueName.trim()) {
+                                  showToast("El nombre es obligatorio", "error");
+                                  return;
+                                }
+                                setShowNewColleagueForm(false);
+                              }}
+                            >
+                              Listo
+                            </button>
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300"
+                              onClick={() => {
+                                setShowNewColleagueForm(false);
+                                setNewColleagueName("");
+                                setNewColleagueOffice("");
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {referralType === "client" && (
+                    <div className="pt-2">
                       <SearchableSelect
-                        placeholder="Seleccionar colega..."
-                        value={selectedColleagueId}
-                        onChange={(val) => setSelectedColleagueId(val)}
-                        options={referredColleagues.map((c) => ({
-                          value: c.id,
-                          label: c.nombreApellido,
-                          subtitle: c.oficina,
-                        }))}
+                        placeholder="Buscar cliente..."
+                        value={selectedClientReferrerId}
+                        onChange={(val) => setSelectedClientReferrerId(val)}
+                        options={clients
+                          .filter((c) => c.id !== editingClient?.id)
+                          .map((c) => ({
+                            value: c.id,
+                            label: c.name,
+                            subtitle: c.phone,
+                          }))}
                         emptyLabel="Ninguno"
                         allowEmpty
                       />
-                      <button
-                        type="button"
-                        className="text-xs font-bold text-blue-600 hover:text-blue-800"
-                        onClick={() => setShowNewColleagueForm(true)}
-                      >
-                        + Crear nuevo colega
-                      </button>
-                    </>
-                  ) : (
-                    <div className="p-3 border border-blue-100 rounded-xl bg-blue-50/50 space-y-3">
-                      <p className="text-xs font-bold text-blue-700">
-                        Nuevo Colega
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          placeholder="Nombre y apellido *"
-                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                          value={newColleagueName}
-                          onChange={(e) => setNewColleagueName(e.target.value)}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Oficina"
-                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                          value={newColleagueOffice}
-                          onChange={(e) =>
-                            setNewColleagueOffice(e.target.value)
-                          }
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                          onClick={() => {
-                            if (!newColleagueName.trim()) {
-                              showToast("El nombre es obligatorio", "error");
-                              return;
-                            }
-                            setShowNewColleagueForm(false);
-                          }}
-                        >
-                          Listo
-                        </button>
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300"
-                          onClick={() => {
-                            setShowNewColleagueForm(false);
-                            setNewColleagueName("");
-                            setNewColleagueOffice("");
-                          }}
-                        >
-                          Cancelar
-                        </button>
-                      </div>
                     </div>
                   )}
                 </div>
