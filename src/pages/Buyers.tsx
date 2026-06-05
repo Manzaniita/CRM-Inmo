@@ -5,9 +5,6 @@ import {
   Search,
   ShoppingCart,
   X,
-  Trash2,
-  Edit3,
-  Link2,
   MoreVertical,
   MessageCircle,
 } from "lucide-react";
@@ -31,13 +28,16 @@ import type { Buyer, BuyerStatus } from "../types";
 import { useUIStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
 
-const STATUS_VARIANT: Record<BuyerStatus, string> = {
-  activo: "green",
-  pausado: "gray",
-  compró: "blue",
-  compro: "blue",
-  descartado: "red",
-  seguimiento: "purple",
+const getBuyerStatusVariant = (status: BuyerStatus) => {
+  switch (status) {
+    case "activo": return "green" as const;
+    case "pausado": return "gray" as const;
+    case "compró":
+    case "compro": return "blue" as const;
+    case "descartado": return "red" as const;
+    case "seguimiento": return "purple" as const;
+    default: return "gray" as const;
+  }
 };
 
 function BuyerOperationMenu({
@@ -45,11 +45,17 @@ function BuyerOperationMenu({
   onUpdate,
   onLog,
   showToast,
+  onEdit,
+  onViewRelations,
+  onDelete,
 }: {
   buyer: Buyer;
   onUpdate: (b: Buyer) => void;
   onLog: (log: any) => void;
   showToast: (message: string, type: any) => void;
+  onEdit: () => void;
+  onViewRelations: () => void;
+  onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -87,7 +93,7 @@ function BuyerOperationMenu({
     if (!buttonRef.current || !open) return null;
     const rect = buttonRef.current.getBoundingClientRect();
     const menuWidth = 192;
-    const menuHeight = 180;
+    const menuHeight = 280;
     let left = rect.right - menuWidth + 4;
     let top = rect.bottom + 6;
     if (left < 8) left = 8;
@@ -154,6 +160,37 @@ function BuyerOperationMenu({
               }}
             >
               Marcar como Seguimiento
+            </button>
+            <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
+            <button
+              className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                onEdit();
+              }}
+            >
+              Editar
+            </button>
+            <button
+              className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                onViewRelations();
+              }}
+            >
+              Ver vínculos
+            </button>
+            <button
+              className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-slate-700/50 text-red-700 dark:text-red-400 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                onDelete();
+              }}
+            >
+              Eliminar
             </button>
           </div>,
           document.body,
@@ -357,7 +394,7 @@ export default function BuyersPage() {
                       <span>• {buyer.email}</span>
                     </p>
                   </div>
-                  <Badge variant={STATUS_VARIANT[buyer.estado] as any}>
+                  <Badge variant={getBuyerStatusVariant(buyer.estado)}>
                     {buyer.estado}
                   </Badge>
                 </div>
@@ -394,43 +431,16 @@ export default function BuyersPage() {
                     </p>
                   )}
                 </div>
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                   <BuyerOperationMenu
                     buyer={buyer}
                     onUpdate={updateBuyer}
                     onLog={addActivityLog}
                     showToast={showToast}
+                    onEdit={() => openForm(buyer)}
+                    onViewRelations={() => openRelations("buyer", buyer.id)}
+                    onDelete={() => handleDelete(buyer.id)}
                   />
-                  <button
-                    className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openForm(buyer);
-                    }}
-                    title="Editar"
-                  >
-                    <Edit3 size={16} />
-                  </button>
-                  <button
-                    className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openRelations("buyer", buyer.id);
-                    }}
-                    title="Ver vínculos"
-                  >
-                    <Link2 size={16} />
-                  </button>
-                  <button
-                    className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(buyer.id);
-                    }}
-                    title="Eliminar"
-                  >
-                    <Trash2 size={16} />
-                  </button>
                 </div>
               </Card>
             </div>

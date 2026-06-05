@@ -18,11 +18,14 @@ import { validateWaitingRoom } from "../lib/validators";
 import type { WaitingRoomEntry, WaitingRoomStatus } from "../types";
 import { useUIStore } from "../stores/uiStore";
 
-const STATUS_VARIANT: Record<WaitingRoomStatus, string> = {
-  pendiente: "orange",
-  contactado: "blue",
-  descartado: "gray",
-  convertido: "green",
+const getWaitingRoomStatusVariant = (status: WaitingRoomStatus) => {
+  switch (status) {
+    case "pendiente": return "orange" as const;
+    case "contactado": return "blue" as const;
+    case "descartado": return "gray" as const;
+    case "convertido": return "green" as const;
+    default: return "gray" as const;
+  }
 };
 
 export default function WaitingRoom() {
@@ -181,7 +184,7 @@ export default function WaitingRoom() {
                       {entry.telefono} • {entry.email}
                     </p>
                   </div>
-                  <Badge variant={STATUS_VARIANT[entry.estado] as any}>
+                  <Badge variant={getWaitingRoomStatusVariant(entry.estado)}>
                     {entry.estado}
                   </Badge>
                 </div>

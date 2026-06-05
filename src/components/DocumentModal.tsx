@@ -40,15 +40,15 @@ const DOCUMENT_STATUSES: DocumentStatus[] = [
   'pendiente', 'cargado', 'revisado', 'vencido'
 ];
 
-function getStatusVariant(status: string): any {
+const getDocumentStatusVariant = (status: string) => {
   switch (status) {
-    case 'revisado': return 'green';
-    case 'cargado': return 'blue';
-    case 'vencido': return 'red';
-    case 'pendiente': return 'orange';
-    default: return 'gray';
+    case 'revisado': return 'green' as const;
+    case 'cargado': return 'blue' as const;
+    case 'vencido': return 'red' as const;
+    case 'pendiente': return 'orange' as const;
+    default: return 'gray' as const;
   }
-}
+};
 
 function getStatusIcon(status: string) {
   switch (status) {
@@ -283,9 +283,10 @@ export default function DocumentModal({
   const StatusBadgeIcon = document ? getStatusIcon(document.status) : FileText;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
           <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
             {mode === 'create' ? 'Nuevo Documento' : isEditing && mode !== 'view' ? 'Editar Documento' : 'Detalle del Documento'}
           </h2>
@@ -295,7 +296,7 @@ export default function DocumentModal({
         </div>
 
         {mode === 'view' && !isEditing ? (
-          <div className="p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             <div className="flex items-start gap-4">
               <div className={cn(
                 "w-16 h-16 rounded-2xl flex items-center justify-center",
@@ -310,7 +311,7 @@ export default function DocumentModal({
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{document?.nombre}</h3>
                 <div className="flex gap-2 mt-2">
                   <Badge variant="gray">{document?.tipo}</Badge>
-                  <Badge variant={document ? getStatusVariant(document.status) : 'gray'}>{document?.status}</Badge>
+                  <Badge variant={document ? getDocumentStatusVariant(document.status) : 'gray'}>{document?.status}</Badge>
                 </div>
               </div>
             </div>
@@ -531,8 +532,8 @@ export default function DocumentModal({
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={onClose}>
+            <div className="mt-8 flex justify-end gap-3">
+              <Button variant="ghost" onClick={onClose}>
                 Cancelar
               </Button>
               {mode === 'view' && (
@@ -540,7 +541,7 @@ export default function DocumentModal({
                   Cancelar edición
                 </Button>
               )}
-              <Button variant="primary" onClick={handleSubmit} className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 border-none text-white shadow-lg shadow-blue-500/25">
+              <Button variant="primary" onClick={handleSubmit}>
                 {document ? 'Guardar Cambios' : 'Crear Documento'}
               </Button>
             </div>

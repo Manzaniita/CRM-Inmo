@@ -228,7 +228,7 @@ export default function Reservometro() {
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
             Reservómetro
@@ -307,111 +307,113 @@ export default function Reservometro() {
         />
       </div>
 
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="relative flex-1 max-w-md w-full">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-            />
-            <input
-              type="text"
-              placeholder="Buscar por comprador, propiedad o ID..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 w-full md:w-auto flex-wrap">
-            <select
-              className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none"
-              value={filterPropertyType}
-              onChange={(e) => setFilterPropertyType(e.target.value)}
-            >
-              <option value="all">Tipo propiedad</option>
-              <option value="vinculada">Vinculada</option>
-              <option value="manual">Manual</option>
-            </select>
-            <select
-              className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none"
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value)}
-            >
-              <option value="fecha">Fecha (más próxima)</option>
-              <option value="fecha-desc">Fecha (más lejana)</option>
-              <option value="estado">Estado</option>
-              <option value="comision">Comisión</option>
-              <option value="precio">Precio</option>
-            </select>
-            <button
-              onClick={() =>
-                setSortDirection((d) => (d === "asc" ? "desc" : "asc"))
-              }
-              className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-              title={sortDirection === "asc" ? "Ascendente" : "Descendente"}
-            >
-              <ArrowUpDown
-                size={16}
-                className={cn(
-                  "transition-transform",
-                  sortDirection === "asc" ? "rotate-180" : "",
-                )}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-6">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+            <div className="relative flex-1 max-w-md w-full">
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
               />
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-col gap-3 w-full">
-          <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto flex-wrap">
-            <SearchableSelect
-              placeholder="Filtrar comprador"
-              value={filterBuyer}
-              onChange={setFilterBuyer}
-              options={clients.map((c) => ({
-                value: c.id,
-                label: c.name,
-                subtitle: c.phone,
-              }))}
-              allowEmpty
-              emptyLabel="Todos los compradores"
-            />
-            <SearchableSelect
-              placeholder="Filtrar vendedor"
-              value={filterSeller}
-              onChange={setFilterSeller}
-              options={clients.map((c) => ({
-                value: c.id,
-                label: c.name,
-                subtitle: c.phone,
-              }))}
-              allowEmpty
-              emptyLabel="Todos los vendedores"
-            />
-            <input
-              type="text"
-              placeholder="Agente / Inmo"
-              className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none"
-              value={filterAgent}
-              onChange={(e) => setFilterAgent(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest self-center mr-1">
-              Estado:
-            </span>
-            {(["all", ...STAGES] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-bold border transition-all",
-                  filterStatus === s
-                    ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200"
-                    : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600",
-                )}
+              <input
+                type="text"
+                placeholder="Buscar por comprador, propiedad o ID..."
+                className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 w-full md:w-auto flex-wrap">
+              <select
+                className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none"
+                value={filterPropertyType}
+                onChange={(e) => setFilterPropertyType(e.target.value)}
               >
-                {s === "all" ? "Todas" : s.charAt(0).toUpperCase() + s.slice(1)}
+                <option value="all">Tipo propiedad</option>
+                <option value="vinculada">Vinculada</option>
+                <option value="manual">Manual</option>
+              </select>
+              <select
+                className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none"
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value)}
+              >
+                <option value="fecha">Fecha (más próxima)</option>
+                <option value="fecha-desc">Fecha (más lejana)</option>
+                <option value="estado">Estado</option>
+                <option value="comision">Comisión</option>
+                <option value="precio">Precio</option>
+              </select>
+              <button
+                onClick={() =>
+                  setSortDirection((d) => (d === "asc" ? "desc" : "asc"))
+                }
+                className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                title={sortDirection === "asc" ? "Ascendente" : "Descendente"}
+              >
+                <ArrowUpDown
+                  size={16}
+                  className={cn(
+                    "transition-transform",
+                    sortDirection === "asc" ? "rotate-180" : "",
+                  )}
+                />
               </button>
-            ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 w-full">
+            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto flex-wrap">
+              <SearchableSelect
+                placeholder="Filtrar comprador"
+                value={filterBuyer}
+                onChange={setFilterBuyer}
+                options={clients.map((c) => ({
+                  value: c.id,
+                  label: c.name,
+                  subtitle: c.phone,
+                }))}
+                allowEmpty
+                emptyLabel="Todos los compradores"
+              />
+              <SearchableSelect
+                placeholder="Filtrar vendedor"
+                value={filterSeller}
+                onChange={setFilterSeller}
+                options={clients.map((c) => ({
+                  value: c.id,
+                  label: c.name,
+                  subtitle: c.phone,
+                }))}
+                allowEmpty
+                emptyLabel="Todos los vendedores"
+              />
+              <input
+                type="text"
+                placeholder="Agente / Inmo"
+                className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none"
+                value={filterAgent}
+                onChange={(e) => setFilterAgent(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest self-center mr-1">
+                Estado:
+              </span>
+              {(["all", ...STAGES] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(s)}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-bold border transition-all",
+                    filterStatus === s
+                      ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200"
+                      : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600",
+                  )}
+                >
+                  {s === "all" ? "Todas" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

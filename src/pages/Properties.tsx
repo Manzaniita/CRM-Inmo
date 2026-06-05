@@ -1556,78 +1556,77 @@ export default function Properties() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden mb-6">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-          <div className="relative flex-1 max-w-md">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-            />
-            <input
-              type="text"
-              placeholder="Buscar por dirección, zona o título..."
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <select
-              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800"
-              value={filterOperation}
-              onChange={(e) => setFilterOperation(e.target.value as any)}
-            >
-              <option value="">Todas las operaciones</option>
-              {customOptions.propertyOperations.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <div className="flex gap-1 flex-wrap">
-              {[
-                { id: "", label: "Todas" },
-                ...customOptions.propertyStatuses,
-              ].map((st) => (
-                <button
-                  key={st.id || "all"}
-                  type="button"
-                  onClick={() => setFilterStatus(st.id)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
-                    filterStatus === st.id
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300",
-                  )}
-                >
-                  {st.label}
-                </button>
-              ))}
-            </div>
-            <select
-              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800"
-              value={sortPrice}
-              onChange={(e) =>
-                setSortPrice(e.target.value as "asc" | "desc" | "")
-              }
-            >
-              <option value="">Ordenar por precio</option>
-              <option value="asc">Precio: menor a mayor</option>
-              <option value="desc">Precio: mayor a menor</option>
-            </select>
-          </div>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+          />
+          <input
+            type="text"
+            placeholder="Buscar por dirección, zona o título..."
+            className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-slate-800"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center p-12">
-            <Loader2
-              size={32}
-              className="animate-spin text-slate-400"
-              strokeWidth={1.5}
-            />
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800"
+            value={filterOperation}
+            onChange={(e) => setFilterOperation(e.target.value as any)}
+          >
+            <option value="">Todas las operaciones</option>
+            {customOptions.propertyOperations.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <div className="flex gap-1 flex-wrap">
+            {[
+              { id: "", label: "Todas" },
+              ...customOptions.propertyStatuses,
+            ].map((st) => (
+              <button
+                key={st.id || "all"}
+                type="button"
+                onClick={() => setFilterStatus(st.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
+                  filterStatus === st.id
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-blue-300",
+                )}
+              >
+                {st.label}
+              </button>
+            ))}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 p-6">
+          <select
+            className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none bg-white dark:bg-slate-800"
+            value={sortPrice}
+            onChange={(e) =>
+              setSortPrice(e.target.value as "asc" | "desc" | "")
+            }
+          >
+            <option value="">Ordenar por precio</option>
+            <option value="asc">Precio: menor a mayor</option>
+            <option value="desc">Precio: mayor a menor</option>
+          </select>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2
+            size={32}
+            className="animate-spin text-slate-400"
+            strokeWidth={1.5}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProps.map((prop) => {
               const remaining = contractTimeRemaining(prop.contractEndDate);
               const imgSrc =
@@ -1849,17 +1848,16 @@ export default function Properties() {
           </div>
         )}
 
-        {!isLoading && filteredProps.length === 0 && (
-          <div className="py-20 text-center">
-            <Home size={48} className="mx-auto text-gray-200 mb-4" />
-            <p className="text-slate-500 dark:text-slate-400 font-medium">
-              {searchTerm || filterOperation || filterStatus
-                ? "No se encontraron propiedades con los filtros actuales."
-                : "Todavía no hay propiedades cargadas."}
-            </p>
-          </div>
-        )}
-      </div>
+      {!isLoading && filteredProps.length === 0 && (
+        <div className="py-20 text-center">
+          <Home size={48} className="mx-auto text-gray-200 mb-4" />
+          <p className="text-slate-500 dark:text-slate-400 font-medium">
+            {searchTerm || filterOperation || filterStatus
+              ? "No se encontraron propiedades con los filtros actuales."
+              : "Todavía no hay propiedades cargadas."}
+          </p>
+        </div>
+      )}
 
       {isImportModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

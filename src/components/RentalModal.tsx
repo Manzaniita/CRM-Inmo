@@ -113,7 +113,7 @@ export default function RentalModal({
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-        <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-3xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
           <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -124,7 +124,7 @@ export default function RentalModal({
             </div>
             <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400 dark:text-slate-500"><X size={24} /></button>
           </div>
-          <div className="flex-1 overflow-y-auto p-8 scrollbar-thin">
+          <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div className="p-5 bg-green-50/50 rounded-2xl border border-green-100">
@@ -179,7 +179,7 @@ export default function RentalModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-3xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom duration-300">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom duration-300">
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
           <h2 className="font-black text-xl text-slate-900 dark:text-slate-100">{rental ? 'Editar Alquiler' : 'Nuevo Alquiler'}</h2>
           <button onClick={onClose} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><X size={24} /></button>
@@ -275,9 +275,9 @@ export default function RentalModal({
                 placeholder="Condiciones especiales, garantias..." value={formData.notas} onChange={e => setFormData({...formData, notas: e.target.value})} />
             </div>
           </div>
-          <div className="mt-10 flex gap-3 sticky bottom-0 bg-white dark:bg-slate-900 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" variant="primary" className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 border-none text-white shadow-lg shadow-blue-500/25">{rental ? 'Guardar Cambios' : 'Registrar Alquiler'}</Button>
+          <div className="mt-8 flex justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" variant="primary">{rental ? 'Guardar Cambios' : 'Registrar Alquiler'}</Button>
           </div>
         </form>
       </div>
