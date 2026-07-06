@@ -7,12 +7,13 @@ import { useTasks } from "./useTasks";
 import { useActivityLogs } from "./useActivityLogs";
 import { useUIStore } from "../stores/uiStore";
 import { generateId } from "../lib/id";
+import type { Task } from "../types";
 
 const FINAL_PROPERTY_STATUSES = ["vendida", "alquilada", "finalizado"];
 
 export function useContractExpiration() {
   const { properties } = useProperties();
-  const { tasks } = useTasks();
+  const { tasks, addTask } = useTasks();
   const { addActivityLog } = useActivityLogs();
   const queryClient = useQueryClient();
   const processedAutoKeys = useRef<Set<string>>(new Set());
@@ -30,18 +31,18 @@ export function useContractExpiration() {
           (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
         );
 
-        // Warning 15 days before
-        if (daysLeft <= 15 && daysLeft >= 0) {
+        // Alerta a 15 días (media prioridad)
+        if (daysLeft <= 15 && daysLeft > 5) {
           const warningKey = `contract-warning-15-${prop.id}-${prop.contractEndDate}`;
           if (!processedAutoKeys.current.has(warningKey)) {
             const exists = tasks.some((t) => t.autoKey === warningKey);
             if (!exists) {
-              const newTask = {
+              const newTask: Task = {
                 id: generateId("t"),
                 title: `Revisar / renovar contrato de ${prop.title}`,
                 description: `El contrato de la propiedad ${prop.title} vence el ${prop.contractEndDate}. Contactar al cliente para revisar renovación.`,
                 dueDate: new Date().toISOString().split("T")[0],
-                priority: daysLeft === 0 ? "alta" : "media",
+                priority: "media",
                 status: "pendiente",
                 propertyId: prop.id,
                 clientId: prop.ownerId,
@@ -49,23 +50,44 @@ export function useContractExpiration() {
                 source: "auto_contract_renewal",
                 autoKey: warningKey,
               };
-              const currentUser = useAuthStore.getState().user;
-              if (currentUser) {
-                const { createdAt, ...rest } = newTask;
-                const { data, error } = await supabase
-                  .from("tasks")
-                  .insert({ ...rest, user_id: currentUser.id })
-                  .select();
-                if (!error && data) {
-                  queryClient.invalidateQueries({ queryKey: ["tasks"] });
-                  addActivityLog({
-                    type: "task",
-                    action: "created",
-                    title: `Tarea automática creada: Revisar contrato de ${prop.title}`,
-                    entityId: prop.id,
-                  });
-                }
-              }
+              await addTask(newTask);
+              addActivityLog({
+                type: "task",
+                action: "created",
+                title: `Tarea automática creada: Revisar contrato de ${prop.title}`,
+                entityId: prop.id,
+              });
+            }
+            processedAutoKeys.current.add(warningKey);
+          }
+        }
+
+        // Alerta a 5 días o menos (alta prioridad)
+        if (daysLeft <= 5 && daysLeft >= 0) {
+          const warningKey = `contract-warning-5-${prop.id}-${prop.contractEndDate}`;
+          if (!processedAutoKeys.current.has(warningKey)) {
+            const exists = tasks.some((t) => t.autoKey === warningKey);
+            if (!exists) {
+              const newTask: Task = {
+                id: generateId("t"),
+                title: `Renovar contrato de ${prop.title}`,
+                description: `El contrato de la propiedad ${prop.title} vence el ${prop.contractEndDate}. Es necesario renovar o revisar el contrato urgentemente.`,
+                dueDate: new Date().toISOString().split("T")[0],
+                priority: "alta",
+                status: "pendiente",
+                propertyId: prop.id,
+                clientId: prop.ownerId,
+                createdAt: new Date().toISOString(),
+                source: "auto_contract_renewal",
+                autoKey: warningKey,
+              };
+              await addTask(newTask);
+              addActivityLog({
+                type: "task",
+                action: "created",
+                title: `Tarea automática creada: Renovar contrato de ${prop.title}`,
+                entityId: prop.id,
+              });
             }
             processedAutoKeys.current.add(warningKey);
           }
@@ -102,7 +124,7 @@ export function useContractExpiration() {
           if (!processedAutoKeys.current.has(expiredKey)) {
             const exists = tasks.some((t) => t.autoKey === expiredKey);
             if (!exists) {
-              const newTask = {
+              const newTask: Task = {
                 id: generateId("t"),
                 title: `Revisar / renovar contrato de ${prop.title}`,
                 description: `El contrato de la propiedad ${prop.title} venció el ${prop.contractEndDate}. Contactar al cliente urgentemente.`,
@@ -115,26 +137,16 @@ export function useContractExpiration() {
                 source: "auto_contract_renewal",
                 autoKey: expiredKey,
               };
-              const currentUser2 = useAuthStore.getState().user;
-              if (currentUser2) {
-                const { createdAt, ...rest } = newTask;
-                const { data, error } = await supabase
-                  .from("tasks")
-                  .insert({ ...rest, user_id: currentUser2.id })
-                  .select();
-                if (!error && data) {
-                  queryClient.invalidateQueries({ queryKey: ["tasks"] });
-                }
-              }
+              await addTask(newTask);
             }
             processedAutoKeys.current.add(expiredKey);
-            const currentUser3 = useAuthStore.getState().user;
-            if (currentUser3) {
+            const currentUser = useAuthStore.getState().user;
+            if (currentUser) {
               await supabase
                 .from("properties")
                 .update({ status: "vencida" })
                 .eq("id", prop.id)
-                .eq("user_id", currentUser3.id);
+                .eq("user_id", currentUser.id);
             }
             queryClient.invalidateQueries({ queryKey: ["properties"] });
             addActivityLog({
@@ -153,5 +165,5 @@ export function useContractExpiration() {
     checkContractExpirations();
     const interval = setInterval(checkContractExpirations, 60000);
     return () => clearInterval(interval);
-  }, [properties, tasks, addActivityLog, queryClient]);
+  }, [properties, tasks, addTask, addActivityLog, queryClient]);
 }

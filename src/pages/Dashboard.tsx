@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Bell,
   Star,
+  User,
 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "motion/react";
@@ -478,76 +479,147 @@ export default function Dashboard() {
 
           <Card title="Tareas pendientes" subtitle="Ordenadas por fecha">
             <div className="space-y-2 pt-2">
-              {pendingTasksList.slice(0, 8).map((task, idx) => (
-                <motion.div
-                  key={task.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.04 }}
-                  className="flex items-center gap-4 p-3 rounded-xl border border-slate-100 dark:border-white/5 hover:shadow-soft-md dark:hover:shadow-none transition-all group bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm"
-                >
-                  <div
-                    className={cn(
-                      "w-2 h-2 rounded-full shrink-0",
-                      task.status === "vencida" || isOverdue(task.dueDate)
-                        ? "bg-rose-500"
-                        : task.status === "en proceso"
-                          ? "bg-accent dark:bg-dark-accent"
-                          : "bg-amber-500",
-                    )}
-                  />
-                  <div
-                    className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => navigate("/tareas")}
+              {pendingTasksList.slice(0, 8).map((task, idx) => {
+                const relatedBadges = [
+                  ...(task.clientId
+                    ? [
+                        {
+                          label: clients.find((c) => c.id === task.clientId)
+                            ?.name,
+                          icon: User,
+                          variant: "purple" as const,
+                        },
+                      ]
+                    : []),
+                  ...(task.propertyId
+                    ? [
+                        {
+                          label: properties.find(
+                            (p) => p.id === task.propertyId,
+                          )?.title,
+                          icon: Home,
+                          variant: "blue" as const,
+                        },
+                      ]
+                    : []),
+                  ...(task.relatedEntities || [])
+                    .map((r) => {
+                      if (r.type === "client") {
+                        return {
+                          label: clients.find((c) => c.id === r.id)?.name,
+                          icon: User,
+                          variant: "purple" as const,
+                        };
+                      }
+                      if (r.type === "property") {
+                        return {
+                          label: properties.find((p) => p.id === r.id)?.title,
+                          icon: Home,
+                          variant: "blue" as const,
+                        };
+                      }
+                      if (r.type === "sale") {
+                        const sale = sales.find((s) => s.id === r.id);
+                        return {
+                          label: sale?.nombre || "Operación",
+                          icon: TrendingUp,
+                          variant: "green" as const,
+                        };
+                      }
+                      return null;
+                    })
+                    .filter(Boolean),
+                ].filter((b) => b?.label) as {
+                  label: string;
+                  icon: React.ElementType;
+                  variant: "blue" | "green" | "purple";
+                }[];
+
+                return (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04 }}
+                    onClick={() => navigate(`/tareas?taskId=${task.id}`)}
+                    className="flex items-center gap-4 p-3 rounded-xl border border-slate-100 dark:border-white/5 hover:shadow-soft-md dark:hover:shadow-none transition-all group bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm cursor-pointer"
                   >
-                    <h4 className="font-bold text-sm truncate text-slate-900 dark:text-slate-100">
-                      {task.title}
-                    </h4>
-                    <div className="flex items-center mt-1 gap-2">
-                      <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center font-medium">
-                        <Clock size={12} className="mr-1" strokeWidth={1.5} />
-                        {formatDate(task.dueDate)}
-                        {isOverdue(task.dueDate) && (
-                          <span className="ml-1 text-rose-500 font-bold">
-                            (Vencida)
-                          </span>
-                        )}
-                        {isToday(task.dueDate) && (
-                          <span className="ml-1 text-amber-500 font-bold">
-                            (Hoy)
-                          </span>
-                        )}
-                        {task.status === "reprogramado" && (
-                          <span className="ml-1 text-violet-500 font-bold">
-                            (Reprogramada)
-                          </span>
-                        )}
-                      </span>
-                      <Badge
-                        size="xs"
-                        variant={
-                          task.priority === "urgente"
-                            ? "red"
-                            : task.priority === "alta"
-                              ? "orange"
-                              : "blue"
-                        }
-                      >
-                        {task.priority}
-                      </Badge>
+                    <div
+                      className={cn(
+                        "w-2 h-2 rounded-full shrink-0",
+                        task.status === "vencida" || isOverdue(task.dueDate)
+                          ? "bg-rose-500"
+                          : task.status === "en proceso"
+                            ? "bg-accent dark:bg-dark-accent"
+                            : "bg-amber-500",
+                      )}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-sm truncate text-slate-900 dark:text-slate-100">
+                        {task.title}
+                      </h4>
+                      <div className="flex flex-wrap items-center mt-1 gap-2">
+                        {relatedBadges.map((b, i) => (
+                          <Badge
+                            key={i}
+                            size="xs"
+                            variant={b.variant}
+                            className="gap-1"
+                          >
+                            <b.icon size={10} strokeWidth={1.5} />
+                            <span className="truncate max-w-[120px]">
+                              {b.label}
+                            </span>
+                          </Badge>
+                        ))}
+                        <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center font-medium">
+                          <Clock size={12} className="mr-1" strokeWidth={1.5} />
+                          {formatDate(task.dueDate)}
+                          {isOverdue(task.dueDate) && (
+                            <span className="ml-1 text-rose-500 font-bold">
+                              (Vencida)
+                            </span>
+                          )}
+                          {isToday(task.dueDate) && (
+                            <span className="ml-1 text-amber-500 font-bold">
+                              (Hoy)
+                            </span>
+                          )}
+                          {task.status === "reprogramado" && (
+                            <span className="ml-1 text-violet-500 font-bold">
+                              (Reprogramada)
+                            </span>
+                          )}
+                        </span>
+                        <Badge
+                          size="xs"
+                          variant={
+                            task.priority === "urgente"
+                              ? "red"
+                              : task.priority === "alta"
+                                ? "orange"
+                                : "blue"
+                          }
+                        >
+                          {task.priority}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.15 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => completeTask(task.id)}
-                    className="p-2 text-slate-300 dark:text-slate-600 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
-                    title="Marcar como completada"
-                  >
-                    <CheckCircle2 size={22} strokeWidth={1.5} />
-                  </motion.button>
-                </motion.div>
-              ))}
+                    <motion.button
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        completeTask(task.id);
+                      }}
+                      className="p-2 text-slate-300 dark:text-slate-600 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors"
+                      title="Marcar como completada"
+                    >
+                      <CheckCircle2 size={22} strokeWidth={1.5} />
+                    </motion.button>
+                  </motion.div>
+                );
+              })}
               {pendingTasksList.length > 8 && (
                 <div className="text-center pt-2">
                   <button

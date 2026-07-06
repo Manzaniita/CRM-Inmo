@@ -62,13 +62,31 @@ export function useProperties() {
     mutationFn: async (property: Property) => {
       if (!user) throw new Error('No hay sesión activa');
       const previous = queryClient.getQueryData<Property[]>(PROPERTIES_KEY)?.find(p => p.id === property.id);
+
+      // Prórroga automática: si la propiedad estaba vencida y se actualiza
+      // la fecha de fin de contrato a una fecha futura, reactivarla.
+      let updateData: Property = property;
+      if (
+        previous?.status === 'vencida' &&
+        property.status === 'vencida' &&
+        property.contractEndDate
+      ) {
+        const end = new Date(property.contractEndDate);
+        end.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (end > today) {
+          updateData = { ...property, status: 'disponible' };
+        }
+      }
+
       const { error } = await supabase
         .from('properties')
-        .update(property)
+        .update(updateData)
         .eq('id', property.id)
         .eq('user_id', user.id);
       if (error) throw new Error(error.message);
-      return { property, previous };
+      return { property: updateData, previous };
     },
     onSuccess: ({ property, previous }) => {
       queryClient.invalidateQueries({ queryKey: PROPERTIES_KEY });

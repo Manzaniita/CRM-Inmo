@@ -6,6 +6,7 @@ interface BadgeProps {
   variant?: 'blue' | 'green' | 'orange' | 'red' | 'gray' | 'purple' | 'yellow';
   size?: 'xs' | 'sm' | 'md';
   className?: string;
+  key?: React.Key;
 }
 
 export default function Badge({ children, variant = 'gray', size = 'sm', className }: BadgeProps) {
