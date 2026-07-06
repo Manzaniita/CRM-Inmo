@@ -5,7 +5,10 @@ import { useAuthStore } from "../stores/authStore";
 import { useProperties } from "./useProperties";
 import { useTasks } from "./useTasks";
 import { useActivityLogs } from "./useActivityLogs";
+import { useUIStore } from "../stores/uiStore";
 import { generateId } from "../lib/id";
+
+const FINAL_PROPERTY_STATUSES = ["vendida", "alquilada", "finalizado"];
 
 export function useContractExpiration() {
   const { properties } = useProperties();
@@ -68,8 +71,33 @@ export function useContractExpiration() {
           }
         }
 
+        // Notificación destacada a 7 días
+        if (daysLeft === 7) {
+          const notifyKey = `contract-notify-7-${prop.id}-${prop.contractEndDate}`;
+          if (!processedAutoKeys.current.has(notifyKey)) {
+            useUIStore
+              .getState()
+              .showToast(
+                `⏰ Quedan 7 días para el vencimiento de la exclusiva de ${prop.title}`,
+                "warning",
+              );
+            addActivityLog({
+              type: "property",
+              action: "status_changed",
+              title: `Alerta: 7 días para vencimiento de exclusiva - ${prop.title}`,
+              description: `El contrato de exclusiva vence el ${prop.contractEndDate}.`,
+              entityId: prop.id,
+            });
+            processedAutoKeys.current.add(notifyKey);
+          }
+        }
+
         // Expired
-        if (daysLeft < 0 && prop.status !== "vencida") {
+        if (
+          daysLeft < 0 &&
+          prop.status !== "vencida" &&
+          !FINAL_PROPERTY_STATUSES.includes(prop.status)
+        ) {
           const expiredKey = `contract-expired-${prop.id}-${prop.contractEndDate}`;
           if (!processedAutoKeys.current.has(expiredKey)) {
             const exists = tasks.some((t) => t.autoKey === expiredKey);

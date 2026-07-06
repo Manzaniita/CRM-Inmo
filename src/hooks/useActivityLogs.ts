@@ -29,7 +29,7 @@ export function useActivityLogs(entityId?: string) {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
-  const { data: activityLogs = [] } = useQuery({
+  const { data: activityLogs = [], isLoading } = useQuery({
     queryKey: ["activity_logs", entityId ?? "all"],
     queryFn: () => fetchActivityLogs(entityId),
     enabled: !!user,
@@ -60,6 +60,7 @@ export function useActivityLogs(entityId?: string) {
 
   return {
     activityLogs,
+    isLoading,
     addActivityLog: addActivityLog.mutateAsync,
   };
 }

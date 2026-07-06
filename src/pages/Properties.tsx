@@ -28,6 +28,9 @@ import {
   MessageCircle,
   Download,
   Image as ImageIcon,
+  ArrowUp,
+  ArrowDown,
+  Maximize2,
 } from "lucide-react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useClients } from "../hooks/useClients";
@@ -78,6 +81,7 @@ import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useCustomOptions } from "../hooks/useCustomOptions";
 import { useStorage } from "../hooks/useStorage";
 import FileUpload from "../components/FileUpload";
+import Lightbox from "../components/Lightbox";
 
 export default function Properties() {
   const { id } = useParams();
@@ -141,6 +145,8 @@ export default function Properties() {
   const [quickUploadFile, setQuickUploadFile] = useState<File | null>(null);
   const [isUploadingQuickDoc, setIsUploadingQuickDoc] = useState(false);
   const [activeImage, setActiveImage] = useState<string>("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [propDocFile, setPropDocFile] = useState<File | null>(null);
   const [isUploadingPropDoc, setIsUploadingPropDoc] = useState(false);
   const [openMenuPropertyId, setOpenMenuPropertyId] = useState<string | null>(
@@ -272,6 +278,42 @@ export default function Properties() {
     setIsFormModalOpen(true);
   };
 
+  const handleImageUpload = async (file: File | null) => {
+    if (!file) return;
+    try {
+      const user = useAuthStore.getState().user;
+      const prefix = editingProperty ? editingProperty.id : "new";
+      const path = `${user?.id}/${prefix}/${Date.now()}_${file.name}`;
+      const { publicUrl } = await uploadStorageFile("property-images", path, file);
+      const currentImages = formData.images || [];
+      setFormData({
+        ...formData,
+        imageUrl: undefined,
+        images: [...currentImages, publicUrl],
+      });
+      showToast("Imagen agregada", "success");
+    } catch (err: any) {
+      showToast(err.message || "Error al subir imagen", "error");
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const currentImages = formData.images || [];
+    setFormData({
+      ...formData,
+      images: currentImages.filter((_, i) => i !== index),
+    });
+  };
+
+  const moveImage = (index: number, direction: "up" | "down") => {
+    const currentImages = [...(formData.images || [])];
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= currentImages.length) return;
+    const [moved] = currentImages.splice(index, 1);
+    currentImages.splice(newIndex, 0, moved);
+    setFormData({ ...formData, images: currentImages });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = { ...formData };
@@ -396,7 +438,14 @@ export default function Properties() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <div className="relative group rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+            <div
+              className="relative group rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer"
+              onClick={() => {
+                const idx = selectedProp.images?.findIndex((i) => i === activeImage) || 0;
+                setLightboxIndex(idx >= 0 ? idx : 0);
+                setLightboxOpen(true);
+              }}
+            >
               {activeImage ? (
                 <img
                   src={activeImage}
@@ -411,6 +460,13 @@ export default function Properties() {
                   />
                 </div>
               )}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+              <button
+                type="button"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-3 rounded-full bg-white/80 dark:bg-slate-900/80 text-slate-700 dark:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+              >
+                <Maximize2 size={20} />
+              </button>
               <div className="absolute top-4 left-4 flex gap-2">
                 <Badge
                   variant={getStatusVariant(selectedProp.status)}
@@ -426,12 +482,15 @@ export default function Properties() {
 
             {/* Gallery Thumbnails */}
             {selectedProp.images && selectedProp.images.length > 0 && (
-              <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2">
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
                 {selectedProp.images.map((img, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => setActiveImage(img)}
+                    onClick={() => {
+                      setActiveImage(img);
+                      setLightboxIndex(idx);
+                    }}
                     className={cn(
                       "relative rounded-xl overflow-hidden border-2 aspect-square transition-all",
                       activeImage === img
@@ -1091,6 +1150,13 @@ export default function Properties() {
             </div>
           </div>
         )}
+
+        <Lightbox
+          images={selectedProp.images || []}
+          initialIndex={lightboxIndex}
+          isOpen={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+        />
       </div>
     );
   }
@@ -1323,49 +1389,58 @@ export default function Properties() {
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Imagen principal
+                  Galería de imágenes
                 </label>
-                <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center overflow-hidden shrink-0">
-                    {formData.imageUrl ||
-                    (formData.images && formData.images[0]) ? (
-                      <img
-                        src={formData.imageUrl || formData.images?.[0]}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Camera
-                        size={24}
-                        className="text-slate-300 dark:text-slate-600"
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <FileUpload
-                      accept="image/*"
-                      maxSizeMB={5}
-                      preview={false}
-                      uploading={isUploadingImage}
-                      helperText="Máximo 5 MB. Formatos: JPG, PNG, WEBP."
-                      onFileSelect={async (file) => {
-                        if (!file) {
-                          setFormData({ ...formData, imageUrl: undefined, images: [] });
-                          return;
-                        }
-                        try {
-                          const user = useAuthStore.getState().user;
-                          const prefix = editingProperty ? editingProperty.id : 'new';
-                          const path = `${user?.id}/${prefix}/${Date.now()}_${file.name}`;
-                          const { publicUrl } = await uploadStorageFile('property-images', path, file);
-                          setFormData({ ...formData, imageUrl: undefined, images: [publicUrl] });
-                          showToast('Imagen subida correctamente', 'success');
-                        } catch (err: any) {
-                          showToast(err.message || 'Error al subir imagen', 'error');
-                        }
-                      }}
-                    />
-                  </div>
+                <div className="space-y-3">
+                  <FileUpload
+                    accept="image/*"
+                    maxSizeMB={5}
+                    preview={false}
+                    uploading={isUploadingImage}
+                    helperText="Máximo 5 MB por imagen. Formatos: JPG, PNG, WEBP. Podés subir varias."
+                    onFileSelect={handleImageUpload}
+                  />
+                  {formData.images && formData.images.length > 0 && (
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                      {formData.images.map((img, idx) => (
+                        <div
+                          key={`${img}-${idx}`}
+                          className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"
+                        >
+                          <img
+                            src={img}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => moveImage(idx, "up")}
+                              disabled={idx === 0}
+                              className="p-1 text-white hover:bg-white/20 rounded disabled:opacity-30"
+                            >
+                              <ArrowUp size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveImage(idx, "down")}
+                              disabled={idx === (formData.images?.length || 0) - 1}
+                              className="p-1 text-white hover:bg-white/20 rounded disabled:opacity-30"
+                            >
+                              <ArrowDown size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeImage(idx)}
+                              className="p-1 text-white hover:bg-red-500/80 rounded"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div>

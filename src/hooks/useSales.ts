@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import type { Sale } from "../types";
+import type { Sale, Task } from "../types";
 import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
+import { generateId } from "../lib/id";
 
 const fetchSales = async () => {
   const user = useAuthStore.getState().user;
@@ -16,6 +17,12 @@ const fetchSales = async () => {
   return (data ?? []) as Sale[];
 };
 
+function getFutureDate(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().split("T")[0];
+}
+
 export function useSales() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -25,6 +32,61 @@ export function useSales() {
     queryFn: fetchSales,
     enabled: !!user,
   });
+
+  const createPostSaleTask = async (sale: Sale) => {
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser) return;
+
+    const autoKey = `post-sale-${sale.id}`;
+    const { data: existing } = await supabase
+      .from("tasks")
+      .select("id")
+      .eq("user_id", currentUser.id)
+      .eq("autoKey", autoKey)
+      .limit(1);
+
+    if (existing && existing.length > 0) return;
+
+    // Obtener nombres de propiedad y comprador desde Supabase
+    const { data: propertyData } = await supabase
+      .from("properties")
+      .select("title")
+      .eq("id", sale.propiedadId)
+      .eq("user_id", currentUser.id)
+      .single();
+    const { data: clientData } = await supabase
+      .from("clients")
+      .select("name")
+      .eq("id", sale.clientCompradorId)
+      .eq("user_id", currentUser.id)
+      .single();
+
+    const propertyTitle = propertyData?.title || sale.externalPropertyAddress || "propiedad";
+    const clientName = clientData?.name || sale.comprador || "cliente";
+
+    const task: Task = {
+      id: generateId("t"),
+      title: `Llamar al cliente para post-venta - ${clientName}`,
+      description: `Seguimiento post-venta de ${propertyTitle}. Contactar a ${clientName} para verificar satisfacción y resolver dudas.`,
+      dueDate: getFutureDate(30),
+      priority: "media",
+      status: "pendiente",
+      clientId: sale.clientCompradorId || undefined,
+      propertyId: sale.propiedadId || undefined,
+      createdAt: new Date().toISOString(),
+      source: "auto_post_sale",
+      autoKey,
+      relatedEntities: [
+        ...(sale.clientCompradorId ? [{ type: "client" as const, id: sale.clientCompradorId }] : []),
+        ...(sale.propiedadId ? [{ type: "property" as const, id: sale.propiedadId }] : []),
+        { type: "sale" as const, id: sale.id },
+      ],
+    };
+
+    const { createdAt, ...rest } = task;
+    await supabase.from("tasks").insert({ ...rest, user_id: currentUser.id });
+    queryClient.invalidateQueries({ queryKey: ["tasks"] });
+  };
 
   const addSale = useMutation({
     mutationFn: async (sale: Sale) => {
@@ -40,6 +102,7 @@ export function useSales() {
           .update({ status: "vendida" })
           .eq("id", inserted.propiedadId)
           .eq("user_id", user!.id);
+        await createPostSaleTask(inserted);
       }
       return inserted;
     },
@@ -67,6 +130,7 @@ export function useSales() {
           .update({ status: "vendida" })
           .eq("id", sale.propiedadId)
           .eq("user_id", user!.id);
+        await createPostSaleTask(sale);
       }
       return sale;
     },

@@ -80,6 +80,9 @@ export function validateSale(sale: Partial<Sale>): ValidationResult {
   if (typeof sale.grossCommissionUsd === 'number' && sale.grossCommissionUsd < 0) {
     return { valid: false, message: 'La comisión bruta no puede ser negativa.' };
   }
+  if (typeof sale.gastosOficina === 'number' && sale.gastosOficina < 0) {
+    return { valid: false, message: 'Los gastos de oficina no pueden ser negativos.' };
+  }
   return { valid: true };
 }
 

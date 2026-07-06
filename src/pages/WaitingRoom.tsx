@@ -7,11 +7,14 @@ import {
   Trash2,
   Edit3,
   CheckCircle2,
+  UserPlus,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useWaitingRoom } from "../hooks/useWaitingRoom";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { Card } from "../components/Card";
+import EmptyState from "../components/EmptyState";
 import { cn, normalizeSearchText } from "../lib/utils";
 import { generateId } from "../lib/id";
 import { validateWaitingRoom } from "../lib/validators";
@@ -36,6 +39,7 @@ export default function WaitingRoom() {
     updateWaitingRoomEntry,
     deleteWaitingRoomEntry,
   } = useWaitingRoom();
+  const navigate = useNavigate();
   const showToast = useUIStore((state) => state.showToast);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("");
@@ -162,14 +166,20 @@ export default function WaitingRoom() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="py-20 text-center">
-          <Sofa size={48} className="mx-auto text-gray-200 mb-4" />
-          <p className="text-slate-500 dark:text-slate-400 font-medium">
-            {searchTerm || filterStatus
-              ? "No se encontraron resultados."
-              : "La sala de espera está vacía."}
-          </p>
-        </div>
+        <EmptyState
+          icon={Sofa}
+          title={
+            searchTerm || filterStatus
+              ? "No se encontraron resultados"
+              : "La sala de espera está vacía"
+          }
+          description="Los leads e interesados pendientes aparecerán aquí."
+          action={
+            <Button variant="outline" size="sm" onClick={() => openForm()}>
+              Nuevo ingreso
+            </Button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((entry) => (
@@ -208,6 +218,19 @@ export default function WaitingRoom() {
                   )}
                 </div>
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+                  {entry.estado !== "convertido" && (
+                    <button
+                      className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                      onClick={() =>
+                        navigate("/clientes", {
+                          state: { prefillWaitingRoom: entry },
+                        })
+                      }
+                      title="Convertir a cliente"
+                    >
+                      <UserPlus size={16} />
+                    </button>
+                  )}
                   <button
                     className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                     onClick={() => openForm(entry)}

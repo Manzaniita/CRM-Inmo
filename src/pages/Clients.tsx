@@ -24,7 +24,7 @@ import {
   Download,
   Trash2,
 } from "lucide-react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { motion } from "motion/react";
 import {
   Client,
@@ -43,6 +43,7 @@ import {
   EventStatus,
   Property,
   ReferredColleague,
+  WaitingRoomEntry,
 } from "../types";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -119,6 +120,7 @@ function BentoInfoItem({
 export default function Clients() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const clientIdFromQuery = searchParams.get("clientId");
   const effectiveClientId = id || clientIdFromQuery || undefined;
@@ -250,6 +252,41 @@ export default function Clients() {
   });
 
   const selectedClient = clients.find((c) => c.id === effectiveClientId);
+
+  // Detectar lead precargado desde Sala de Espera
+  const [prefillWaitingRoom, setPrefillWaitingRoom] =
+    useState<WaitingRoomEntry | null>(null);
+
+  useEffect(() => {
+    const entry = location.state?.prefillWaitingRoom as
+      | WaitingRoomEntry
+      | undefined;
+    if (entry) {
+      setEditingClient(null);
+      setFormData({
+        name: entry.nombre,
+        phone: entry.telefono || "",
+        email: entry.email || "",
+        type: "comprador",
+        types: ["comprador"],
+        status: "nuevo",
+        origin: "WhatsApp",
+        lastContact: new Date().toISOString().split("T")[0],
+        notes: [entry.interes, entry.notas].filter(Boolean).join("\n"),
+        profession: "",
+        referredBy: "",
+        referredByColleagueId: "",
+        referredByClientId: "",
+        dashboardPinned: false,
+        dashboardArchived: false,
+        birthdate: "",
+        interestZone: entry.interes || "",
+      });
+      setPrefillWaitingRoom(entry);
+      setIsFormModalOpen(true);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Detectar query params para crear referido desde colega
   useEffect(() => {
@@ -524,30 +561,43 @@ export default function Clients() {
       clientData.referredBy = "";
     }
 
-    if (editingClient) {
-      updateClient(clientData);
-    } else {
-      addClient(clientData);
-    }
-
-    if (colleagueToUpdate) {
-      const col = referredColleagues.find(
-        (c) => c.id === colleagueToUpdate!.id,
-      );
-      if (col) {
-        const updatedIds = [...(col.referredClientIds || [])];
-        if (!updatedIds.includes(colleagueToUpdate.clientId)) {
-          updatedIds.push(colleagueToUpdate.clientId);
-        }
-        updateReferredColleague({ ...col, referredClientIds: updatedIds });
+    const saveClient = async () => {
+      if (editingClient) {
+        await updateClient(clientData);
+      } else {
+        await addClient(clientData);
       }
-    }
 
-    setIsFormModalOpen(false);
-    setShowNewColleagueForm(false);
-    setNewColleagueName("");
-    setNewColleagueOffice("");
-    setSelectedColleagueId("");
+      if (colleagueToUpdate) {
+        const col = referredColleagues.find(
+          (c) => c.id === colleagueToUpdate!.id,
+        );
+        if (col) {
+          const updatedIds = [...(col.referredClientIds || [])];
+          if (!updatedIds.includes(colleagueToUpdate.clientId)) {
+            updatedIds.push(colleagueToUpdate.clientId);
+          }
+          updateReferredColleague({ ...col, referredClientIds: updatedIds });
+        }
+      }
+
+      if (prefillWaitingRoom) {
+        await updateWaitingRoomEntry({
+          ...prefillWaitingRoom,
+          estado: "convertido",
+        });
+        setPrefillWaitingRoom(null);
+        showToast("Lead convertido a cliente", "success");
+      }
+
+      setIsFormModalOpen(false);
+      setShowNewColleagueForm(false);
+      setNewColleagueName("");
+      setNewColleagueOffice("");
+      setSelectedColleagueId("");
+    };
+
+    saveClient();
   };
 
   const getTypeBadgeVariant = (typeId: string): any => {

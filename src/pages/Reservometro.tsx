@@ -32,13 +32,17 @@ import {
 } from "../lib/utils";
 import { generateId } from "../lib/id";
 import { validateSale } from "../lib/validators";
-import type { Sale, SaleStatus, ActivityLog } from "../types";
+import type { Sale, SaleStatus, ActivityLog, Document } from "../types";
 import SearchableSelect from "../components/SearchableSelect";
 import { useUIStore } from "../stores/uiStore";
+import { useAuthStore } from "../stores/authStore";
 import { useProperties } from "../hooks/useProperties";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useSales } from "../hooks/useSales";
 import { useClients } from "../hooks/useClients";
+import { useDocuments } from "../hooks/useDocuments";
+import { useStorage } from "../hooks/useStorage";
+import FileUpload from "../components/FileUpload";
 
 const STAGES: SaleStatus[] = ["activa", "vendida", "caída"];
 
@@ -840,6 +844,8 @@ function SaleFormModal({
   const { addActivityLog } = useActivityLogs();
   const { clients, addClient } = useClients();
   const { properties } = useProperties();
+  const { addDocument } = useDocuments();
+  const { uploadFile: uploadStorageFile } = useStorage();
   const showToast = useUIStore((state) => state.showToast);
 
   const hasManualProperty = !!(
@@ -867,6 +873,9 @@ function SaleFormModal({
 
   // Field-level errors
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [saleDocFile, setSaleDocFile] = useState<File | null>(null);
+  const [isUploadingSaleDoc, setIsUploadingSaleDoc] = useState(false);
+  const [saleDocType, setSaleDocType] = useState<"Reserva" | "Boleto">("Reserva");
 
   const [formData, setFormData] = useState<Partial<Sale>>(() => {
     if (sale) {
@@ -911,12 +920,26 @@ function SaleFormModal({
       presupuesto: undefined,
       isCollected: false,
       grossCommissionUsd: undefined,
+      gastosOficina: undefined,
+      comisionNetaFinal: undefined,
       fechaCreacion: new Date().toISOString().split("T")[0],
       externalPropertyAddress: "",
       externalPropertyLink: "",
       externalPropertyCode: "",
     };
   });
+
+  // Cálculo automático de comisión neta final
+  useEffect(() => {
+    const comisionBruta = Number(formData.comisionEstimada) || 0;
+    const gastos = Number(formData.gastosOficina) || 0;
+    const referidoPct = Number(formData.porcentajeReferido) || 0;
+    const referidoAmount = comisionBruta * (referidoPct / 100);
+    const neta = comisionBruta - gastos - referidoAmount;
+    if (formData.comisionNetaFinal !== neta) {
+      setFormData((prev) => ({ ...prev, comisionNetaFinal: neta }));
+    }
+  }, [formData.comisionEstimada, formData.gastosOficina, formData.porcentajeReferido]);
 
   const handleCreateBuyer = () => {
     if (!newBuyerName.trim()) {
@@ -970,7 +993,7 @@ function SaleFormModal({
     showToast(`Vendedor "${newClient.name}" creado y seleccionado`, "success");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, boolean> = {};
 
@@ -1017,8 +1040,10 @@ function SaleFormModal({
       return showToast(validation.message || "Error de validación", "error");
     }
     const now = new Date().toISOString().split("T")[0];
+    let saleId = sale?.id;
+
     if (sale) {
-      updateSale({ ...sale, ...(data as Sale), fechaActualizacion: now });
+      await updateSale({ ...sale, ...(data as Sale), fechaActualizacion: now });
     } else {
       const newSale: Sale = {
         ...(data as Sale),
@@ -1026,7 +1051,8 @@ function SaleFormModal({
         fechaCreacion: now,
         fechaActualizacion: now,
       };
-      addSale(newSale);
+      const created = await addSale(newSale);
+      saleId = created.id;
       if (propertyMode === "manual") {
         addActivityLog({
           type: "sale",
@@ -1036,6 +1062,41 @@ function SaleFormModal({
         });
       }
     }
+
+    // Subir documento de reserva/boleto vinculado a la venta
+    if (saleDocFile && saleId) {
+      setIsUploadingSaleDoc(true);
+      try {
+        const user = useAuthStore.getState().user;
+        const path = `${user?.id}/sales/${saleId}/${Date.now()}_${saleDocFile.name}`;
+        const { publicUrl } = await uploadStorageFile("documents", path, saleDocFile);
+        const ext = saleDocFile.name.includes(".")
+          ? saleDocFile.name.split(".").pop()?.toLowerCase() || ""
+          : "";
+        const newDoc: Document = {
+          id: generateId("d"),
+          nombre: `${saleDocType} firmada`,
+          tipo: saleDocType === "Reserva" ? "Reserva" : "Boleto",
+          status: "cargado",
+          clientId: formData.clientCompradorId || undefined,
+          propertyId: formData.propiedadId || undefined,
+          saleId,
+          uploadDate: new Date().toISOString(),
+          notes: "",
+          fileName: saleDocFile.name,
+          fileSize: saleDocFile.size,
+          fileExtension: ext,
+          url: publicUrl,
+        };
+        await addDocument(newDoc);
+        showToast(`${saleDocType} cargada correctamente`, "success");
+      } catch (err: any) {
+        showToast(err.message || "Error al subir documento", "error");
+      } finally {
+        setIsUploadingSaleDoc(false);
+      }
+    }
+
     onClose();
   };
 
@@ -1621,6 +1682,7 @@ function SaleFormModal({
                 { key: "porcentajeNeto", label: "% Neto" },
                 { key: "porcentajeReferido", label: "% Referido" },
                 { key: "grossCommissionUsd", label: "Comisión bruta USD" },
+                { key: "gastosOficina", label: "Gastos oficina" },
               ].map((field) => (
                 <div key={field.key}>
                   <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
@@ -1645,6 +1707,14 @@ function SaleFormModal({
                   />
                 </div>
               ))}
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                  Comisión neta final
+                </label>
+                <div className="h-[42px] flex items-center px-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-400 text-sm font-bold">
+                  {formatCurrency(formData.comisionNetaFinal || 0, formData.moneda || "USD")}
+                </div>
+              </div>
               <div>
                 <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
                   Monto Escritura
@@ -1768,6 +1838,39 @@ function SaleFormModal({
                 onChange={(e) =>
                   setFormData({ ...formData, notas: e.target.value })
                 }
+              />
+            </div>
+
+            {/* Documentos de la operación */}
+            <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-4">
+              <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                Documentos de la operación
+              </label>
+              <div className="flex gap-2">
+                {(["Reserva", "Boleto"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setSaleDocType(type)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-bold border transition-all",
+                      saleDocType === type
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
+                    )}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+              <FileUpload
+                accept=".pdf,image/*"
+                maxSizeMB={10}
+                preview={false}
+                uploading={isUploadingSaleDoc}
+                helperText="Subí la reserva firmada o el boleto. Se vinculará automáticamente a esta operación."
+                value={saleDocFile}
+                onFileSelect={setSaleDocFile}
               />
             </div>
           </div>

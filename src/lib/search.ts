@@ -55,6 +55,7 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
       matches(p.city) ||
       matches(p.operation) ||
       matches(p.status) ||
+      matches(p.code) ||
       matches(p.propertyCode) ||
       matches(p.propertyLink) ||
       matches(p.externalLink) ||
@@ -65,7 +66,7 @@ export function searchAll(data: SearchData, query: string): SearchResultItem[] {
       found.push({
         id: p.id,
         title: p.title,
-        subtitle: `${p.address}, ${p.city} · ${p.operation} · ${p.status}`,
+        subtitle: `${p.code}${p.propertyCode ? ` · Ref: ${p.propertyCode}` : ""} · ${p.address}, ${p.city} · ${p.operation}`,
         type: 'propiedad',
         path: `/propiedades/${p.id}`,
       });

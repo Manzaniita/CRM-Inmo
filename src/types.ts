@@ -116,7 +116,7 @@ export interface Task {
   propertyId?: string;
   notes?: string;
   createdAt: string;
-  source?: 'manual' | 'auto_contract_renewal' | 'auto_birthday';
+  source?: 'manual' | 'auto_contract_renewal' | 'auto_birthday' | 'auto_post_sale';
   autoKey?: string;
   relatedEntities?: TaskRelatedEntity[];
   isRecurring?: boolean;
@@ -160,6 +160,8 @@ export interface Sale {
   montoEscritura?: string | number;
   isCollected?: boolean;
   grossCommissionUsd?: number;
+  gastosOficina?: number;
+  comisionNetaFinal?: number;
   infoExtra?: string;
   presupuesto?: number;
   // Comprador/Vendedor extendido

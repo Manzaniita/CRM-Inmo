@@ -23,6 +23,8 @@ import { motion } from "motion/react";
 import { StatCard, Card } from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
+import EmptyState from "../components/EmptyState";
+import { Skeleton, SkeletonStat, SkeletonCard, SkeletonList } from "../components/Skeleton";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useSales } from "../hooks/useSales";
 import { useTasks } from "../hooks/useTasks";
@@ -148,12 +150,20 @@ function LinearProgress({
 }
 
 export default function Dashboard() {
-  const { activityLogs } = useActivityLogs();
-  const { sales } = useSales();
-  const { tasks, completeTask } = useTasks();
-  const { events } = useEvents();
-  const { clients } = useClients();
-  const { properties } = useProperties();
+  const { activityLogs, isLoading: isLoadingLogs } = useActivityLogs();
+  const { sales, isLoading: isLoadingSales } = useSales();
+  const { tasks, completeTask, isLoading: isLoadingTasks } = useTasks();
+  const { events, isLoading: isLoadingEvents } = useEvents();
+  const { clients, isLoading: isLoadingClients } = useClients();
+  const { properties, isLoading: isLoadingProperties } = useProperties();
+
+  const isLoading =
+    isLoadingLogs ||
+    isLoadingSales ||
+    isLoadingTasks ||
+    isLoadingEvents ||
+    isLoadingClients ||
+    isLoadingProperties;
   const profile = useAuthStore((state) => state.profile);
   const navigate = useNavigate();
 
@@ -221,6 +231,35 @@ export default function Dashboard() {
   const totalTasksForProgress = tasks.length || 1;
   const completedTasks = tasks.filter((t) => t.status === "completada").length;
   const tasksCompletedPercent = (completedTasks / totalTasksForProgress) * 100;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 pb-10 page-enter">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonStat key={i} />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <SkeletonCard lines={4} />
+            <SkeletonList count={4} />
+          </div>
+          <div className="space-y-6">
+            <SkeletonCard lines={3} />
+            <SkeletonCard lines={3} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-10 page-enter">
@@ -350,16 +389,11 @@ export default function Dashboard() {
               />
             )}
             {overdueTasks.length === 0 && todayTasks.length === 0 && (
-              <div className="text-center py-6">
-                <CheckCircle2
-                  size={32}
-                  className="mx-auto text-slate-200 dark:text-slate-700 mb-2"
-                  strokeWidth={1.5}
-                />
-                <p className="text-sm text-slate-400 dark:text-slate-500 italic">
-                  ¡Todo bajo control!
-                </p>
-              </div>
+              <EmptyState
+                icon={CheckCircle2}
+                title="¡Todo bajo control!"
+                description="No tenés tareas vencidas ni pendientes para hoy."
+              />
             )}
           </div>
         </Card>
@@ -424,16 +458,20 @@ export default function Dashboard() {
                 </motion.div>
               ))}
               {todayEvents.length === 0 && (
-                <div className="text-center py-10">
-                  <Calendar
-                    size={40}
-                    className="mx-auto text-slate-200 dark:text-slate-700 mb-3"
-                    strokeWidth={1.5}
-                  />
-                  <p className="text-slate-400 dark:text-slate-500 text-sm italic">
-                    No hay eventos para hoy.
-                  </p>
-                </div>
+                <EmptyState
+                  icon={Calendar}
+                  title="Sin eventos para hoy"
+                  description="Tu agenda está libre. Aprovechá para contactar clientes."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate("/agenda")}
+                    >
+                      Ir a Agenda
+                    </Button>
+                  }
+                />
               )}
             </div>
           </Card>
@@ -521,16 +559,20 @@ export default function Dashboard() {
                 </div>
               )}
               {pendingTasksList.length === 0 && (
-                <div className="text-center py-8">
-                  <CheckSquare
-                    size={40}
-                    className="mx-auto text-slate-200 dark:text-slate-700 mb-3"
-                    strokeWidth={1.5}
-                  />
-                  <p className="text-slate-400 dark:text-slate-500 text-sm italic">
-                    ¡Todo al día por aquí!
-                  </p>
-                </div>
+                <EmptyState
+                  icon={CheckSquare}
+                  title="¡Todo al día!"
+                  description="No tenés tareas pendientes."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate("/tareas")}
+                    >
+                      Nueva tarea
+                    </Button>
+                  }
+                />
               )}
             </div>
           </Card>
@@ -559,16 +601,11 @@ export default function Dashboard() {
                 </Link>
               ))}
               {pinnedClients.length === 0 && (
-                <div className="text-center py-6">
-                  <Star
-                    size={32}
-                    className="mx-auto text-slate-200 dark:text-slate-700 mb-2"
-                    strokeWidth={1.5}
-                  />
-                  <p className="text-slate-400 dark:text-slate-500 text-sm italic">
-                    No hay clientes destacados.
-                  </p>
-                </div>
+                <EmptyState
+                  icon={Star}
+                  title="Sin clientes destacados"
+                  description="Marcá clientes importantes para verlos aquí."
+                />
               )}
             </div>
           </Card>
@@ -605,16 +642,11 @@ export default function Dashboard() {
               {clients.filter(
                 (c) => c.status === "nuevo" || c.status === "contactado",
               ).length === 0 && (
-                <div className="text-center py-6">
-                  <Users
-                    size={32}
-                    className="mx-auto text-slate-200 dark:text-slate-700 mb-2"
-                    strokeWidth={1.5}
-                  />
-                  <p className="text-slate-400 dark:text-slate-500 text-sm italic">
-                    No hay clientes nuevos.
-                  </p>
-                </div>
+                <EmptyState
+                  icon={Users}
+                  title="Sin clientes nuevos"
+                  description="Todos tus clientes están en seguimiento avanzado."
+                />
               )}
             </div>
           </Card>
@@ -659,16 +691,11 @@ export default function Dashboard() {
                 </div>
               ))}
               {allMovements.length === 0 && (
-                <div className="text-center py-4">
-                  <Activity
-                    size={24}
-                    className="mx-auto text-slate-200 dark:text-slate-700 mb-2"
-                    strokeWidth={1.5}
-                  />
-                  <p className="text-xs text-slate-400 dark:text-slate-500 italic">
-                    No hay movimientos recientes.
-                  </p>
-                </div>
+                <EmptyState
+                  icon={Activity}
+                  title="Sin movimientos recientes"
+                  description="Las acciones que realices aparecerán aquí."
+                />
               )}
             </div>
           </Card>
