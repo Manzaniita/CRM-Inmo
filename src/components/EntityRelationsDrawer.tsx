@@ -16,6 +16,7 @@ import {
   ClipboardList,
   Plus,
   ChevronDown,
+  History,
 } from "lucide-react";
 import { useRelationsDrawer } from "../context/RelationsDrawerContext";
 import { useDocuments } from "../hooks/useDocuments";
@@ -138,6 +139,70 @@ function EmptyGroupState({ title }: { title: string }) {
   );
 }
 
+type TimelineEntry = {
+  id: string;
+  type: "log" | "event" | "task";
+  date: string;
+  title: string;
+  subtitle?: string;
+  status?: string;
+  route?: string;
+};
+
+function TimelineView({ items }: { items: TimelineEntry[] }) {
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <History size={40} className="mx-auto text-gray-200 mb-3" />
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          No hay interacciones registradas.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative pl-4 space-y-6">
+      <div className="absolute left-[21px] top-2 bottom-2 w-[2px] bg-slate-200 dark:bg-slate-700" />
+      {items.map((item) => {
+        const Icon =
+          item.type === "log"
+            ? Activity
+            : item.type === "event"
+              ? Calendar
+              : CheckSquare;
+        return (
+          <div key={item.id} className="relative pl-8">
+            <div className="absolute left-0 top-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 bg-blue-500 shadow-sm flex items-center justify-center">
+              <Icon size={8} className="text-white" />
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 p-3 hover:shadow-sm transition-all">
+              <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                {item.title}
+              </p>
+              {item.subtitle && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {item.subtitle}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                  {formatDate(item.date)}
+                </span>
+                {item.status && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                    {item.status}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function EntityRelationsDrawer() {
   const { isOpen, entityType, entityId, closeRelations } = useRelationsDrawer();
   const { referredColleagues } = useReferredColleagues();
@@ -155,6 +220,9 @@ export default function EntityRelationsDrawer() {
     Record<string, boolean>
   >({});
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<"relations" | "timeline">(
+    "relations",
+  );
   const [taskForm, setTaskForm] = useState({
     title: "",
     description: "",
@@ -218,6 +286,76 @@ export default function EntityRelationsDrawer() {
     activityLogs,
   ]);
 
+  const timelineItems = useMemo<TimelineEntry[]>(() => {
+    if (!entityType || !entityId) return [];
+
+    const relatedSale =
+      entityType === "sale"
+        ? sales.find((s) => s.id === entityId)
+        : undefined;
+
+    const logs: TimelineEntry[] = activityLogs.map((log) => ({
+      id: `log-${log.id}`,
+      type: "log",
+      date: log.createdAt,
+      title: log.title,
+      subtitle: log.description,
+    }));
+
+    const relatedEvents = events.filter((e) => {
+      if (entityType === "client") return e.clientId === entityId;
+      if (entityType === "property") return e.propertyId === entityId;
+      if (entityType === "sale" && relatedSale) {
+        return (
+          e.clientId === relatedSale.clientCompradorId ||
+          e.propertyId === relatedSale.propiedadId
+        );
+      }
+      return false;
+    });
+
+    const eventItems: TimelineEntry[] = relatedEvents.map((e) => ({
+      id: `event-${e.id}`,
+      type: "event",
+      date: e.date,
+      title: e.title,
+      subtitle: e.description || e.notes,
+      status: e.type,
+      route: "/agenda",
+    }));
+
+    const relatedTasks = tasks.filter((t) => {
+      if (t.status !== "completada") return false;
+      const direct =
+        (entityType === "client" && t.clientId === entityId) ||
+        (entityType === "property" && t.propertyId === entityId);
+      if (direct) return true;
+      if (entityType === "sale" && relatedSale) {
+        const matchesSale =
+          t.clientId === relatedSale.clientCompradorId ||
+          t.propertyId === relatedSale.propiedadId;
+        if (matchesSale) return true;
+      }
+      return (t.relatedEntities || []).some(
+        (r) => r.type === entityType && r.id === entityId,
+      );
+    });
+
+    const taskItems: TimelineEntry[] = relatedTasks.map((t) => ({
+      id: `task-${t.id}`,
+      type: "task",
+      date: t.createdAt,
+      title: t.title,
+      subtitle: t.description,
+      status: t.status,
+      route: "/tareas",
+    }));
+
+    return [...logs, ...eventItems, ...taskItems].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+  }, [entityType, entityId, activityLogs, events, tasks, sales]);
+
   const entityName = useMemo(() => {
     if (!entityType || !entityId) return "";
     if (entityType === "client") {
@@ -263,22 +401,49 @@ export default function EntityRelationsDrawer() {
       {/* Drawer */}
       <div className="relative w-full sm:w-[420px] md:w-[480px] bg-white dark:bg-slate-800 shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Link2 size={18} className="text-blue-600" />
-              Vista 360°
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate max-w-[280px]">
-              {entityName}
-            </p>
-          </div>
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Link2 size={18} className="text-blue-600" />
+                Vista 360°
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate max-w-[280px]">
+                {entityName}
+              </p>
+            </div>
           <button
             onClick={closeRelations}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
           >
             <X size={20} />
           </button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setDrawerTab("relations")}
+              className={cn(
+                "flex-1 text-xs font-black uppercase tracking-widest py-2 rounded-lg transition-colors",
+                drawerTab === "relations"
+                  ? "bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400"
+                  : "text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800",
+              )}
+            >
+              Relaciones
+            </button>
+            <button
+              onClick={() => setDrawerTab("timeline")}
+              className={cn(
+                "flex-1 text-xs font-black uppercase tracking-widest py-2 rounded-lg transition-colors flex items-center justify-center gap-1",
+                drawerTab === "timeline"
+                  ? "bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400"
+                  : "text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800",
+              )}
+            >
+              <History size={14} />
+              Línea de Tiempo
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -290,6 +455,8 @@ export default function EntityRelationsDrawer() {
                 No se encontró información relacionada.
               </p>
             </div>
+          ) : drawerTab === "timeline" ? (
+            <TimelineView items={timelineItems} />
           ) : !hasLinks ? (
             <div className="text-center py-10">
               <Activity size={40} className="mx-auto text-gray-200 mb-3" />

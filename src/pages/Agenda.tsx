@@ -33,7 +33,13 @@ import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { Card } from "../components/Card";
 import SearchableSelect from "../components/SearchableSelect";
-import { cn, formatDate, normalizeSearchText } from "../lib/utils";
+import {
+  cn,
+  formatDate,
+  normalizeSearchText,
+  generateWhatsAppLink,
+  formatWhatsAppTemplate,
+} from "../lib/utils";
 import { formatRecurrenceLabel, type RecurrenceFrequency } from "../lib/recurrence";
 import { generateId } from "../lib/id";
 import { useUIStore } from "../stores/uiStore";
@@ -63,6 +69,8 @@ export default function Agenda() {
   const [sortBy, setSortBy] = useState<
     "date-asc" | "date-desc" | "status" | "type"
   >("date-asc");
+  const [visitFeedbackEvent, setVisitFeedbackEvent] =
+    useState<CalendarEvent | null>(null);
 
   // Today dynamic
   const today = new Date().toISOString().split("T")[0];
@@ -218,6 +226,37 @@ export default function Agenda() {
       });
     }
     setIsFormOpen(true);
+  };
+
+  const handleCompleteEvent = (event: CalendarEvent) => {
+    if (event.type === "visita" && event.clientId) {
+      setVisitFeedbackEvent(event);
+      return;
+    }
+    completeEvent(event.id);
+  };
+
+  const sendVisitFeedback = (send: boolean) => {
+    const event = visitFeedbackEvent;
+    if (!event) return;
+    if (send) {
+      const client = clients.find((c) => c.id === event.clientId);
+      const property = properties.find((p) => p.id === event.propertyId);
+      const msg = formatWhatsAppTemplate(
+        "Hola {name}, ¿qué te pareció la propiedad de {address} que vimos hoy?",
+        {
+          name: client?.name || "",
+          address: property?.address || event.title || "",
+        },
+      );
+      if (client?.phone) {
+        window.open(generateWhatsAppLink(client.phone, msg), "_blank");
+      } else {
+        showToast("El cliente no tiene teléfono cargado", "warning");
+      }
+    }
+    setVisitFeedbackEvent(null);
+    completeEvent(event.id);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -887,7 +926,7 @@ export default function Agenda() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              completeEvent(event.id);
+                              handleCompleteEvent(event);
                             }}
                             title="Realizado"
                             className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-green-600 rounded-lg hover:bg-green-50"
@@ -960,6 +999,35 @@ export default function Agenda() {
         </div>
       </div>
       {isFormOpen && renderEventForm()}
+
+      {visitFeedbackEvent && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-in zoom-in-95">
+            <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-2">
+              Visita realizada
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+              ¿Querés enviar un pedido de feedback al cliente por WhatsApp?
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => sendVisitFeedback(false)}
+              >
+                No enviar
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={() => sendVisitFeedback(true)}
+              >
+                Enviar feedback
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

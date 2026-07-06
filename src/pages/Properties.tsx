@@ -26,6 +26,7 @@ import {
   Clock,
   Link2,
   MessageCircle,
+  User,
   Download,
   Image as ImageIcon,
   ArrowUp,
@@ -43,6 +44,7 @@ import {
   generateWhatsAppLink,
   formatWhatsAppTemplate,
   parseRichText,
+  normalizeSearchText,
 } from "../lib/utils";
 import { contractTimeRemaining } from "../lib/dates";
 import { generateId } from "../lib/id";
@@ -427,6 +429,26 @@ export default function Properties() {
       )
       .slice(0, 5);
 
+    // Motor de matching: compradores que coinciden con la propiedad.
+    const matchingBuyers = buyers.filter((b) => {
+      const hasBudget =
+        b.presupuestoMin !== undefined || b.presupuestoMax !== undefined;
+      const min = b.presupuestoMin ?? 0;
+      const max = b.presupuestoMax ?? Infinity;
+      const priceOk =
+        selectedProp.price >= min * 0.9 && selectedProp.price <= max * 1.1;
+      const zoneOk =
+        !!b.zonaBuscada &&
+        normalizeSearchText(selectedProp.zone).includes(
+          normalizeSearchText(b.zonaBuscada),
+        );
+      const typeOk =
+        !!b.tipoPropiedad &&
+        normalizeSearchText(selectedProp.type) ===
+          normalizeSearchText(b.tipoPropiedad);
+      return hasBudget && priceOk && zoneOk && typeOk;
+    });
+
     return (
       <div className="animate-in slide-in-from-right duration-300">
         <button
@@ -796,6 +818,67 @@ export default function Properties() {
                 {interestedClients.length === 0 && (
                   <p className="text-xs text-center text-slate-400 dark:text-slate-500 italic">
                     No hay clientes que coincidan con el perfil.
+                  </p>
+                )}
+              </div>
+            </Card>
+
+            <Card title="Candidatos para esta propiedad">
+              <div className="space-y-4">
+                {matchingBuyers.map((buyer) => (
+                  <div
+                    key={buyer.id}
+                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-100 dark:border-emerald-500/20 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-bold shrink-0">
+                      {buyer.nombre.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                        {buyer.nombre}
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase">
+                        {buyer.presupuestoMin !== undefined &&
+                          buyer.presupuestoMax !== undefined
+                          ? `${formatCurrency(buyer.presupuestoMin, buyer.moneda || "USD")} - ${formatCurrency(buyer.presupuestoMax, buyer.moneda || "USD")}`
+                          : buyer.presupuestoMin !== undefined
+                            ? `Desde ${formatCurrency(buyer.presupuestoMin, buyer.moneda || "USD")}`
+                            : buyer.presupuestoMax !== undefined
+                              ? `Hasta ${formatCurrency(buyer.presupuestoMax, buyer.moneda || "USD")}`
+                              : "Presupuesto no definido"}
+                        {" "}• {buyer.zonaBuscada} • {buyer.tipoPropiedad}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const msg = formatWhatsAppTemplate(
+                          "Hola {name}, tengo una propiedad que coincide con lo que buscás en {zone}: {title} ({address}). Precio: {price}. ¿Te interesa que coordinemos una visita?",
+                          {
+                            name: buyer.nombre,
+                            zone: selectedProp.zone,
+                            title: selectedProp.title,
+                            address: selectedProp.address,
+                            price: formatCurrency(
+                              selectedProp.price,
+                              selectedProp.currency,
+                            ),
+                          },
+                        );
+                        window.open(
+                          generateWhatsAppLink(buyer.telefono, msg),
+                          "_blank",
+                        );
+                      }}
+                      className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+                      title="Enviar mensaje por WhatsApp"
+                    >
+                      <MessageCircle size={16} />
+                    </button>
+                  </div>
+                ))}
+                {matchingBuyers.length === 0 && (
+                  <p className="text-xs text-center text-slate-400 dark:text-slate-500 italic py-2">
+                    No hay compradores que coincidan con esta propiedad.
                   </p>
                 )}
               </div>

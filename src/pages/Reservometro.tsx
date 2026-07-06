@@ -17,6 +17,8 @@ import {
   Link2,
   CheckCircle2,
   AlertCircle,
+  XCircle,
+  FileText,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
@@ -56,11 +58,21 @@ function getBestDate(sale: Sale): string {
   );
 }
 
+function getSaleDocumentStatus(documents: Document[], saleId?: string) {
+  const saleDocs = documents.filter((d) => d.saleId === saleId);
+  const hasDni = saleDocs.some((d) => d.tipo === "DNI");
+  const hasReserveOrBoleto = saleDocs.some(
+    (d) => d.tipo === "Reserva" || d.tipo === "Boleto",
+  );
+  return { hasDni, hasReserveOrBoleto };
+}
+
 export default function Reservometro() {
   const { addActivityLog } = useActivityLogs();
   const { sales, addSale, updateSale, deleteSale } = useSales();
   const { clients, addClient } = useClients();
   const { properties } = useProperties();
+  const { documents } = useDocuments();
   const showToast = useUIStore((state) => state.showToast);
   const { openRelations } = useRelationsDrawer();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -454,9 +466,51 @@ export default function Reservometro() {
                             >
                               {sale.estado}
                             </Badge>
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
-                              #{sale.id}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              {(() => {
+                                const { hasDni, hasReserveOrBoleto } =
+                                  getSaleDocumentStatus(documents, sale.id);
+                                return (
+                                  <>
+                                    <span
+                                      className={cn(
+                                        "flex items-center gap-0.5 text-[10px] font-bold",
+                                        hasDni
+                                          ? "text-green-600"
+                                          : "text-rose-500",
+                                      )}
+                                      title="DNI comprador"
+                                    >
+                                      {hasDni ? (
+                                        <CheckCircle2 size={12} />
+                                      ) : (
+                                        <XCircle size={12} />
+                                      )}
+                                      DNI
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        "flex items-center gap-0.5 text-[10px] font-bold",
+                                        hasReserveOrBoleto
+                                          ? "text-green-600"
+                                          : "text-rose-500",
+                                      )}
+                                      title="Reserva/Boleto"
+                                    >
+                                      {hasReserveOrBoleto ? (
+                                        <CheckCircle2 size={12} />
+                                      ) : (
+                                        <XCircle size={12} />
+                                      )}
+                                      Doc
+                                    </span>
+                                  </>
+                                );
+                              })()}
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                                #{sale.id}
+                              </p>
+                            </div>
                           </div>
                           <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 transition-colors line-clamp-1">
                             {sale.nombre ||
@@ -624,6 +678,46 @@ export default function Reservometro() {
                             Cobrada
                           </span>
                         )}
+                        {(() => {
+                          const { hasDni, hasReserveOrBoleto } =
+                            getSaleDocumentStatus(documents, sale.id);
+                          return (
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span
+                                className={cn(
+                                  "flex items-center gap-1 text-[10px] font-medium",
+                                  hasDni
+                                    ? "text-green-600"
+                                    : "text-rose-500",
+                                )}
+                                title="DNI del comprador"
+                              >
+                                {hasDni ? (
+                                  <CheckCircle2 size={12} />
+                                ) : (
+                                  <XCircle size={12} />
+                                )}
+                                DNI
+                              </span>
+                              <span
+                                className={cn(
+                                  "flex items-center gap-1 text-[10px] font-medium",
+                                  hasReserveOrBoleto
+                                    ? "text-green-600"
+                                    : "text-rose-500",
+                                )}
+                                title="Reserva o Boleto cargado"
+                              >
+                                {hasReserveOrBoleto ? (
+                                  <CheckCircle2 size={12} />
+                                ) : (
+                                  <XCircle size={12} />
+                                )}
+                                Res/Bol
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -844,7 +938,7 @@ function SaleFormModal({
   const { addActivityLog } = useActivityLogs();
   const { clients, addClient } = useClients();
   const { properties } = useProperties();
-  const { addDocument } = useDocuments();
+  const { documents, addDocument } = useDocuments();
   const { uploadFile: uploadStorageFile } = useStorage();
   const showToast = useUIStore((state) => state.showToast);
 
@@ -1846,6 +1940,48 @@ function SaleFormModal({
               <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                 Documentos de la operación
               </label>
+              {sale && (
+                <div className="grid grid-cols-2 gap-3">
+                  {(() => {
+                    const { hasDni, hasReserveOrBoleto } =
+                      getSaleDocumentStatus(documents, sale.id);
+                    return (
+                      <>
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 p-2 rounded-lg border text-xs font-bold",
+                            hasDni
+                              ? "bg-green-50 dark:bg-green-500/10 border-green-100 dark:border-green-500/20 text-green-700 dark:text-green-400"
+                              : "bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20 text-rose-700 dark:text-rose-400",
+                          )}
+                        >
+                          {hasDni ? (
+                            <CheckCircle2 size={16} />
+                          ) : (
+                            <XCircle size={16} />
+                          )}
+                          DNI comprador
+                        </div>
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 p-2 rounded-lg border text-xs font-bold",
+                            hasReserveOrBoleto
+                              ? "bg-green-50 dark:bg-green-500/10 border-green-100 dark:border-green-500/20 text-green-700 dark:text-green-400"
+                              : "bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20 text-rose-700 dark:text-rose-400",
+                          )}
+                        >
+                          {hasReserveOrBoleto ? (
+                            <CheckCircle2 size={16} />
+                          ) : (
+                            <XCircle size={16} />
+                          )}
+                          Reserva / Boleto
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
               <div className="flex gap-2">
                 {(["Reserva", "Boleto"] as const).map((type) => (
                   <button
