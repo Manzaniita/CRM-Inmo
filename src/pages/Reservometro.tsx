@@ -208,11 +208,8 @@ export default function Reservometro() {
     sold: sales.filter((s) => s.estado === "vendida").length,
     fallen: sales.filter((s) => s.estado === "caída").length,
     totalCommissions: sales
-      .filter((s) => s.estado === "vendida")
-      .reduce(
-        (acc, s) => acc + (s.moneda === "ARS" ? s.comisionEstimada : 0),
-        0,
-      ),
+      .filter((s) => s.estado === "vendida" && s.moneda === "ARS")
+      .reduce((acc, s) => acc + Number(s.comisionEstimada || 0), 0),
     grossCommissionsUsd: sales
       .filter((s) => {
         if (s.estado !== "vendida" || !s.isCollected) return false;
@@ -221,13 +218,10 @@ export default function Reservometro() {
         return new Date(dateStr).getFullYear() === currentYear;
       })
       .reduce((acc, s) => {
-        if (
-          typeof s.valorCierre === "number" &&
-          typeof s.porcentajeNeto === "number"
-        ) {
-          return acc + s.valorCierre * (s.porcentajeNeto / 100);
-        }
-        return acc;
+        const commissionUsd =
+          Number(s.grossCommissionUsd) ||
+          (s.moneda === "USD" ? Number(s.comisionEstimada || 0) : 0);
+        return acc + commissionUsd;
       }, 0),
   };
 
@@ -985,10 +979,6 @@ function SaleFormModal({
       return {
         ...sale,
         isCollected: sale.isCollected ?? false,
-        montoEscritura:
-          typeof sale.montoEscritura === "number"
-            ? String(sale.montoEscritura)
-            : sale.montoEscritura,
       };
     }
     return {
@@ -1733,19 +1723,19 @@ function SaleFormModal({
                   key: "valorOfertado",
                   label: "Valor Ofertado",
                   required: false,
-                  numeric: false,
+                  numeric: true,
                 },
                 {
                   key: "contraoferta1",
                   label: "Contraoferta 1",
                   required: false,
-                  numeric: false,
+                  numeric: true,
                 },
                 {
                   key: "contraoferta2",
                   label: "Contraoferta 2",
                   required: false,
-                  numeric: false,
+                  numeric: true,
                 },
                 {
                   key: "valorCierre",
@@ -1904,14 +1894,19 @@ function SaleFormModal({
                   Monto Escritura
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   className={inputCls("")}
                   value={
                     ((formData as Record<string, unknown>)
-                      .montoEscritura as string) ?? ""
+                      .montoEscritura as number) ?? ""
                   }
                   onChange={(e) =>
-                    setFormData({ ...formData, montoEscritura: e.target.value })
+                    setFormData({
+                      ...formData,
+                      montoEscritura: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    })
                   }
                 />
               </div>

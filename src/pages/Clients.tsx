@@ -4,6 +4,7 @@ import {
   Plus,
   Search,
   Filter,
+  Home,
   ArrowLeft,
   ChevronRight,
   Phone,
@@ -1434,6 +1435,77 @@ export default function Clients() {
                 />
               </div>
             </Card>
+
+            {/* Buyer Search History */}
+            {(() => {
+              const linkedBuyer =
+                buyers.find((b) => b.id === selectedClient.buyerId) ||
+                buyers.find(
+                  (b) =>
+                    b.email?.trim().toLowerCase() ===
+                    selectedClient.email?.trim().toLowerCase(),
+                ) ||
+                buyers.find(
+                  (b) =>
+                    b.telefono?.trim() === selectedClient.phone?.trim(),
+                );
+              if (!linkedBuyer) return null;
+              return (
+                <Card title="Historial de Búsqueda (Comprador)" glow>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <BentoInfoItem
+                      icon={DollarSign}
+                      label="Presupuesto"
+                      value={
+                        linkedBuyer.presupuestoMax
+                          ? formatCurrency(
+                              linkedBuyer.presupuestoMax,
+                              linkedBuyer.moneda || "USD",
+                            )
+                          : "Sin especificar"
+                      }
+                    />
+                    {linkedBuyer.presupuestoMin && (
+                      <BentoInfoItem
+                        icon={DollarSign}
+                        label="Presupuesto mínimo"
+                        value={formatCurrency(
+                          linkedBuyer.presupuestoMin,
+                          linkedBuyer.moneda || "USD",
+                        )}
+                      />
+                    )}
+                    {linkedBuyer.zonaBuscada && (
+                      <BentoInfoItem
+                        icon={MapPin}
+                        label="Zona buscada"
+                        value={linkedBuyer.zonaBuscada}
+                      />
+                    )}
+                    {linkedBuyer.tipoPropiedad && (
+                      <BentoInfoItem
+                        icon={Home}
+                        label="Tipo de propiedad"
+                        value={linkedBuyer.tipoPropiedad}
+                      />
+                    )}
+                    <BentoInfoItem
+                      icon={Search}
+                      label="Estado como comprador"
+                      value={linkedBuyer.estado}
+                    />
+                  </div>
+                  {linkedBuyer.notas && (
+                    <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-sm text-slate-600 dark:text-slate-300">
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">
+                        Notas del comprador:
+                      </span>{" "}
+                      {linkedBuyer.notas}
+                    </div>
+                  )}
+                </Card>
+              );
+            })()}
 
             {/* Properties */}
             <Card title="Propiedades Asociadas" glow>

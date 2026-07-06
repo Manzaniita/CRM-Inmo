@@ -47,7 +47,10 @@ export default function Reports() {
         .filter((s) => s.moneda === "USD")
         .reduce(
           (acc, s) =>
-            acc + (s.valorCierre || s.precioAcordado || s.precioPublicado || 0),
+            acc +
+            Number(
+              s.valorCierre || s.precioAcordado || s.precioPublicado || 0,
+            ),
           0,
         ),
     [sales],
@@ -74,15 +77,24 @@ export default function Reports() {
     () =>
       sales
         .filter((s) => s.estado === "activa")
-        .reduce((acc, s) => acc + (s.comisionEstimada || 0), 0),
+        .reduce((acc, s) => acc + Number(s.comisionEstimada || 0), 0),
     [sales],
   );
 
   const collectedCommissions = useMemo(
     () =>
       sales
-        .filter((s) => s.isCollected && s.grossCommissionUsd)
-        .reduce((acc, s) => acc + (s.grossCommissionUsd || 0), 0),
+        .filter((s) => s.estado === "vendida" && s.isCollected)
+        .reduce(
+          (acc, s) =>
+            acc +
+            Number(
+              s.grossCommissionUsd ||
+                (s.moneda === "USD" ? s.comisionEstimada : 0) ||
+                0,
+            ),
+          0,
+        ),
     [sales],
   );
 
@@ -133,7 +145,7 @@ export default function Reports() {
     sales.forEach((s) => {
       const monthIdx = new Date(s.fechaCreacion).getMonth();
       if (!isNaN(monthIdx) && s.moneda === "USD")
-        data[monthIdx].value += s.comisionEstimada;
+        data[monthIdx].value += Number(s.comisionEstimada || 0);
     });
 
     return data.slice(0, new Date().getMonth() + 1);
@@ -187,7 +199,8 @@ export default function Reports() {
       .forEach((s) => {
         const client = clients.find((c) => c.id === s.clientCompradorId);
         const origin = client?.origin || "Desconocido";
-        totals[origin] = (totals[origin] || 0) + (s.comisionEstimada || 0);
+        totals[origin] =
+          (totals[origin] || 0) + Number(s.comisionEstimada || 0);
       });
 
     return Object.entries(totals)

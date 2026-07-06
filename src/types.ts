@@ -33,6 +33,7 @@ export interface Client {
   referredBy?: string;
   referredByColleagueId?: string;
   referredByClientId?: string;
+  buyerId?: string;
   dashboardPinned?: boolean;
   dashboardArchived?: boolean;
   birthdate?: string;
@@ -164,12 +165,12 @@ export interface Sale {
   porcentajeBruto?: number;
   porcentajeNeto?: number;
   porcentajeReferido?: number;
-  valorOfertado?: string | number;
-  contraoferta1?: string | number;
-  contraoferta2?: string | number;
+  valorOfertado?: number;
+  contraoferta1?: number;
+  contraoferta2?: number;
   valorCierre?: number;
   escribania?: string;
-  montoEscritura?: string | number;
+  montoEscritura?: number;
   isCollected?: boolean;
   grossCommissionUsd?: number;
   gastosOficina?: number;

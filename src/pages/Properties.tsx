@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useReducer } from "react";
+import React, { useState, useRef, useEffect, useReducer, useMemo } from "react";
 import { createPortal } from "react-dom";
 import SearchableSelect from "../components/SearchableSelect";
 import {
@@ -24,6 +24,7 @@ import {
   Camera,
   Trash2,
   Clock,
+  Edit3,
   Link2,
   MessageCircle,
   User,
@@ -65,6 +66,8 @@ import {
   Sale,
   Rental,
   Client,
+  CalendarEvent,
+  EventStatus,
 } from "../types";
 import RelationsPanel from "../components/RelationsPanel";
 import { getPropertyRelations } from "../lib/relations";
@@ -105,7 +108,7 @@ export default function Properties() {
   const { recordView } = useRecentViews();
   const { sales, addSale, updateSale, deleteSale } = useSales();
   const { tasks } = useTasks();
-  const { events } = useEvents();
+  const { events, addEvent, updateEvent } = useEvents();
   const { clients, addClient } = useClients();
   const { properties, isLoading, addProperty, updateProperty } =
     useProperties();
@@ -143,6 +146,17 @@ export default function Properties() {
   const [selectedDocForModal, setSelectedDocForModal] = useState<
     Document | undefined
   >(undefined);
+
+  // Visit history state
+  const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
+  const [editingVisit, setEditingVisit] = useState<CalendarEvent | null>(null);
+  const [visitForm, setVisitForm] = useState({
+    clientId: "",
+    date: "",
+    time: "",
+    status: "pendiente" as EventStatus,
+    notes: "",
+  });
 
   // Quick upload (simple modal)
   const [isQuickUploadOpen, setIsQuickUploadOpen] = useState(false);
@@ -253,6 +267,20 @@ export default function Properties() {
       return 0;
     });
 
+  const propertyVisits = useMemo(
+    () =>
+      events
+        .filter(
+          (e) =>
+            e.propertyId === effectivePropertyId && e.type === "visita",
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime(),
+        ),
+    [events, effectivePropertyId],
+  );
+
   const handleOpenForm = (prop?: Property) => {
     if (prop) {
       setEditingProperty(prop);
@@ -349,6 +377,75 @@ export default function Properties() {
       addProperty(newProp);
     }
     setIsFormModalOpen(false);
+  };
+
+  const openVisitModal = (visit?: CalendarEvent) => {
+    if (visit) {
+      setEditingVisit(visit);
+      setVisitForm({
+        clientId: visit.clientId || "",
+        date: visit.date,
+        time: visit.time || "",
+        status: visit.status,
+        notes: visit.notes || visit.description || "",
+      });
+    } else {
+      setEditingVisit(null);
+      setVisitForm({
+        clientId: "",
+        date: new Date().toISOString().split("T")[0],
+        time: "",
+        status: "pendiente",
+        notes: "",
+      });
+    }
+    setIsVisitModalOpen(true);
+  };
+
+  const handleSaveVisit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!effectivePropertyId) return;
+    if (!visitForm.date) {
+      showToast("La fecha es obligatoria", "error");
+      return;
+    }
+    const title = `Visita - ${selectedProp?.title || "Propiedad"}`;
+    if (editingVisit) {
+      await updateEvent({
+        ...editingVisit,
+        title,
+        clientId: visitForm.clientId || undefined,
+        date: visitForm.date,
+        time: visitForm.time,
+        status: visitForm.status,
+        notes: visitForm.notes,
+        description: visitForm.notes,
+      });
+    } else {
+      const newEvent: CalendarEvent = {
+        id: generateId("e"),
+        title,
+        date: visitForm.date,
+        time: visitForm.time,
+        type: "visita",
+        status: visitForm.status,
+        propertyId: effectivePropertyId,
+        clientId: visitForm.clientId || undefined,
+        notes: visitForm.notes,
+        description: visitForm.notes,
+        createdAt: new Date().toISOString(),
+      };
+      await addEvent(newEvent);
+    }
+    setIsVisitModalOpen(false);
+    setEditingVisit(null);
+    setVisitForm({
+      clientId: "",
+      date: "",
+      time: "",
+      status: "pendiente",
+      notes: "",
+    });
   };
 
   const handleCreateOwnerFromForm = () => {
@@ -729,6 +826,94 @@ export default function Properties() {
                     </React.Fragment>
                   ))}
                 </>
+              )}
+            </div>
+
+            {/* Visit History */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">
+                  Historial de Visitas
+                </h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openVisitModal()}
+                >
+                  <Plus size={14} className="mr-1" /> Registrar Visita
+                </Button>
+              </div>
+              {propertyVisits.length === 0 ? (
+                <p className="text-sm text-slate-400 dark:text-slate-500 italic py-4">
+                  Sin visitas registradas.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {propertyVisits.map((visit) => {
+                    const client = clients.find((c) => c.id === visit.clientId);
+                    return (
+                      <React.Fragment key={visit.id}>
+                      <Card
+                        className="border-slate-100 dark:border-white/5"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <Calendar
+                                size={14}
+                                className="text-slate-400 dark:text-slate-500"
+                              />
+                              <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {formatDate(visit.date)}{" "}
+                                {visit.time && `· ${visit.time}`}
+                              </span>
+                              <Badge
+                                variant={
+                                  visit.status === "realizado"
+                                    ? "green"
+                                    : visit.status === "cancelado"
+                                      ? "red"
+                                      : "orange"
+                                }
+                                size="sm"
+                              >
+                                {visit.status}
+                              </Badge>
+                            </div>
+                            {client ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  navigate(`/clientes/${client.id}`)
+                                }
+                                className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                <User size={14} /> {client.name}
+                              </button>
+                            ) : (
+                              <p className="text-sm text-slate-400 dark:text-slate-500">
+                                Cliente no vinculado
+                              </p>
+                            )}
+                            {visit.notes && (
+                              <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+                                {visit.notes}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openVisitModal(visit)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                        </div>
+                      </Card>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
@@ -2642,6 +2827,124 @@ export default function Properties() {
       )}
 
       {isFormModalOpen && renderFormModal()}
+
+      {isVisitModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setIsVisitModalOpen(false)}
+          />
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md relative z-10 p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                {editingVisit ? "Editar Visita" : "Registrar Visita"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsVisitModalOpen(false)}
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveVisit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
+                  Cliente
+                </label>
+                <select
+                  value={visitForm.clientId}
+                  onChange={(e) =>
+                    setVisitForm({ ...visitForm, clientId: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="">Sin cliente</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
+                    Fecha *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={visitForm.date}
+                    onChange={(e) =>
+                      setVisitForm({ ...visitForm, date: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
+                    Hora
+                  </label>
+                  <input
+                    type="time"
+                    value={visitForm.time}
+                    onChange={(e) =>
+                      setVisitForm({ ...visitForm, time: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
+                  Estado
+                </label>
+                <select
+                  value={visitForm.status}
+                  onChange={(e) =>
+                    setVisitForm({
+                      ...visitForm,
+                      status: e.target.value as EventStatus,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="pendiente">Pendiente</option>
+                  <option value="realizado">Realizado</option>
+                  <option value="cancelado">Cancelado</option>
+                  <option value="reprogramado">Reprogramado</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
+                  Notas
+                </label>
+                <textarea
+                  value={visitForm.notes}
+                  onChange={(e) =>
+                    setVisitForm({ ...visitForm, notes: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={() => setIsVisitModalOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button variant="primary" type="submit">
+                  Guardar
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
