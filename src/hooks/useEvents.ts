@@ -5,6 +5,36 @@ import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
 import { getNextOccurrence, type RecurrenceFrequency } from "../lib/recurrence";
 
+// Supabase usa snake_case para las columnas de recurrencia.
+function toEventDb(event: Partial<CalendarEvent>) {
+  const {
+    isRecurring,
+    recurrenceFrequency,
+    recurrenceEndDate,
+    createdAt,
+    ...rest
+  } = event;
+  return {
+    ...rest,
+    ...(isRecurring !== undefined && { is_recurring: isRecurring }),
+    ...(recurrenceFrequency !== undefined && {
+      recurrence_frequency: recurrenceFrequency,
+    }),
+    ...(recurrenceEndDate !== undefined && {
+      recurrence_end_date: recurrenceEndDate,
+    }),
+  };
+}
+
+function fromEventDb(row: any): CalendarEvent {
+  return {
+    ...row,
+    isRecurring: row.is_recurring,
+    recurrenceFrequency: row.recurrence_frequency,
+    recurrenceEndDate: row.recurrence_end_date,
+  } as CalendarEvent;
+}
+
 const fetchEvents = async () => {
   const user = useAuthStore.getState().user;
   if (!user) throw new Error("No session");
@@ -14,7 +44,7 @@ const fetchEvents = async () => {
     .eq("user_id", user.id)
     .order("createdAt", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as CalendarEvent[];
+  return (data ?? []).map(fromEventDb);
 };
 
 export function useEvents() {
@@ -32,10 +62,10 @@ export function useEvents() {
       const { createdAt, ...rest } = event;
       const { data, error } = await supabase
         .from("events")
-        .insert({ ...rest, user_id: user!.id })
+        .insert({ ...toEventDb(rest), user_id: user!.id })
         .select();
       if (error) throw error;
-      return data![0] as CalendarEvent;
+      return fromEventDb(data![0]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -48,7 +78,7 @@ export function useEvents() {
     mutationFn: async (event: CalendarEvent) => {
       const { error } = await supabase
         .from("events")
-        .update(event)
+        .update(toEventDb(event))
         .eq("id", event.id)
         .eq("user_id", user!.id);
       if (error) throw error;
@@ -71,7 +101,7 @@ export function useEvents() {
         .single();
       if (fetchError) throw fetchError;
 
-      const event = eventData as CalendarEvent;
+      const event = fromEventDb(eventData);
       if (
         event.isRecurring &&
         event.recurrenceFrequency &&

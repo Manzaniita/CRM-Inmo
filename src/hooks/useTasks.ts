@@ -5,6 +5,37 @@ import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
 import { getNextOccurrence, type RecurrenceFrequency } from "../lib/recurrence";
 
+// Supabase usa snake_case para las columnas de recurrencia.
+function toTaskDb(task: Partial<Task>) {
+  const {
+    isRecurring,
+    recurrenceFrequency,
+    recurrenceEndDate,
+    createdAt,
+    ...rest
+  } = task;
+  return {
+    ...rest,
+    ...(isRecurring !== undefined && { is_recurring: isRecurring }),
+    ...(recurrenceFrequency !== undefined && {
+      recurrence_frequency: recurrenceFrequency,
+    }),
+    ...(recurrenceEndDate !== undefined && {
+      recurrence_end_date: recurrenceEndDate,
+    }),
+  };
+}
+
+function fromTaskDb(row: any): Task {
+  return {
+    ...row,
+    relatedEntities: row.relatedEntities ?? [],
+    isRecurring: row.is_recurring,
+    recurrenceFrequency: row.recurrence_frequency,
+    recurrenceEndDate: row.recurrence_end_date,
+  } as Task;
+}
+
 const fetchTasks = async () => {
   const user = useAuthStore.getState().user;
   if (!user) throw new Error("No session");
@@ -14,10 +45,7 @@ const fetchTasks = async () => {
     .eq("user_id", user.id)
     .order("createdAt", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((t) => ({
-    ...t,
-    relatedEntities: t.relatedEntities ?? [],
-  })) as Task[];
+  return (data ?? []).map(fromTaskDb);
 };
 
 export function useTasks() {
@@ -35,10 +63,10 @@ export function useTasks() {
       const { createdAt, ...rest } = task;
       const { data, error } = await supabase
         .from("tasks")
-        .insert({ ...rest, user_id: user!.id })
+        .insert({ ...toTaskDb(rest), user_id: user!.id })
         .select();
       if (error) throw error;
-      return data![0] as Task;
+      return fromTaskDb(data![0]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -51,7 +79,7 @@ export function useTasks() {
     mutationFn: async (task: Task) => {
       const { error } = await supabase
         .from("tasks")
-        .update(task)
+        .update(toTaskDb(task))
         .eq("id", task.id)
         .eq("user_id", user!.id);
       if (error) throw error;
@@ -74,7 +102,7 @@ export function useTasks() {
         .single();
       if (fetchError) throw fetchError;
 
-      const task = taskData as Task;
+      const task = fromTaskDb(taskData);
       if (
         task.isRecurring &&
         task.recurrenceFrequency &&

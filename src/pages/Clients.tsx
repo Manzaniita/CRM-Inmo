@@ -84,6 +84,167 @@ import { useTasks } from "../hooks/useTasks";
 import { useEvents } from "../hooks/useEvents";
 import { useClients } from "../hooks/useClients";
 
+function padNumber(n: number) {
+  return n.toString().padStart(2, "0");
+}
+
+function BirthdayInput({
+  value,
+  includeYear,
+  onChange,
+}: {
+  value?: string;
+  includeYear: boolean;
+  onChange: (dateStr: string, includeYear: boolean) => void;
+}) {
+  const parts = parseBirthdateParts(value);
+  const [day, setDay] = useState(parts.day);
+  const [month, setMonth] = useState(parts.month);
+  const [year, setYear] = useState(parts.year);
+
+  useEffect(() => {
+    const p = parseBirthdateParts(value);
+    setDay(p.day);
+    setMonth(p.month);
+    setYear(p.year);
+  }, [value]);
+
+  const update = (
+    nextDay: string,
+    nextMonth: string,
+    nextYear: string,
+    nextIncludeYear: boolean,
+  ) => {
+    const d = padNumber(Number(nextDay) || 0);
+    const m = padNumber(Number(nextMonth) || 0);
+    if (d === "00" || m === "00") {
+      onChange("", nextIncludeYear);
+      return;
+    }
+    if (nextIncludeYear && nextYear.length === 4) {
+      onChange(`${nextYear}-${m}-${d}`, nextIncludeYear);
+    } else {
+      onChange(`1900-${m}-${d}`, false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2 items-center">
+        <input
+          type="number"
+          placeholder="Día"
+          min={1}
+          max={31}
+          value={day}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setDay(v);
+            update(v, month, year, includeYear);
+          }}
+          onBlur={() => setDay(padNumber(Number(day) || 0))}
+          className="w-20 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent/50"
+        />
+        <span className="text-slate-400">/</span>
+        <input
+          type="number"
+          placeholder="Mes"
+          min={1}
+          max={12}
+          value={month}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setMonth(v);
+            update(day, v, year, includeYear);
+          }}
+          onBlur={() => setMonth(padNumber(Number(month) || 0))}
+          className="w-20 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent/50"
+        />
+        <label className="flex items-center gap-2 ml-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={includeYear}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              onChange(value || "", checked);
+            }}
+            className="rounded border-slate-300 text-accent focus:ring-accent"
+          />
+          Incluir año
+        </label>
+      </div>
+      {includeYear && (
+        <input
+          type="number"
+          placeholder="Año"
+          min={1900}
+          max={new Date().getFullYear()}
+          value={year}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+            setYear(v);
+            update(day, month, v, includeYear);
+          }}
+          onBlur={() => {
+            const y = Number(year);
+            if (y < 1900 || y > new Date().getFullYear()) setYear("");
+          }}
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+        />
+      )}
+    </div>
+  );
+}
+
+function formatBirthdate(dateStr?: string, withYear = true) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  const year = d.getFullYear();
+  const day = d.getDate();
+  const month = d.toLocaleString("es-AR", { month: "long" });
+  if (year === 1900) return `${day} de ${month}`;
+  const age = new Date().getFullYear() - year;
+  return withYear
+    ? `${day} de ${month} de ${year} (${age} años)`
+    : `${day} de ${month}`;
+}
+
+function isBirthdateWithoutYear(dateStr?: string): boolean {
+  if (!dateStr || !dateStr.includes("-")) return true;
+  const [y] = dateStr.split("-");
+  return y === "1900" || y === "";
+}
+
+function normalizeBirthdate(dateStr: string, includeYear: boolean): string {
+  if (!dateStr) return dateStr;
+  if (dateStr.includes("-")) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    if (!includeYear || y === 1900) {
+      return `1900-${padNumber(m)}-${padNumber(d)}`;
+    }
+    return `${y}-${padNumber(m)}-${padNumber(d)}`;
+  }
+  return dateStr;
+}
+
+function parseBirthdateParts(dateStr?: string): {
+  day: string;
+  month: string;
+  year: string;
+  includeYear: boolean;
+} {
+  if (!dateStr || !dateStr.includes("-")) {
+    return { day: "", month: "", year: "", includeYear: false };
+  }
+  const [y, m, d] = dateStr.split("-");
+  return {
+    day: padNumber(Number(d)),
+    month: padNumber(Number(m)),
+    year: y !== "1900" ? y : "",
+    includeYear: y !== "1900",
+  };
+}
+
 function BentoInfoItem({
   icon: Icon,
   label,
@@ -250,6 +411,7 @@ export default function Clients() {
     dashboardArchived: false,
     birthdate: "",
   });
+  const [includeBirthYear, setIncludeBirthYear] = useState(true);
 
   const selectedClient = clients.find((c) => c.id === effectiveClientId);
 
@@ -282,6 +444,7 @@ export default function Clients() {
         birthdate: "",
         interestZone: entry.interes || "",
       });
+      setIncludeBirthYear(true);
       setPrefillWaitingRoom(entry);
       setIsFormModalOpen(true);
       window.history.replaceState({}, document.title);
@@ -315,6 +478,7 @@ export default function Clients() {
       setSelectedColleagueId(colleagueId);
       setReferralType("colleague");
       setSelectedClientReferrerId("");
+      setIncludeBirthYear(true);
       setShowNewColleagueForm(false);
       setNewColleagueName("");
       setNewColleagueOffice("");
@@ -429,6 +593,7 @@ export default function Clients() {
     if (client) {
       setEditingClient(client);
       setFormData(client);
+      setIncludeBirthYear(!isBirthdateWithoutYear(client.birthdate));
       if (client.referredByColleagueId) {
         setReferralType("colleague");
         setSelectedColleagueId(client.referredByColleagueId);
@@ -447,6 +612,7 @@ export default function Clients() {
       setNewColleagueOffice("");
     } else {
       setEditingClient(null);
+      setIncludeBirthYear(true);
       setFormData({
         name: "",
         phone: "",
@@ -490,6 +656,14 @@ export default function Clients() {
           id: generateId("c"),
           createdAt: new Date().toISOString().split("T")[0],
         };
+
+    // Normalizar fecha de nacimiento (sin año -> 1900)
+    if (clientData.birthdate) {
+      clientData.birthdate = normalizeBirthdate(
+        clientData.birthdate,
+        includeBirthYear,
+      );
+    }
 
     // Handle referral logic
     let colleagueToUpdate: { id: string; clientId: string } | null = null;
@@ -1201,7 +1375,7 @@ export default function Clients() {
                   <BentoInfoItem
                     icon={Calendar}
                     label="Fecha de Nacimiento"
-                    value={`${formatDate(selectedClient.birthdate)} (${formatDate(
+                    value={`${formatBirthdate(selectedClient.birthdate)} (próximo: ${formatDate(
                       getUpcomingBirthday(selectedClient.birthdate),
                     )})`}
                   />
@@ -1508,7 +1682,7 @@ export default function Clients() {
                       Cumpleaños
                     </span>
                     <span className="font-medium text-slate-900 dark:text-slate-100">
-                      {formatDate(selectedClient.birthdate)} (próximo:{" "}
+                      {formatBirthdate(selectedClient.birthdate)} (próximo:{" "}
                       {formatDate(getUpcomingBirthday(selectedClient.birthdate))})
                     </span>
                   </div>
@@ -2225,17 +2399,18 @@ export default function Clients() {
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Fecha de Nacimiento
                 </label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-                  value={formData.birthdate || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, birthdate: e.target.value })
-                  }
+                <BirthdayInput
+                  value={formData.birthdate}
+                  includeYear={includeBirthYear}
+                  onChange={(dateStr, includeYear) => {
+                    setFormData({ ...formData, birthdate: dateStr });
+                    setIncludeBirthYear(includeYear);
+                  }}
                 />
                 <p className="text-xs text-slate-500 mt-1">
                   Si completás esta fecha se creará automáticamente un evento y
-                  una tarea anual de cumpleaños.
+                  una tarea anual de cumpleaños. Desmarcá "Incluir año" si no
+                  sabés el año de nacimiento.
                 </p>
               </div>
               <div className="md:col-span-2">

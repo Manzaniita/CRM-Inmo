@@ -5,6 +5,8 @@ import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
 import { generateId } from "../lib/id";
 import { getUpcomingBirthday } from "../lib/recurrence";
+import { useEvents } from "./useEvents";
+import { useTasks } from "./useTasks";
 
 const fetchClients = async () => {
   const user = useAuthStore.getState().user;
@@ -18,7 +20,13 @@ const fetchClients = async () => {
   return (data ?? []) as Client[];
 };
 
-async function ensureBirthdayReminders(client: Client) {
+async function ensureBirthdayReminders(
+  client: Client,
+  addEvent: (event: CalendarEvent) => Promise<CalendarEvent>,
+  updateEvent: (event: CalendarEvent) => Promise<CalendarEvent>,
+  addTask: (task: Task) => Promise<Task>,
+  updateTask: (task: Task) => Promise<Task>,
+) {
   const user = useAuthStore.getState().user;
   if (!user) return;
 
@@ -39,6 +47,8 @@ async function ensureBirthdayReminders(client: Client) {
     return;
   }
 
+  const upcomingDate = getUpcomingBirthday(client.birthdate);
+
   const { data: existingEvents } = await supabase
     .from("events")
     .select("id")
@@ -52,7 +62,7 @@ async function ensureBirthdayReminders(client: Client) {
       id: generateId("e"),
       title: `Cumpleaños de ${client.name}`,
       description: `Recordatorio anual del cumpleaños de ${client.name}.`,
-      date: client.birthdate,
+      date: upcomingDate,
       time: "09:00",
       type: "recordatorio",
       status: "pendiente",
@@ -62,8 +72,21 @@ async function ensureBirthdayReminders(client: Client) {
       recurrenceFrequency: "yearly",
       source: "auto_birthday",
     };
-    const { createdAt: _, ...eventRest } = birthdayEvent;
-    await supabase.from("events").insert({ ...eventRest, user_id: user.id });
+    await addEvent(birthdayEvent);
+  } else {
+    await updateEvent({
+      id: existingEvents[0].id,
+      title: `Cumpleaños de ${client.name}`,
+      description: `Recordatorio anual del cumpleaños de ${client.name}.`,
+      date: upcomingDate,
+      time: "09:00",
+      type: "recordatorio",
+      status: "pendiente",
+      clientId: client.id,
+      isRecurring: true,
+      recurrenceFrequency: "yearly",
+      source: "auto_birthday",
+    } as CalendarEvent);
   }
 
   const { data: existingTasks } = await supabase
@@ -79,7 +102,7 @@ async function ensureBirthdayReminders(client: Client) {
       id: generateId("t"),
       title: `Saludar a ${client.name} por su cumpleaños`,
       description: `Recordatorio anual para saludar a ${client.name} el día de su cumpleaños.`,
-      dueDate: getUpcomingBirthday(client.birthdate),
+      dueDate: upcomingDate,
       priority: "media",
       status: "pendiente",
       clientId: client.id,
@@ -89,14 +112,29 @@ async function ensureBirthdayReminders(client: Client) {
       recurrenceFrequency: "yearly",
       relatedEntities: [{ type: "client", id: client.id }],
     };
-    const { createdAt: __, ...taskRest } = birthdayTask;
-    await supabase.from("tasks").insert({ ...taskRest, user_id: user.id });
+    await addTask(birthdayTask);
+  } else {
+    await updateTask({
+      id: existingTasks[0].id,
+      title: `Saludar a ${client.name} por su cumpleaños`,
+      description: `Recordatorio anual para saludar a ${client.name} el día de su cumpleaños.`,
+      dueDate: upcomingDate,
+      priority: "media",
+      status: "pendiente",
+      clientId: client.id,
+      source: "auto_birthday",
+      isRecurring: true,
+      recurrenceFrequency: "yearly",
+      relatedEntities: [{ type: "client", id: client.id }],
+    } as Task);
   }
 }
 
 export function useClients() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const { addEvent, updateEvent } = useEvents();
+  const { addTask, updateTask } = useTasks();
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -114,7 +152,7 @@ export function useClients() {
       return data![0] as Client;
     },
     onSuccess: async (client) => {
-      await ensureBirthdayReminders(client);
+      await ensureBirthdayReminders(client, addEvent, updateEvent, addTask, updateTask);
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -134,7 +172,7 @@ export function useClients() {
       return client;
     },
     onSuccess: async (client) => {
-      await ensureBirthdayReminders(client);
+      await ensureBirthdayReminders(client, addEvent, updateEvent, addTask, updateTask);
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
