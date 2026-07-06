@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useBuyers } from "../hooks/useBuyers";
-import { useClients } from "../hooks/useClients";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useRelationsDrawer } from "../context/RelationsDrawerContext";
 import Badge from "../components/Badge";
@@ -25,7 +24,7 @@ import {
 } from "../lib/utils";
 import { generateId } from "../lib/id";
 import { validateBuyer } from "../lib/validators";
-import type { Buyer, BuyerStatus, Client, EntityNote } from "../types";
+import type { Buyer, BuyerStatus } from "../types";
 import { useUIStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
 
@@ -202,7 +201,6 @@ function BuyerOperationMenu({
 
 export default function BuyersPage() {
   const { buyers, isLoading, addBuyer, updateBuyer, deleteBuyer } = useBuyers();
-  const { clients, addClient, updateClient } = useClients();
   const { addActivityLog } = useActivityLogs();
   const showToast = useUIStore((state) => state.showToast);
   const profile = useAuthStore((state) => state.profile);
@@ -281,68 +279,6 @@ export default function BuyersPage() {
     setIsFormOpen(true);
   };
 
-  const syncBuyerWithClient = async (buyer: Buyer, previousBuyer?: Buyer | null) => {
-    const normalizedEmail = buyer.email?.trim().toLowerCase();
-    const normalizedPhone = buyer.telefono?.trim();
-    let client = clients.find(
-      (c) =>
-        (normalizedEmail && c.email?.trim().toLowerCase() === normalizedEmail) ||
-        (normalizedPhone && c.phone?.trim() === normalizedPhone) ||
-        c.buyerId === buyer.id
-    );
-
-    const noteChanged = buyer.notas && (!previousBuyer || previousBuyer.notas !== buyer.notas);
-    const newNote: EntityNote | null = noteChanged
-      ? {
-          id: generateId("n"),
-          content: `Nota desde Compradores: ${buyer.notas}`,
-          createdAt: new Date().toISOString(),
-        }
-      : null;
-
-    if (client) {
-      const historyNotes = [...(client.historyNotes || [])];
-      if (newNote) historyNotes.push(newNote);
-      await updateClient({
-        ...client,
-        name: buyer.nombre,
-        phone: buyer.telefono,
-        email: buyer.email,
-        buyerId: buyer.id,
-        budget: buyer.presupuestoMax,
-        currency: buyer.moneda,
-        interestZone: buyer.zonaBuscada,
-        propertyTypeInterest: buyer.tipoPropiedad,
-        notes: buyer.notas,
-        historyNotes,
-        lastContact: new Date().toISOString().split("T")[0],
-      });
-    } else {
-      const historyNotes: EntityNote[] = [];
-      if (newNote) historyNotes.push(newNote);
-      const newClient: Client = {
-        id: generateId("c"),
-        name: buyer.nombre,
-        phone: buyer.telefono,
-        email: buyer.email,
-        type: "comprador",
-        types: ["comprador"],
-        status: "activo",
-        origin: "buyer",
-        lastContact: new Date().toISOString().split("T")[0],
-        notes: buyer.notas,
-        buyerId: buyer.id,
-        budget: buyer.presupuestoMax,
-        currency: buyer.moneda,
-        interestZone: buyer.zonaBuscada,
-        propertyTypeInterest: buyer.tipoPropiedad,
-        historyNotes,
-        createdAt: buyer.createdAt || new Date().toISOString().split("T")[0],
-      };
-      await addClient(newClient);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validation = validateBuyer(formData);
@@ -350,13 +286,15 @@ export default function BuyersPage() {
       showToast(validation.message || "Error de validación", "error");
       return;
     }
-    const buyer: Buyer = { ...(formData as Buyer), id: editingBuyer ? editingBuyer.id : generateId("b") };
+    const buyer: Buyer = {
+      ...(formData as Buyer),
+      id: editingBuyer ? editingBuyer.id : generateId("b"),
+    };
     if (editingBuyer) {
       await updateBuyer(buyer);
     } else {
       await addBuyer(buyer);
     }
-    await syncBuyerWithClient(buyer, editingBuyer);
     setIsFormOpen(false);
   };
 

@@ -18,6 +18,7 @@ import {
   ArrowUpDown,
   AlertTriangle,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import {
   useParams,
@@ -28,6 +29,7 @@ import {
 } from "react-router-dom";
 
 import { useEvents } from "../hooks/useEvents";
+import { supabase } from "../lib/supabase";
 import { CalendarEvent, EventType, EventStatus } from "../types";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -71,6 +73,7 @@ export default function Agenda() {
   >("date-asc");
   const [visitFeedbackEvent, setVisitFeedbackEvent] =
     useState<CalendarEvent | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Today dynamic
   const today = new Date().toISOString().split("T")[0];
@@ -203,6 +206,40 @@ export default function Agenda() {
           return `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
       }
     });
+
+  const handleSyncAll = async () => {
+    const unsynced = events.filter((e) => !e.googleCalendarEventId);
+    if (unsynced.length === 0) {
+      showToast("No hay eventos pendientes de sincronizar", "info");
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("No hay sesión activa");
+      let synced = 0;
+      for (const event of unsynced) {
+        const res = await fetch("/api/google-calendar-sync", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action: "create", event }),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || "Error sincronizando evento");
+        await updateEvent({ ...event, googleCalendarEventId: result.googleEventId });
+        synced++;
+      }
+      showToast(`${synced} evento(s) sincronizado(s) con Google Calendar`, "success");
+    } catch (err: any) {
+      showToast(err.message || "Error de sincronización", "error");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleOpenForm = (event?: CalendarEvent) => {
     if (event) {
@@ -619,6 +656,19 @@ export default function Agenda() {
               Semana
             </button>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncAll}
+            disabled={isSyncing}
+          >
+            {isSyncing ? (
+              <Loader2 size={16} className="mr-2 animate-spin" />
+            ) : (
+              <RefreshCw size={16} className="mr-2" />
+            )}
+            Sincronizar con Google
+          </Button>
           <Button variant="primary" onClick={() => handleOpenForm()}>
             <Plus size={18} className="mr-2" /> Nuevo Evento
           </Button>

@@ -208,8 +208,8 @@ export default function Reservometro() {
     sold: sales.filter((s) => s.estado === "vendida").length,
     fallen: sales.filter((s) => s.estado === "caída").length,
     totalCommissions: sales
-      .filter((s) => s.estado === "vendida" && s.moneda === "ARS")
-      .reduce((acc, s) => acc + Number(s.comisionEstimada || 0), 0),
+      .filter((s) => s.estado === "vendida")
+      .reduce((acc, s) => acc + Number(s.grossCommissionUsd || 0), 0),
     grossCommissionsUsd: sales
       .filter((s) => {
         if (s.estado !== "vendida" || !s.isCollected) return false;
@@ -217,12 +217,7 @@ export default function Reservometro() {
         if (!dateStr) return false;
         return new Date(dateStr).getFullYear() === currentYear;
       })
-      .reduce((acc, s) => {
-        const commissionUsd =
-          Number(s.grossCommissionUsd) ||
-          (s.moneda === "USD" ? Number(s.comisionEstimada || 0) : 0);
-        return acc + commissionUsd;
-      }, 0),
+      .reduce((acc, s) => acc + Number(s.grossCommissionUsd || 0), 0),
   };
 
   const getStatusVariant = (status: string): string => {
@@ -306,8 +301,8 @@ export default function Reservometro() {
           color="red"
         />
         <StatCard
-          label="Comisiones (ARS)"
-          value={formatCurrency(stats.totalCommissions, "ARS")}
+          label="Comisiones Brutas (USD)"
+          value={formatCurrency(stats.totalCommissions, "USD")}
           icon={DollarSign}
           color="green"
         />

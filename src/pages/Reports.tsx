@@ -85,16 +85,7 @@ export default function Reports() {
     () =>
       sales
         .filter((s) => s.estado === "vendida" && s.isCollected)
-        .reduce(
-          (acc, s) =>
-            acc +
-            Number(
-              s.grossCommissionUsd ||
-                (s.moneda === "USD" ? s.comisionEstimada : 0) ||
-                0,
-            ),
-          0,
-        ),
+        .reduce((acc, s) => acc + Number(s.grossCommissionUsd || 0), 0),
     [sales],
   );
 

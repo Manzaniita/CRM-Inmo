@@ -94,12 +94,24 @@ export default function Configuration() {
       setActiveTab(tab);
     }
     verifyRole();
-    fetchGoogleIntegration();
+
+    // Capturar tokens de OAuth inmediatamente al cargar (después del redirect)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.provider_refresh_token) {
+        saveGoogleIntegration(session).then(() => fetchGoogleIntegration());
+      } else {
+        fetchGoogleIntegration();
+      }
+    });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === "SIGNED_IN" && session?.provider_refresh_token) {
+        if (
+          (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") &&
+          session?.provider_refresh_token
+        ) {
           await saveGoogleIntegration(session);
+          await fetchGoogleIntegration();
         }
       },
     );
@@ -114,17 +126,19 @@ export default function Configuration() {
   }, [activeTab, serverRole]);
 
   const fetchGoogleIntegration = async () => {
-    if (!profile?.user_id) return;
+    const userId = profile?.user_id;
+    if (!userId) return;
     const { data, error } = await supabase
       .from("user_integrations")
       .select("email")
-      .eq("user_id", profile.user_id)
+      .eq("user_id", userId)
       .eq("provider", "google_calendar")
-      .single();
+      .maybeSingle();
     if (!error && data) {
       setGoogleIntegration({ email: data.email });
     } else {
       setGoogleIntegration(null);
+      if (error) console.error("Error cargando integración Google:", error);
     }
   };
 
