@@ -47,6 +47,7 @@ import Reservometro from "./pages/Reservometro";
 import EntityRelationsDrawer from "./components/EntityRelationsDrawer";
 import LoginPage from "./pages/LoginPage";
 import ResetPassword from "./pages/ResetPassword";
+import RecentViewsDock from "./components/RecentViewsDock";
 
 const MENU_ITEMS = [
   {
@@ -640,6 +641,7 @@ export default function App() {
       </div>
       <EntityRelationsDrawer />
       <GlobalToast />
+      <RecentViewsDock />
     </div>
   );
 }

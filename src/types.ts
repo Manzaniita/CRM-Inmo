@@ -69,6 +69,7 @@ export interface Property {
   contractStartDate?: string;
   contractEndDate?: string;
   propertyCode?: string;
+  priceHistory?: { date: string; price: number }[];
   marketplaceId?: string;
   marketplaceStatus?: 'no_publicada' | 'lista' | 'publicada' | 'pausada' | 'error';
   marketplaceTitle?: string;
@@ -173,6 +174,7 @@ export interface Sale {
   grossCommissionUsd?: number;
   gastosOficina?: number;
   comisionNetaFinal?: number;
+  referredByColleagueId?: string;
   infoExtra?: string;
   presupuesto?: number;
   // Comprador/Vendedor extendido
@@ -225,6 +227,7 @@ export interface Document {
   fileSize?: number;
   fileExtension?: string;
   url?: string;
+  expiryDate?: string;
 }
 
 export type WaitingRoomStatus = 'pendiente' | 'contactado' | 'descartado' | 'convertido';

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { X, FileText, Download, Edit3, Trash2, Paperclip, Calendar, User, Home, Tag, Clock, CheckCircle2, AlertCircle, FileCheck, FileSignature } from 'lucide-react';
+import { X, FileText, Download, Edit3, Trash2, Paperclip, Calendar, User, Home, Tag, Clock, CheckCircle2, AlertCircle, FileCheck, FileSignature, AlertTriangle } from 'lucide-react';
 import { Document, DocumentType, DocumentStatus, Client, Property, Sale, Rental } from '../types';
 import Button from './Button';
 import Badge from './Badge';
 import SearchableSelect from './SearchableSelect';
 import FileUpload from './FileUpload';
 import { cn, formatDate } from '../lib/utils';
+import { isDocExpiringSoon } from '../lib/dates';
 
 import { generateId } from '../lib/id';
 import { validateDocument } from '../lib/validators';
@@ -95,7 +96,8 @@ export default function DocumentModal({
     propertyId: document?.propertyId || defaultPropertyId || '',
     saleId: document?.saleId || '',
     rentalId: document?.rentalId || '',
-    notes: document?.notes || ''
+    notes: document?.notes || '',
+    expiryDate: document?.expiryDate || ''
   });
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -125,7 +127,8 @@ export default function DocumentModal({
           propertyId: document.propertyId || '',
           saleId: document.saleId || '',
           rentalId: document.rentalId || '',
-          notes: document.notes || ''
+          notes: document.notes || '',
+          expiryDate: document.expiryDate || ''
         });
       } else if (mode === 'create') {
         setFormData({
@@ -136,7 +139,8 @@ export default function DocumentModal({
           propertyId: defaultPropertyId || '',
           saleId: '',
           rentalId: '',
-          notes: ''
+          notes: '',
+          expiryDate: ''
         });
         setSelectedFile(null);
       }
@@ -209,6 +213,7 @@ export default function DocumentModal({
         saleId: formData.saleId || undefined,
         rentalId: formData.rentalId || undefined,
         notes: formData.notes || undefined,
+        expiryDate: formData.expiryDate || undefined,
         fileName: selectedFile ? selectedFile.name : document.fileName,
         fileSize: selectedFile ? selectedFile.size : document.fileSize,
         fileExtension: selectedFile ? selectedFile.name.split('.').pop() || document.fileExtension : document.fileExtension,
@@ -243,6 +248,7 @@ export default function DocumentModal({
         rentalId: formData.rentalId || undefined,
         uploadDate: now,
         notes: formData.notes || undefined,
+        expiryDate: formData.expiryDate || undefined,
         fileName: selectedFile ? selectedFile.name : undefined,
         fileSize: selectedFile ? selectedFile.size : undefined,
         fileExtension: selectedFile ? selectedFile.name.split('.').pop() || undefined : undefined,
@@ -309,9 +315,15 @@ export default function DocumentModal({
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{document?.nombre}</h3>
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-2">
                   <Badge variant="gray">{document?.tipo}</Badge>
                   <Badge variant={document ? getDocumentStatusVariant(document.status) : 'gray'}>{document?.status}</Badge>
+                  {document && isDocExpiringSoon(document) && (
+                    <Badge variant="orange" className="flex items-center gap-1">
+                      <AlertTriangle size={12} />
+                      {new Date(document.expiryDate!) < new Date() ? 'Vencido' : 'Por vencer'}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -341,6 +353,22 @@ export default function DocumentModal({
                 </div>
                 <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{document ? formatDate(document.uploadDate) : '-'}</p>
               </div>
+
+              {document?.expiryDate && (
+                <div className={cn(
+                  "p-4 rounded-xl",
+                  isDocExpiringSoon(document) ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-slate-50 dark:bg-slate-800/50'
+                )}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock size={14} className={isDocExpiringSoon(document) ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'} />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Vencimiento</span>
+                  </div>
+                  <p className={cn(
+                    "text-sm font-bold",
+                    isDocExpiringSoon(document) ? 'text-amber-700 dark:text-amber-300' : 'text-slate-800 dark:text-slate-200'
+                  )}>{formatDate(document.expiryDate)}</p>
+                </div>
+              )}
 
               {document?.clientId && (
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
@@ -382,6 +410,40 @@ export default function DocumentModal({
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Notas</span>
                 </div>
                 <p className="text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">{document.notes}</p>
+              </div>
+            )}
+
+            {document?.url && (
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/50">
+                <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Vista previa</span>
+                  <Button variant="ghost" size="sm" onClick={handleDownload}>
+                    <Download size={14} className="mr-1" /> Descargar
+                  </Button>
+                </div>
+                <div className="p-4 flex items-center justify-center min-h-[180px]">
+                  {(() => {
+                    const ext = (document?.fileExtension || '').toLowerCase();
+                    if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+                      return <img src={document.url} alt={document.nombre} className="max-h-80 rounded-lg object-contain shadow-sm" />;
+                    }
+                    if (ext === 'pdf') {
+                      return (
+                        <iframe
+                          src={document.url}
+                          title={document.nombre}
+                          className="w-full h-80 rounded-lg border border-slate-200 dark:border-slate-700 bg-white"
+                        />
+                      );
+                    }
+                    return (
+                      <div className="text-center text-slate-400">
+                        <FileText size={40} className="mx-auto mb-2" />
+                        <p className="text-sm">La vista previa no está disponible para este formato.</p>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             )}
 
@@ -450,6 +512,16 @@ export default function DocumentModal({
                     <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1.5">Vencimiento</label>
+                <input
+                  type="date"
+                  value={formData.expiryDate}
+                  onChange={e => setFormData({ ...formData, expiryDate: e.target.value })}
+                  className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Relevante para contratos y documentos temporales.</p>
               </div>
             </div>
 

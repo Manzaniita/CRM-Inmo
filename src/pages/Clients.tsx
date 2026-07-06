@@ -78,6 +78,7 @@ import { useReferredColleagues } from "../hooks/useReferredColleagues";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useCustomOptions } from "../hooks/useCustomOptions";
 import { useStorage } from "../hooks/useStorage";
+import { useRecentViews } from "../hooks/useRecentViews";
 import FileUpload from "../components/FileUpload";
 import { useSales } from "../hooks/useSales";
 import { useTasks } from "../hooks/useTasks";
@@ -309,6 +310,7 @@ export default function Clients() {
   const { activityLogs, addActivityLog } = useActivityLogs();
   const { customOptions, updateCustomOptions } = useCustomOptions();
   const { uploadFile: uploadStorageFile } = useStorage();
+  const { recordView } = useRecentViews();
   const showToast = useUIStore((state) => state.showToast);
   const profile = useAuthStore((state) => state.profile);
   const { openRelations } = useRelationsDrawer();
@@ -414,6 +416,17 @@ export default function Clients() {
   const [includeBirthYear, setIncludeBirthYear] = useState(true);
 
   const selectedClient = clients.find((c) => c.id === effectiveClientId);
+
+  // Registrar navegación reciente
+  useEffect(() => {
+    if (selectedClient) {
+      recordView({
+        id: selectedClient.id,
+        type: 'client',
+        name: selectedClient.name,
+      });
+    }
+  }, [selectedClient?.id, selectedClient?.name]);
 
   // Detectar lead precargado desde Sala de Espera
   const [prefillWaitingRoom, setPrefillWaitingRoom] =

@@ -41,6 +41,7 @@ import { Card } from "../components/Card";
 import {
   cn,
   formatCurrency,
+  formatDate,
   generateWhatsAppLink,
   formatWhatsAppTemplate,
   parseRichText,
@@ -82,6 +83,7 @@ import { useReferredColleagues } from "../hooks/useReferredColleagues";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useCustomOptions } from "../hooks/useCustomOptions";
 import { useStorage } from "../hooks/useStorage";
+import { useRecentViews } from "../hooks/useRecentViews";
 import FileUpload from "../components/FileUpload";
 import Lightbox from "../components/Lightbox";
 
@@ -100,6 +102,7 @@ export default function Properties() {
   const { activityLogs, addActivityLog } = useActivityLogs();
   const { customOptions, updateCustomOptions } = useCustomOptions();
   const { uploadFile: uploadStorageFile, uploading: isUploadingImage } = useStorage();
+  const { recordView } = useRecentViews();
   const { sales, addSale, updateSale, deleteSale } = useSales();
   const { tasks } = useTasks();
   const { events } = useEvents();
@@ -221,6 +224,11 @@ export default function Properties() {
   useEffect(() => {
     if (selectedProp) {
       setActiveImage(selectedProp.imageUrl || selectedProp.images?.[0] || "");
+      recordView({
+        id: selectedProp.id,
+        type: 'property',
+        name: selectedProp.title,
+      });
     }
   }, [selectedProp]);
 
@@ -575,6 +583,64 @@ export default function Properties() {
                   }}
                 />
               </div>
+
+              {selectedProp.priceHistory && selectedProp.priceHistory.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                    <TrendingUp size={18} className="text-blue-600" />
+                    Historial de precios
+                  </h3>
+                  <div className="space-y-2">
+                    {(() => {
+                      const sorted = [...selectedProp.priceHistory].sort(
+                        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+                      );
+                      return sorted
+                        .map((entry, idx) => {
+                          const prev = sorted[idx - 1];
+                          const diff = prev ? entry.price - prev.price : 0;
+                          const isUp = diff > 0;
+                          const isDown = diff < 0;
+                          return (
+                            <div
+                              key={`${entry.date}-${idx}`}
+                              className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-[10px] font-black text-slate-400">
+                                  {sorted.length - idx}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                    {formatCurrency(entry.price, selectedProp.currency)}
+                                  </p>
+                                  <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                                    {formatDate(entry.date)}
+                                  </p>
+                                </div>
+                              </div>
+                              {prev && (
+                                <div
+                                  className={cn(
+                                    "text-xs font-bold flex items-center gap-1",
+                                    isUp && "text-green-600",
+                                    isDown && "text-red-600",
+                                    !isUp && !isDown && "text-slate-400",
+                                  )}
+                                >
+                                  {isUp && <ArrowUp size={14} />}
+                                  {isDown && <ArrowDown size={14} />}
+                                  {formatCurrency(Math.abs(diff), selectedProp.currency)}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                        .reverse();
+                    })()}
+                  </div>
+                </div>
+              )}
 
               <div className="mt-8">
                 <EntityNotesPanel

@@ -57,6 +57,11 @@ export function formatDateRelative(dateString: string): string {
   return `En ${d} días`;
 }
 
+export function isDocExpiringSoon(doc: { tipo?: string; expiryDate?: string }): boolean {
+  if (!doc.expiryDate || doc.tipo !== 'Contrato') return false;
+  return isOverdue(doc.expiryDate) || isToday(doc.expiryDate) || isWithinNextDays(doc.expiryDate, 30);
+}
+
 export function contractTimeRemaining(contractEndDate?: string): { text: string; expired: boolean } {
   if (!contractEndDate) return { text: 'Sin vencimiento', expired: false };
   const d = daysUntil(contractEndDate);

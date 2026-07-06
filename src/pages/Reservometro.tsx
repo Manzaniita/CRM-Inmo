@@ -44,6 +44,7 @@ import { useSales } from "../hooks/useSales";
 import { useClients } from "../hooks/useClients";
 import { useDocuments } from "../hooks/useDocuments";
 import { useStorage } from "../hooks/useStorage";
+import { useReferredColleagues } from "../hooks/useReferredColleagues";
 import FileUpload from "../components/FileUpload";
 
 const STAGES: SaleStatus[] = ["activa", "vendida", "caída"];
@@ -73,6 +74,7 @@ export default function Reservometro() {
   const { clients, addClient } = useClients();
   const { properties } = useProperties();
   const { documents } = useDocuments();
+  const { referredColleagues } = useReferredColleagues();
   const showToast = useUIStore((state) => state.showToast);
   const { openRelations } = useRelationsDrawer();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -658,6 +660,12 @@ export default function Reservometro() {
                             Bruta USD {sale.grossCommissionUsd}
                           </span>
                         )}
+                        {sale.referredByColleagueId && (
+                          <span className="block text-[10px] text-blue-600 mt-0.5">
+                            Ref: {referredColleagues.find((c) => c.id === sale.referredByColleagueId)?.nombreApellido || "Colega"}
+                            {sale.porcentajeReferido ? ` (${sale.porcentajeReferido}%)` : ""}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs text-slate-600 dark:text-slate-400">
@@ -939,6 +947,7 @@ function SaleFormModal({
   const { clients, addClient } = useClients();
   const { properties } = useProperties();
   const { documents, addDocument } = useDocuments();
+  const { referredColleagues } = useReferredColleagues();
   const { uploadFile: uploadStorageFile } = useStorage();
   const showToast = useUIStore((state) => state.showToast);
 
@@ -1020,6 +1029,7 @@ function SaleFormModal({
       externalPropertyAddress: "",
       externalPropertyLink: "",
       externalPropertyCode: "",
+      referredByColleagueId: undefined,
     };
   });
 
@@ -1350,6 +1360,37 @@ function SaleFormModal({
                   Seleccione un cliente o ingrese el nombre del comprador
                 </p>
               )}
+
+              {/* Colega referido (solo si el origen del cliente es Referido) */}
+              {(() => {
+                const selectedClient = clients.find(
+                  (c) => c.id === formData.clientCompradorId,
+                );
+                if (selectedClient?.origin !== "Referido") return null;
+                return (
+                  <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/10 rounded-xl space-y-3">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                      Cliente referido — vincular colega
+                    </p>
+                    <SearchableSelect
+                      value={formData.referredByColleagueId || ""}
+                      onChange={(val) =>
+                        setFormData({
+                          ...formData,
+                          referredByColleagueId: val || undefined,
+                        })
+                      }
+                      options={referredColleagues.map((c) => ({
+                        value: c.id,
+                        label: c.nombreApellido,
+                        subtitle: c.oficina,
+                      }))}
+                      placeholder="Seleccionar colega referido"
+                      allowEmpty
+                    />
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Propiedad */}
@@ -1809,6 +1850,55 @@ function SaleFormModal({
                   {formatCurrency(formData.comisionNetaFinal || 0, formData.moneda || "USD")}
                 </div>
               </div>
+            </div>
+
+            {/* Desglose de comisiones */}
+            {(() => {
+              const comisionBruta = Number(formData.comisionEstimada) || 0;
+              const gastos = Number(formData.gastosOficina) || 0;
+              const refPct = Number(formData.porcentajeReferido) || 0;
+              const montoColega = comisionBruta * (refPct / 100);
+              const neta = comisionBruta - gastos - montoColega;
+              const currency = formData.moneda || "USD";
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">
+                      Bruta total
+                    </p>
+                    <p className="text-sm font-black text-slate-900 dark:text-slate-100">
+                      {formatCurrency(comisionBruta, currency)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">
+                      Para el colega ({refPct}%)
+                    </p>
+                    <p className="text-sm font-black text-blue-600">
+                      {formatCurrency(montoColega, currency)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">
+                      Gastos oficina
+                    </p>
+                    <p className="text-sm font-black text-rose-600">
+                      {formatCurrency(gastos, currency)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-500/20">
+                    <p className="text-[10px] text-green-600 uppercase tracking-widest font-bold">
+                      Neta agente
+                    </p>
+                    <p className="text-sm font-black text-green-700 dark:text-green-400">
+                      {formatCurrency(neta, currency)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
                   Monto Escritura

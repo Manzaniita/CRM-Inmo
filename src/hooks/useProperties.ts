@@ -80,6 +80,17 @@ export function useProperties() {
         }
       }
 
+      // Auditoría de cambios de precio
+      if (previous && previous.price !== updateData.price) {
+        const entry = { date: new Date().toISOString(), price: updateData.price };
+        const existingHistory = updateData.priceHistory || previous.priceHistory || [];
+        // Evitar duplicar entrada consecutiva idéntica
+        const lastEntry = existingHistory[existingHistory.length - 1];
+        if (!lastEntry || lastEntry.price !== entry.price) {
+          updateData = { ...updateData, priceHistory: [...existingHistory, entry] };
+        }
+      }
+
       const { error } = await supabase
         .from('properties')
         .update(updateData)

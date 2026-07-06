@@ -24,6 +24,7 @@ import {
   Tag,
   FileSignature,
   FileCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { useDocuments } from "../hooks/useDocuments";
 import { useRentals } from "../hooks/useRentals";
@@ -34,6 +35,7 @@ import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { Card } from "../components/Card";
 import { cn, formatDate } from "../lib/utils";
+import { isDocExpiringSoon } from "../lib/dates";
 import { generateId } from "../lib/id";
 import { validateDocument } from "../lib/validators";
 import { useProperties } from "../hooks/useProperties";
@@ -71,6 +73,7 @@ interface FormData {
   saleId: string;
   rentalId: string;
   notes: string;
+  expiryDate: string;
 }
 
 const emptyFormData: FormData = {
@@ -82,6 +85,7 @@ const emptyFormData: FormData = {
   saleId: "",
   rentalId: "",
   notes: "",
+  expiryDate: "",
 };
 
 function getStatusVariant(status: string): any {
@@ -202,6 +206,7 @@ export default function Documents() {
       saleId: doc.saleId || "",
       rentalId: doc.rentalId || "",
       notes: doc.notes || "",
+      expiryDate: doc.expiryDate || "",
     });
     setIsFormModalOpen(true);
   };
@@ -245,6 +250,7 @@ export default function Documents() {
         saleId: formData.saleId || undefined,
         rentalId: formData.rentalId || undefined,
         notes: formData.notes || undefined,
+        expiryDate: formData.expiryDate || undefined,
         fileName: selectedFile ? selectedFile.name : editingDoc.fileName,
         fileSize: selectedFile ? selectedFile.size : editingDoc.fileSize,
         fileExtension: selectedFile
@@ -281,6 +287,7 @@ export default function Documents() {
         rentalId: formData.rentalId || undefined,
         uploadDate: now,
         notes: formData.notes || undefined,
+        expiryDate: formData.expiryDate || undefined,
         fileName: selectedFile ? selectedFile.name : undefined,
         fileSize: selectedFile ? selectedFile.size : undefined,
         fileExtension: selectedFile
@@ -477,6 +484,16 @@ export default function Documents() {
                     >
                       {doc.status}
                     </Badge>
+                    {isDocExpiringSoon(doc) && (
+                      <Badge
+                        size="sm"
+                        variant="orange"
+                        className="w-fit flex items-center gap-1"
+                      >
+                        <AlertTriangle size={10} />
+                        Vence {formatDate(doc.expiryDate!)}
+                      </Badge>
+                    )}
                   </div>
                   <div className="pt-3 border-t border-gray-50 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                     <span className="flex items-center gap-1">
@@ -545,9 +562,17 @@ export default function Documents() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <Badge variant={getStatusVariant(doc.status)}>
-                      {doc.status}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge variant={getStatusVariant(doc.status)}>
+                        {doc.status}
+                      </Badge>
+                      {isDocExpiringSoon(doc) && (
+                        <Badge variant="orange" className="flex items-center gap-1">
+                          <AlertTriangle size={10} />
+                          Vence {formatDate(doc.expiryDate!)}
+                        </Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
                     {formatDate(doc.uploadDate)}
@@ -644,11 +669,17 @@ export default function Documents() {
                   <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">
                     {selectedDoc.nombre}
                   </h3>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <Badge variant="gray">{selectedDoc.tipo}</Badge>
                     <Badge variant={getStatusVariant(selectedDoc.status)}>
                       {selectedDoc.status}
                     </Badge>
+                    {isDocExpiringSoon(selectedDoc) && (
+                      <Badge variant="orange" className="flex items-center gap-1">
+                        <AlertTriangle size={12} />
+                        {new Date(selectedDoc.expiryDate!) < new Date() ? 'Vencido' : 'Por vencer'}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -698,6 +729,42 @@ export default function Documents() {
                     {formatDate(selectedDoc.uploadDate)}
                   </p>
                 </div>
+
+                {/* Expiry info */}
+                {selectedDoc.expiryDate && (
+                  <div
+                    className={cn(
+                      "p-4 rounded-xl",
+                      isDocExpiringSoon(selectedDoc)
+                        ? "bg-amber-50 dark:bg-amber-900/20"
+                        : "bg-slate-50 dark:bg-slate-800/50",
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock
+                        size={14}
+                        className={
+                          isDocExpiringSoon(selectedDoc)
+                            ? "text-amber-500"
+                            : "text-slate-400 dark:text-slate-500"
+                        }
+                      />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                        Vencimiento
+                      </span>
+                    </div>
+                    <p
+                      className={cn(
+                        "text-sm font-bold",
+                        isDocExpiringSoon(selectedDoc)
+                          ? "text-amber-700 dark:text-amber-300"
+                          : "text-slate-800 dark:text-slate-200",
+                      )}
+                    >
+                      {formatDate(selectedDoc.expiryDate)}
+                    </p>
+                  </div>
+                )}
 
                 {/* Client */}
                 {selectedDoc.clientId && (
@@ -772,6 +839,55 @@ export default function Documents() {
                   <p className="text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
                     {selectedDoc.notes}
                   </p>
+                </div>
+              )}
+
+              {/* Preview */}
+              {selectedDoc.url && (
+                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/50">
+                  <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Vista previa
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSimulatedDownload(selectedDoc)}
+                    >
+                      <Download size={14} className="mr-1" /> Descargar
+                    </Button>
+                  </div>
+                  <div className="p-4 flex items-center justify-center min-h-[180px]">
+                    {(() => {
+                      const ext = (selectedDoc.fileExtension || "").toLowerCase();
+                      if (["jpg", "jpeg", "png", "webp", "gif"].includes(ext)) {
+                        return (
+                          <img
+                            src={selectedDoc.url}
+                            alt={selectedDoc.nombre}
+                            className="max-h-80 rounded-lg object-contain shadow-sm"
+                          />
+                        );
+                      }
+                      if (ext === "pdf") {
+                        return (
+                          <iframe
+                            src={selectedDoc.url}
+                            title={selectedDoc.nombre}
+                            className="w-full h-80 rounded-lg border border-slate-200 dark:border-slate-700 bg-white"
+                          />
+                        );
+                      }
+                      return (
+                        <div className="text-center text-slate-400">
+                          <FileText size={40} className="mx-auto mb-2" />
+                          <p className="text-sm">
+                            La vista previa no está disponible para este formato.
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               )}
 
@@ -887,6 +1003,24 @@ export default function Documents() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Expiry date */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Fecha de vencimiento
+                </label>
+                <input
+                  type="date"
+                  value={formData.expiryDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, expiryDate: e.target.value })
+                  }
+                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Útil para contratos y documentos con vigencia.
+                </p>
               </div>
 
               {/* Related entities */}

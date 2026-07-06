@@ -68,6 +68,15 @@ export default function Reports() {
       : 0;
 
   const activeSales = sales.filter((s) => s.estado === "activa").length;
+  const soldSales = sales.filter((s) => s.estado === "vendida").length;
+
+  const pipelineValue = useMemo(
+    () =>
+      sales
+        .filter((s) => s.estado === "activa")
+        .reduce((acc, s) => acc + (s.comisionEstimada || 0), 0),
+    [sales],
+  );
 
   const collectedCommissions = useMemo(
     () =>
@@ -152,6 +161,40 @@ export default function Reports() {
     }));
   }, [clients]);
 
+  // Chart Data: Active vs Sold Sales by Month
+  const activeVsSoldByMonth = useMemo(() => {
+    const months = [
+      "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+      "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+    ];
+    const data = months.map((m) => ({ name: m, activas: 0, vendidas: 0 }));
+
+    sales.forEach((s) => {
+      const monthIdx = new Date(s.fechaCreacion).getMonth();
+      if (isNaN(monthIdx)) return;
+      if (s.estado === "activa") data[monthIdx].activas++;
+      if (s.estado === "vendida") data[monthIdx].vendidas++;
+    });
+
+    return data.slice(0, new Date().getMonth() + 1);
+  }, [sales]);
+
+  // Chart Data: Lead Origin Ranking (closed sales)
+  const originRanking = useMemo(() => {
+    const totals: Record<string, number> = {};
+    sales
+      .filter((s) => s.estado === "vendida")
+      .forEach((s) => {
+        const client = clients.find((c) => c.id === s.clientCompradorId);
+        const origin = client?.origin || "Desconocido";
+        totals[origin] = (totals[origin] || 0) + (s.comisionEstimada || 0);
+      });
+
+    return Object.entries(totals)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [sales, clients]);
+
   return (
     <div className="space-y-8 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -170,7 +213,7 @@ export default function Reports() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <ReportStat
           label="Ventas Totales Est. (USD)"
           value={formatCurrency(totalSalesEstimated, "USD")}
@@ -181,6 +224,18 @@ export default function Reports() {
           label="Operaciones Activas"
           value={activeSales.toString()}
           trend="+2"
+          trendType="up"
+        />
+        <ReportStat
+          label="Operaciones Vendidas"
+          value={soldSales.toString()}
+          trend="+1"
+          trendType="up"
+        />
+        <ReportStat
+          label="Pipeline Value (USD)"
+          value={formatCurrency(pipelineValue, "USD")}
+          trend="activo"
           trendType="up"
         />
         <ReportStat
@@ -287,6 +342,57 @@ export default function Reports() {
               </ResponsiveContainer>
             </div>
           </Card>
+
+          <Card
+            title="Operaciones Activas vs. Vendidas"
+            className="h-[400px]"
+          >
+            <div className="h-[300px] mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={activeVsSoldByMonth}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#f3f4f6"
+                  />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: "#9ca3af" }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: "#9ca3af" }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "12px",
+                      border: "none",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                    }}
+                    cursor={{ fill: "#f9fafb" }}
+                  />
+                  <Bar
+                    dataKey="activas"
+                    name="Activas"
+                    fill="#2563eb"
+                    radius={[4, 4, 0, 0]}
+                    barSize={20}
+                  />
+                  <Bar
+                    dataKey="vendidas"
+                    name="Vendidas"
+                    fill="#10b981"
+                    radius={[4, 4, 0, 0]}
+                    barSize={20}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
         </div>
 
         {/* Breakdown Charts */}
@@ -377,6 +483,49 @@ export default function Reports() {
                 }
                 color="bg-purple-500"
               />
+            </div>
+          </Card>
+
+          <Card title="Ranking de Origen de Leads Cerrados">
+            <div className="space-y-4">
+              {originRanking.length === 0 && (
+                <p className="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">
+                  Aún no hay ventas cerradas.
+                </p>
+              )}
+              {originRanking.map((item, idx) => (
+                <div key={item.name} className="space-y-1">
+                  <div className="flex justify-between items-center text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <span className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-black flex items-center justify-center text-slate-500">
+                        {idx + 1}
+                      </span>
+                      <span className="capitalize">{item.name}</span>
+                    </span>
+                    <span className="font-black text-slate-900 dark:text-slate-100">
+                      {formatCurrency(item.value, "USD")}
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-1000",
+                        idx === 0
+                          ? "bg-blue-500"
+                          : idx === 1
+                            ? "bg-violet-500"
+                            : "bg-emerald-500",
+                      )}
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          (item.value / (originRanking[0]?.value || 1)) * 100,
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>
         </div>
