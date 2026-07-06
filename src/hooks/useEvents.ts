@@ -4,6 +4,7 @@ import type { CalendarEvent } from "../types";
 import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
 import { getNextOccurrence, type RecurrenceFrequency } from "../lib/recurrence";
+import { syncEventToGoogle } from "../lib/googleCalendar";
 
 // Supabase usa snake_case para las columnas de recurrencia.
 function toEventDb(event: Partial<CalendarEvent>) {
@@ -11,6 +12,7 @@ function toEventDb(event: Partial<CalendarEvent>) {
     isRecurring,
     recurrenceFrequency,
     recurrenceEndDate,
+    googleCalendarEventId,
     createdAt,
     ...rest
   } = event;
@@ -23,6 +25,9 @@ function toEventDb(event: Partial<CalendarEvent>) {
     ...(recurrenceEndDate !== undefined && {
       recurrence_end_date: recurrenceEndDate,
     }),
+    ...(googleCalendarEventId !== undefined && {
+      google_calendar_event_id: googleCalendarEventId,
+    }),
   };
 }
 
@@ -32,6 +37,7 @@ function fromEventDb(row: any): CalendarEvent {
     isRecurring: row.is_recurring,
     recurrenceFrequency: row.recurrence_frequency,
     recurrenceEndDate: row.recurrence_end_date,
+    googleCalendarEventId: row.google_calendar_event_id,
   } as CalendarEvent;
 }
 
@@ -65,7 +71,19 @@ export function useEvents() {
         .insert({ ...toEventDb(rest), user_id: user!.id })
         .select();
       if (error) throw error;
-      return fromEventDb(data![0]);
+      const saved = fromEventDb(data![0]);
+
+      // Sincronizar con Google Calendar y guardar el ID remoto.
+      const { googleEventId } = await syncEventToGoogle("create", saved);
+      if (googleEventId && googleEventId !== saved.googleCalendarEventId) {
+        await supabase
+          .from("events")
+          .update({ google_calendar_event_id: googleEventId })
+          .eq("id", saved.id)
+          .eq("user_id", user!.id);
+      }
+
+      return saved;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -82,6 +100,16 @@ export function useEvents() {
         .eq("id", event.id)
         .eq("user_id", user!.id);
       if (error) throw error;
+
+      const { googleEventId } = await syncEventToGoogle("update", event);
+      if (googleEventId && googleEventId !== event.googleCalendarEventId) {
+        await supabase
+          .from("events")
+          .update({ google_calendar_event_id: googleEventId })
+          .eq("id", event.id)
+          .eq("user_id", user!.id);
+      }
+
       return event;
     },
     onSuccess: () => {
@@ -159,6 +187,17 @@ export function useEvents() {
 
   const deleteEvent = useMutation({
     mutationFn: async (eventId: string) => {
+      const { data: eventData, error: fetchError } = await supabase
+        .from("events")
+        .select("*")
+        .eq("id", eventId)
+        .eq("user_id", user!.id)
+        .single();
+      if (fetchError) throw fetchError;
+
+      const event = fromEventDb(eventData);
+      await syncEventToGoogle("delete", event);
+
       const { error } = await supabase
         .from("events")
         .delete()

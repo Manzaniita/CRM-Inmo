@@ -20,6 +20,9 @@ import {
   Tag,
   Mail,
   Pencil,
+  Calendar,
+  Plug,
+  Unlink,
 } from "lucide-react";
 import Button from "../components/Button";
 import { Card } from "../components/Card";
@@ -29,7 +32,7 @@ import { updateProfile } from "../hooks/useUpdateProfile";
 import { useCustomOptions } from "../hooks/useCustomOptions";
 import type { Profile, CustomOptions, CustomOptionItem } from "../types";
 import { supabase } from "../lib/supabase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUIStore } from "../stores/uiStore";
 import { useAuthStore } from "../stores/authStore";
 
@@ -41,18 +44,21 @@ interface UserProfile {
   must_change_password?: boolean;
 }
 
-type ConfigTabId = "perfil" | "plantillas" | "datos" | "usuarios" | "listas";
+type ConfigTabId = "perfil" | "plantillas" | "datos" | "usuarios" | "listas" | "integraciones";
 
 export default function Configuration() {
   const showToast = useUIStore((state) => state.showToast);
   const profile = useAuthStore((state) => state.profile);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<ConfigTabId>("perfil");
   const [saveStatus, setSaveStatus] = useState(false);
   const { customOptions, updateCustomOptions } = useCustomOptions();
 
   const [form, setForm] = useState<Profile>(profile ?? { name: '', email: '', phone: '', license: '', templateProperty: '', templateClient: '', templateBuyer: '', role: 'agent', must_change_password: false });
+  const [googleIntegration, setGoogleIntegration] = useState<{ email: string } | null>(null);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
 
   // Superadmin state
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
@@ -83,7 +89,21 @@ export default function Configuration() {
   };
 
   useEffect(() => {
+    const tab = searchParams.get("tab") as ConfigTabId;
+    if (tab && ["perfil", "listas", "usuarios", "integraciones"].includes(tab)) {
+      setActiveTab(tab);
+    }
     verifyRole();
+    fetchGoogleIntegration();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session?.provider_refresh_token) {
+          await saveGoogleIntegration(session);
+        }
+      },
+    );
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -92,6 +112,75 @@ export default function Configuration() {
       fetchUsers();
     }
   }, [activeTab, serverRole]);
+
+  const fetchGoogleIntegration = async () => {
+    if (!profile?.user_id) return;
+    const { data, error } = await supabase
+      .from("user_integrations")
+      .select("email")
+      .eq("user_id", profile.user_id)
+      .eq("provider", "google_calendar")
+      .single();
+    if (!error && data) {
+      setGoogleIntegration({ email: data.email });
+    } else {
+      setGoogleIntegration(null);
+    }
+  };
+
+  const saveGoogleIntegration = async (session: any) => {
+    const user = session.user;
+    if (!user || !session.provider_refresh_token) return;
+    const email = user.email || user.user_metadata?.email || "";
+    const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
+    const { error } = await supabase.from("user_integrations").upsert({
+      user_id: user.id,
+      provider: "google_calendar",
+      email,
+      refresh_token: session.provider_refresh_token,
+      access_token: session.provider_token,
+      expires_at: expiresAt,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) {
+      showToast("Error guardando integración con Google", "error");
+    } else {
+      setGoogleIntegration({ email });
+      showToast("Google Calendar conectado", "success");
+    }
+  };
+
+  const handleConnectGoogle = async () => {
+    setLoadingGoogle(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/configuracion?tab=integraciones`,
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+          scope: "https://www.googleapis.com/auth/calendar.events",
+        },
+      },
+    });
+    setLoadingGoogle(false);
+    if (error) showToast(error.message, "error");
+  };
+
+  const handleDisconnectGoogle = async () => {
+    if (!profile?.user_id) return;
+    const { error } = await supabase
+      .from("user_integrations")
+      .delete()
+      .eq("user_id", profile.user_id)
+      .eq("provider", "google_calendar");
+    if (error) {
+      showToast(error.message, "error");
+    } else {
+      setGoogleIntegration(null);
+      showToast("Google Calendar desconectado", "info");
+    }
+  };
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -366,6 +455,12 @@ export default function Configuration() {
               onClick={() => setActiveTab("usuarios")}
             />
           )}
+          <ConfigTab
+            icon={Calendar}
+            label="Integraciones"
+            active={activeTab === "integraciones"}
+            onClick={() => setActiveTab("integraciones")}
+          />
         </div>
 
         {/* Content Area */}
@@ -569,6 +664,59 @@ export default function Configuration() {
                 options={customOptions}
                 onChange={updateCustomOptions}
               />
+            </Card>
+          )}
+
+          {activeTab === "integraciones" && (
+            <Card
+              title="Integraciones"
+              subtitle="Conectá EstateCRM con servicios externos."
+            >
+              <div className="pt-4 space-y-6">
+                <div className="flex items-start gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40">
+                  <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <Calendar size={24} strokeWidth={1.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100">
+                      Google Calendar
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                      Sincronizá automáticamente los eventos de tu Agenda con
+                      cualquier calendario de Google.
+                    </p>
+                    {googleIntegration ? (
+                      <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <Badge variant="green" size="sm">
+                          Conectado: {googleIntegration.email}
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDisconnectGoogle}
+                          className="gap-2"
+                        >
+                          <Unlink size={16} />
+                          Desconectar
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="mt-3">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={handleConnectGoogle}
+                          isLoading={loadingGoogle}
+                          className="gap-2"
+                        >
+                          <Plug size={16} />
+                          Conectar Google Calendar
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </Card>
           )}
 

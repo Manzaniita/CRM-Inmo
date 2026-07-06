@@ -95,6 +95,17 @@ export interface CalendarEvent {
   recurrenceFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
   recurrenceEndDate?: string;
   source?: 'manual' | 'auto_birthday';
+  googleCalendarEventId?: string;
+}
+
+export interface UserIntegration {
+  user_id: string;
+  provider: string;
+  email: string;
+  refresh_token?: string;
+  access_token?: string;
+  expires_at?: string;
+  updated_at?: string;
 }
 
 export type TaskStatus = 'pendiente' | 'en proceso' | 'completada' | 'vencida' | 'reprogramado' | 'cancelada';
@@ -360,4 +371,5 @@ export interface Profile {
   templateBuyer: string;
   role?: 'agent' | 'superadmin';
   must_change_password?: boolean;
+  googleEmail?: string;
 }

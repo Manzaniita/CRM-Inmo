@@ -34,6 +34,7 @@ import Badge from "../components/Badge";
 import Button from "../components/Button";
 import SearchableSelect from "../components/SearchableSelect";
 import { cn, formatDate } from "../lib/utils";
+import { isOverdue } from "../lib/dates";
 import { formatRecurrenceLabel, type RecurrenceFrequency } from "../lib/recurrence";
 import { generateId } from "../lib/id";
 import { validateTask } from "../lib/validators";
@@ -64,6 +65,7 @@ export default function Tasks() {
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterEntityType, setFilterEntityType] = useState<string>("all");
+  const [showCompleted, setShowCompleted] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -132,6 +134,45 @@ export default function Tasks() {
       })();
     return matchesSearch && matchesPriority && matchesStatus && matchesEntity;
   });
+
+  const priorityRank: Record<TaskPriority, number> = {
+    urgente: 0,
+    alta: 1,
+    media: 2,
+    baja: 3,
+  };
+
+  const sortedTasks = [...filteredTasks]
+    .filter((t) => showCompleted || t.status !== "completada")
+    .sort((a, b) => {
+      const aCompleted = a.status === "completada";
+      const bCompleted = b.status === "completada";
+
+      // Completadas siempre al final
+      if (aCompleted && !bCompleted) return 1;
+      if (!aCompleted && bCompleted) return -1;
+
+      if (aCompleted && bCompleted) {
+        // Entre completadas, ordenar por fecha de creación descendente
+        return (b.createdAt || "").localeCompare(a.createdAt || "");
+      }
+
+      // 1. Vencidas primero
+      const aOverdue = isOverdue(a.dueDate);
+      const bOverdue = isOverdue(b.dueDate);
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+
+      // 2. Por prioridad
+      const pa = priorityRank[a.priority] ?? 99;
+      const pb = priorityRank[b.priority] ?? 99;
+      if (pa !== pb) return pa - pb;
+
+      // 3. Por fecha límite más cercana
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return a.dueDate.localeCompare(b.dueDate);
+    });
 
   const handleOpenForm = (task?: Task) => {
     if (task) {
@@ -586,11 +627,11 @@ export default function Tasks() {
                 {status}
               </h3>
               <Badge variant={getStatusVariant(status)} size="sm">
-                {filteredTasks.filter((t) => t.status === status).length}
+                {sortedTasks.filter((t) => t.status === status).length}
               </Badge>
             </div>
             <div className="flex-1 space-y-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-              {filteredTasks
+              {sortedTasks
                 .filter((t) => t.status === status)
                 .map((task) => (
                   <div
@@ -647,7 +688,7 @@ export default function Tasks() {
   const renderList = () => (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div className="divide-y divide-gray-100">
-        {filteredTasks.map((task) => (
+        {sortedTasks.map((task) => (
           <div
             key={task.id}
             className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-4 group"
@@ -825,14 +866,15 @@ export default function Tasks() {
           </div>
         ))}
 
-        {filteredTasks.length === 0 && (
+        {sortedTasks.length === 0 && (
           <div className="py-20 text-center">
             <CheckSquare size={48} className="mx-auto text-gray-200 mb-4" />
             <p className="text-slate-500 dark:text-slate-400 font-medium">
               {searchTerm ||
               filterPriority !== "all" ||
               filterStatus !== "all" ||
-              filterEntityType !== "all"
+              filterEntityType !== "all" ||
+              showCompleted
                 ? "No se encontraron tareas con los filtros actuales."
                 : "No hay tareas pendientes."}
             </p>
@@ -989,6 +1031,15 @@ export default function Tasks() {
             <option value="media">Media</option>
             <option value="baja">Baja</option>
           </select>
+          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={showCompleted}
+              onChange={(e) => setShowCompleted(e.target.checked)}
+              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            Ver completadas
+          </label>
         </div>
       </div>
 
