@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import type { CalendarEvent } from "../types";
 import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
+import { getNextOccurrence, type RecurrenceFrequency } from "../lib/recurrence";
 
 const fetchEvents = async () => {
   const user = useAuthStore.getState().user;
@@ -62,12 +63,44 @@ export function useEvents() {
 
   const completeEvent = useMutation({
     mutationFn: async (eventId: string) => {
-      const { error } = await supabase
+      const { data: eventData, error: fetchError } = await supabase
         .from("events")
-        .update({ status: "realizado" })
+        .select("*")
         .eq("id", eventId)
-        .eq("user_id", user!.id);
-      if (error) throw error;
+        .eq("user_id", user!.id)
+        .single();
+      if (fetchError) throw fetchError;
+
+      const event = eventData as CalendarEvent;
+      if (
+        event.isRecurring &&
+        event.recurrenceFrequency &&
+        (!event.recurrenceEndDate || event.date <= event.recurrenceEndDate)
+      ) {
+        const nextDate = getNextOccurrence(
+          event.date,
+          event.recurrenceFrequency as RecurrenceFrequency,
+          new Date(),
+        );
+        const active =
+          !event.recurrenceEndDate || nextDate <= event.recurrenceEndDate;
+        const { error } = await supabase
+          .from("events")
+          .update({
+            date: nextDate,
+            status: active ? "pendiente" : "realizado",
+          })
+          .eq("id", eventId)
+          .eq("user_id", user!.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("events")
+          .update({ status: "realizado" })
+          .eq("id", eventId)
+          .eq("user_id", user!.id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });

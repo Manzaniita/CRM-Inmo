@@ -35,6 +35,7 @@ export interface Client {
   referredByClientId?: string;
   dashboardPinned?: boolean;
   dashboardArchived?: boolean;
+  birthdate?: string;
 }
 
 export type PropertyType = string;
@@ -90,6 +91,10 @@ export interface CalendarEvent {
   propertyId?: string;
   notes?: string;
   createdAt: string;
+  isRecurring?: boolean;
+  recurrenceFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  recurrenceEndDate?: string;
+  source?: 'manual' | 'auto_birthday';
 }
 
 export type TaskStatus = 'pendiente' | 'en proceso' | 'completada' | 'vencida' | 'reprogramado' | 'cancelada';
@@ -111,9 +116,12 @@ export interface Task {
   propertyId?: string;
   notes?: string;
   createdAt: string;
-  source?: 'manual' | 'auto_contract_renewal';
+  source?: 'manual' | 'auto_contract_renewal' | 'auto_birthday';
   autoKey?: string;
   relatedEntities?: TaskRelatedEntity[];
+  isRecurring?: boolean;
+  recurrenceFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  recurrenceEndDate?: string;
 }
 
 export type SaleStatus = 'activa' | 'vendida' | 'caída';

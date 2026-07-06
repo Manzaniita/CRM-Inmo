@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import type { Task } from "../types";
 import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
+import { getNextOccurrence, type RecurrenceFrequency } from "../lib/recurrence";
 
 const fetchTasks = async () => {
   const user = useAuthStore.getState().user;
@@ -65,12 +66,44 @@ export function useTasks() {
 
   const completeTask = useMutation({
     mutationFn: async (taskId: string) => {
-      const { error } = await supabase
+      const { data: taskData, error: fetchError } = await supabase
         .from("tasks")
-        .update({ status: "completada" })
+        .select("*")
         .eq("id", taskId)
-        .eq("user_id", user!.id);
-      if (error) throw error;
+        .eq("user_id", user!.id)
+        .single();
+      if (fetchError) throw fetchError;
+
+      const task = taskData as Task;
+      if (
+        task.isRecurring &&
+        task.recurrenceFrequency &&
+        (!task.recurrenceEndDate || task.dueDate <= task.recurrenceEndDate)
+      ) {
+        const nextDueDate = getNextOccurrence(
+          task.dueDate,
+          task.recurrenceFrequency as RecurrenceFrequency,
+          new Date(),
+        );
+        const active =
+          !task.recurrenceEndDate || nextDueDate <= task.recurrenceEndDate;
+        const { error } = await supabase
+          .from("tasks")
+          .update({
+            dueDate: nextDueDate,
+            status: active ? "pendiente" : "completada",
+          })
+          .eq("id", taskId)
+          .eq("user_id", user!.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("tasks")
+          .update({ status: "completada" })
+          .eq("id", taskId)
+          .eq("user_id", user!.id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });

@@ -34,6 +34,7 @@ import Badge from "../components/Badge";
 import Button from "../components/Button";
 import SearchableSelect from "../components/SearchableSelect";
 import { cn, formatDate } from "../lib/utils";
+import { formatRecurrenceLabel, type RecurrenceFrequency } from "../lib/recurrence";
 import { generateId } from "../lib/id";
 import { validateTask } from "../lib/validators";
 import { useUIStore } from "../stores/uiStore";
@@ -77,6 +78,9 @@ export default function Tasks() {
     clientId: "",
     propertyId: "",
     relatedEntities: [],
+    isRecurring: false,
+    recurrenceFrequency: undefined,
+    recurrenceEndDate: "",
   });
 
   React.useEffect(() => {
@@ -144,6 +148,9 @@ export default function Tasks() {
         notes: "",
         clientId: "",
         propertyId: "",
+        isRecurring: false,
+        recurrenceFrequency: undefined,
+        recurrenceEndDate: "",
       });
     }
     setIsFormOpen(true);
@@ -194,14 +201,13 @@ export default function Tasks() {
   };
 
   const quickComplete = (task: Task) => {
-    updateTask({ ...task, status: "completada" });
+    completeTask(task.id);
     addActivityLog({
       type: "task",
       action: "status_changed",
       title: `Tarea completada: ${task.title}`,
       entityId: task.id,
     });
-    showToast("Tarea completada", "success");
   };
 
   const quickReschedule = (task: Task) => {
@@ -377,6 +383,66 @@ export default function Tasks() {
                   setFormData({ ...formData, dueDate: e.target.value })
                 }
               />
+            </div>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-3">
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isRecurring || false}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      isRecurring: e.target.checked,
+                      recurrenceFrequency: e.target.checked
+                        ? formData.recurrenceFrequency || "yearly"
+                        : undefined,
+                    })
+                  }
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                Tarea recurrente
+              </label>
+              {formData.isRecurring && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                      Frecuencia
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                      value={formData.recurrenceFrequency || "yearly"}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          recurrenceFrequency:
+                            e.target.value as RecurrenceFrequency,
+                        })
+                      }
+                    >
+                      <option value="daily">Diaria</option>
+                      <option value="weekly">Semanal</option>
+                      <option value="monthly">Mensual</option>
+                      <option value="yearly">Anual</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                      Fin (opcional)
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                      value={formData.recurrenceEndDate || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          recurrenceEndDate: e.target.value || undefined,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <div className="space-y-3">
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
@@ -614,6 +680,14 @@ export default function Tasks() {
                 <Badge variant={getPriorityVariant(task.priority)} size="sm">
                   {task.priority}
                 </Badge>
+                {task.isRecurring && (
+                  <Badge variant="purple" size="sm">
+                    {formatRecurrenceLabel(
+                      task.recurrenceFrequency,
+                      task.recurrenceEndDate,
+                    )}
+                  </Badge>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-400 dark:text-slate-500">
                 <div className="flex items-center gap-1">

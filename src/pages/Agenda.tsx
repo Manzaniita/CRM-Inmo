@@ -34,6 +34,7 @@ import Button from "../components/Button";
 import { Card } from "../components/Card";
 import SearchableSelect from "../components/SearchableSelect";
 import { cn, formatDate, normalizeSearchText } from "../lib/utils";
+import { formatRecurrenceLabel, type RecurrenceFrequency } from "../lib/recurrence";
 import { generateId } from "../lib/id";
 import { useUIStore } from "../stores/uiStore";
 import { useProperties } from "../hooks/useProperties";
@@ -115,6 +116,9 @@ export default function Agenda() {
     clientId: "",
     propertyId: "",
     notes: "",
+    isRecurring: false,
+    recurrenceFrequency: undefined,
+    recurrenceEndDate: "",
   });
 
   React.useEffect(() => {
@@ -208,6 +212,9 @@ export default function Agenda() {
         clientId: "",
         propertyId: "",
         notes: "",
+        isRecurring: false,
+        recurrenceFrequency: undefined,
+        recurrenceEndDate: "",
       });
     }
     setIsFormOpen(true);
@@ -434,6 +441,66 @@ export default function Agenda() {
                 emptyLabel="Ninguna"
               />
             </div>
+          </div>
+          <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-3">
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.isRecurring || false}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    isRecurring: e.target.checked,
+                    recurrenceFrequency: e.target.checked
+                      ? formData.recurrenceFrequency || "yearly"
+                      : undefined,
+                  })
+                }
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              Evento recurrente
+            </label>
+            {formData.isRecurring && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                    Frecuencia
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={formData.recurrenceFrequency || "yearly"}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        recurrenceFrequency:
+                          e.target.value as RecurrenceFrequency,
+                      })
+                    }
+                  >
+                    <option value="daily">Diaria</option>
+                    <option value="weekly">Semanal</option>
+                    <option value="monthly">Mensual</option>
+                    <option value="yearly">Anual</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                    Fin (opcional)
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    value={formData.recurrenceEndDate || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        recurrenceEndDate: e.target.value || undefined,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">
@@ -717,6 +784,14 @@ export default function Agenda() {
                           <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate">
                             {event.title}
                           </h4>
+                          {event.isRecurring && (
+                            <Badge variant="purple" size="sm">
+                              {formatRecurrenceLabel(
+                                event.recurrenceFrequency,
+                                event.recurrenceEndDate,
+                              )}
+                            </Badge>
+                          )}
                           {isEventOverdue(event) && (
                             <AlertTriangle
                               size={14}

@@ -58,6 +58,7 @@ import {
 } from "../lib/utils";
 import { generateId } from "../lib/id";
 import { validateClient, validateTask } from "../lib/validators";
+import { getUpcomingBirthday } from "../lib/recurrence";
 
 import { useRelationsDrawer } from "../context/RelationsDrawerContext";
 import EntityNotesPanel from "../components/EntityNotesPanel";
@@ -245,6 +246,7 @@ export default function Clients() {
     referredByClientId: "",
     dashboardPinned: false,
     dashboardArchived: false,
+    birthdate: "",
   });
 
   const selectedClient = clients.find((c) => c.id === effectiveClientId);
@@ -271,6 +273,7 @@ export default function Clients() {
         referredByClientId: "",
         dashboardPinned: false,
         dashboardArchived: false,
+        birthdate: "",
       });
       setSelectedColleagueId(colleagueId);
       setReferralType("colleague");
@@ -423,6 +426,7 @@ export default function Clients() {
         referredByClientId: "",
         dashboardPinned: false,
         dashboardArchived: false,
+        birthdate: "",
       });
       setSelectedColleagueId("");
       setSelectedClientReferrerId("");
@@ -1143,6 +1147,15 @@ export default function Clients() {
                   label="Último Contacto"
                   value={formatDate(selectedClient.lastContact || "")}
                 />
+                {selectedClient.birthdate && (
+                  <BentoInfoItem
+                    icon={Calendar}
+                    label="Fecha de Nacimiento"
+                    value={`${formatDate(selectedClient.birthdate)} (${formatDate(
+                      getUpcomingBirthday(selectedClient.birthdate),
+                    )})`}
+                  />
+                )}
               </div>
             </Card>
 
@@ -1436,6 +1449,17 @@ export default function Clients() {
                     </span>
                     <span className="font-medium text-slate-900 dark:text-slate-100">
                       {selectedClient.profession}
+                    </span>
+                  </div>
+                )}
+                {selectedClient.birthdate && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">
+                      Cumpleaños
+                    </span>
+                    <span className="font-medium text-slate-900 dark:text-slate-100">
+                      {formatDate(selectedClient.birthdate)} (próximo:{" "}
+                      {formatDate(getUpcomingBirthday(selectedClient.birthdate))})
                     </span>
                   </div>
                 )}
@@ -2146,6 +2170,23 @@ export default function Clients() {
                     setFormData({ ...formData, lastContact: e.target.value })
                   }
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Fecha de Nacimiento
+                </label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                  value={formData.birthdate || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, birthdate: e.target.value })
+                  }
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Si completás esta fecha se creará automáticamente un evento y
+                  una tarea anual de cumpleaños.
+                </p>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">

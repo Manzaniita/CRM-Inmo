@@ -21,6 +21,9 @@ export function validateClient(client: Partial<Client>): ValidationResult {
   if (email && !isValidEmail(email)) {
     return { valid: false, message: 'El formato del email no es válido.' };
   }
+  if (client.birthdate && !/^\d{4}-\d{2}-\d{2}$/.test(client.birthdate)) {
+    return { valid: false, message: 'La fecha de nacimiento no es válida.' };
+  }
   return { valid: true };
 }
 
