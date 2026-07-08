@@ -6,26 +6,17 @@ const TIMEZONE = "America/Argentina/Buenos_Aires";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 
-function toArgentinaISOString(dateStr: string, timeStr: string): string {
-  // Argentina mantiene UTC-3 todo el año (sin horario de verano).
-  const [hours, minutes] = timeStr.split(":").map(Number);
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setHours(hours, minutes, 0, 0);
-  // Convertir a UTC restando 3 horas.
-  const utc = new Date(d.getTime() - 3 * 60 * 60 * 1000);
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${utc.getFullYear()}-${pad(utc.getMonth() + 1)}-${pad(utc.getDate())}T${pad(utc.getHours())}:${pad(utc.getMinutes())}:00-03:00`;
+function toISOString(dateStr: string, timeStr: string): string {
+  // El frontend envía date (YYYY-MM-DD) y time (HH:mm). Se construye un
+  // ISO string a partir de la combinación exacta, tal como lo espera
+  // Google Calendar para el campo dateTime.
+  return new Date(`${dateStr}T${timeStr || "09:00"}`).toISOString();
 }
 
-function addOneHourArgentina(iso: string): string {
-  // iso termina en -03:00; parseamos como hora local argentina.
-  const base = iso.slice(0, -6); // "yyyy-MM-ddTHH:mm:ss"
-  const d = new Date(`${base}-03:00`);
+function addOneHour(iso: string): string {
+  const d = new Date(iso);
   d.setHours(d.getHours() + 1);
-  return toArgentinaISOString(
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
-    `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
-  );
+  return d.toISOString();
 }
 
 async function getValidAccessToken(
@@ -86,8 +77,13 @@ async function getValidAccessToken(
 }
 
 function buildEventBody(event: any) {
-  const start = toArgentinaISOString(event.date, event.time || "09:00");
-  const end = addOneHourArgentina(start);
+  const date = event.date;
+  const time = event.time || "09:00";
+  if (!date) {
+    throw new Error("El evento no tiene fecha (date)");
+  }
+  const start = toISOString(date, time);
+  const end = addOneHour(start);
   return {
     summary: event.title || "Evento EstateCRM",
     description: event.description || event.notes || "",
@@ -119,9 +115,15 @@ export default async function handler(req: any, res: any) {
       return res.status(401).json({ error: "No autorizado" });
     }
 
+    console.log("GOOGLE CALENDAR SYNC BODY:", JSON.stringify(req.body, null, 2));
+
     const { action, event } = req.body;
+    console.log("GOOGLE CALENDAR SYNC EVENT:", JSON.stringify(event, null, 2));
     if (!action || !event) {
       return res.status(400).json({ error: "Faltan action o event" });
+    }
+    if (!event.date) {
+      return res.status(400).json({ error: "Falta event.date" });
     }
 
     const accessToken = await getValidAccessToken(supabaseAdmin, caller.id);

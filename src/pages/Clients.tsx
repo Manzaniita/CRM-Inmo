@@ -24,6 +24,7 @@ import {
   MoreVertical,
   Download,
   Trash2,
+  ShoppingBag,
 } from "lucide-react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { motion } from "motion/react";
@@ -92,7 +93,7 @@ function padNumber(n: number) {
 
 function BirthdayInput({
   value,
-  includeYear,
+  includeYear: includeYearProp,
   onChange,
 }: {
   value?: string;
@@ -103,31 +104,37 @@ function BirthdayInput({
   const [day, setDay] = useState(parts.day);
   const [month, setMonth] = useState(parts.month);
   const [year, setYear] = useState(parts.year);
+  const [localIncludeYear, setLocalIncludeYear] = useState(includeYearProp);
 
   useEffect(() => {
     const p = parseBirthdateParts(value);
     setDay(p.day);
     setMonth(p.month);
     setYear(p.year);
-  }, [value]);
+    setLocalIncludeYear(includeYearProp);
+  }, [value, includeYearProp]);
 
-  const update = (
+  const buildDateStr = (
+    d: string,
+    m: string,
+    y: string,
+    includeY: boolean,
+  ): string => {
+    const dayNum = Number(d) || 0;
+    const monthNum = Number(m) || 0;
+    if (dayNum === 0 || monthNum === 0) return "";
+    const yearStr = includeY && y.length === 4 ? y : "1900";
+    return `${yearStr}-${padNumber(monthNum)}-${padNumber(dayNum)}`;
+  };
+
+  const commit = (
     nextDay: string,
     nextMonth: string,
     nextYear: string,
     nextIncludeYear: boolean,
   ) => {
-    const d = padNumber(Number(nextDay) || 0);
-    const m = padNumber(Number(nextMonth) || 0);
-    if (d === "00" || m === "00") {
-      onChange("", nextIncludeYear);
-      return;
-    }
-    if (nextIncludeYear && nextYear.length === 4) {
-      onChange(`${nextYear}-${m}-${d}`, nextIncludeYear);
-    } else {
-      onChange(`1900-${m}-${d}`, false);
-    }
+    const dateStr = buildDateStr(nextDay, nextMonth, nextYear, nextIncludeYear);
+    onChange(dateStr, nextIncludeYear);
   };
 
   return (
@@ -142,9 +149,12 @@ function BirthdayInput({
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "").slice(0, 2);
             setDay(v);
-            update(v, month, year, includeYear);
           }}
-          onBlur={() => setDay(padNumber(Number(day) || 0))}
+          onBlur={() => {
+            const padded = padNumber(Number(day) || 0);
+            setDay(padded);
+            commit(padded, month, year, localIncludeYear);
+          }}
           className="w-20 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent/50"
         />
         <span className="text-slate-400">/</span>
@@ -157,25 +167,29 @@ function BirthdayInput({
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "").slice(0, 2);
             setMonth(v);
-            update(day, v, year, includeYear);
           }}
-          onBlur={() => setMonth(padNumber(Number(month) || 0))}
+          onBlur={() => {
+            const padded = padNumber(Number(month) || 0);
+            setMonth(padded);
+            commit(day, padded, year, localIncludeYear);
+          }}
           className="w-20 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent/50"
         />
         <label className="flex items-center gap-2 ml-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
           <input
             type="checkbox"
-            checked={includeYear}
+            checked={localIncludeYear}
             onChange={(e) => {
               const checked = e.target.checked;
-              onChange(value || "", checked);
+              setLocalIncludeYear(checked);
+              commit(day, month, year, checked);
             }}
             className="rounded border-slate-300 text-accent focus:ring-accent"
           />
           Incluir año
         </label>
       </div>
-      {includeYear && (
+      {localIncludeYear && (
         <input
           type="number"
           placeholder="Año"
@@ -185,11 +199,15 @@ function BirthdayInput({
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "").slice(0, 4);
             setYear(v);
-            update(day, month, v, includeYear);
           }}
           onBlur={() => {
             const y = Number(year);
-            if (y < 1900 || y > new Date().getFullYear()) setYear("");
+            if (y < 1900 || y > new Date().getFullYear()) {
+              setYear("");
+              commit(day, month, "", localIncludeYear);
+            } else {
+              commit(day, month, String(y), localIncludeYear);
+            }
           }}
           className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
         />
@@ -290,7 +308,7 @@ export default function Clients() {
   const { sales, addSale, updateSale, deleteSale } = useSales();
   const { tasks, addTask, updateTask, deleteTask } = useTasks();
   const { events, addEvent, updateEvent, deleteEvent } = useEvents();
-  const { clients, isLoading, addClient, updateClient } = useClients();
+  const { clients, isLoading, addClient, updateClient, deleteClient } = useClients();
   const { properties } = useProperties();
   const { rentals, addRental, updateRental, deleteRental } = useRentals();
   const { documents, addDocument, updateDocument, deleteDocument } =
@@ -320,6 +338,7 @@ export default function Clients() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [duplicateClient, setDuplicateClient] = useState<Client | null>(null);
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [docModalMode, setDocModalMode] = useState<"create" | "edit" | "view">(
     "view",
@@ -671,12 +690,33 @@ export default function Clients() {
           createdAt: new Date().toISOString().split("T")[0],
         };
 
-    // Normalizar fecha de nacimiento (sin año -> 1900)
-    if (clientData.birthdate) {
+    // Limpiar fecha de nacimiento vacía para que sea realmente opcional
+    if (!clientData.birthdate || clientData.birthdate.trim() === "") {
+      delete (clientData as Partial<Client>).birthdate;
+    } else {
+      // Normalizar fecha de nacimiento (sin año -> 1900)
       clientData.birthdate = normalizeBirthdate(
         clientData.birthdate,
         includeBirthYear,
       );
+    }
+
+    // Verificar duplicados por teléfono o email (solo en creación)
+    if (!editingClient) {
+      const phone = clientData.phone?.trim().toLowerCase() || "";
+      const email = clientData.email?.trim().toLowerCase() || "";
+      const existing = clients.find((c) => {
+        if (c.id === clientData.id) return false;
+        const samePhone =
+          phone && c.phone?.trim().toLowerCase() === phone;
+        const sameEmail =
+          email && c.email?.trim().toLowerCase() === email;
+        return samePhone || sameEmail;
+      });
+      if (existing) {
+        setDuplicateClient(existing);
+        return;
+      }
     }
 
     // Handle referral logic
@@ -1276,13 +1316,48 @@ export default function Clients() {
               className="transition-transform group-hover:-translate-x-0.5"
             />
           </motion.button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleOpenForm(selectedClient)}
-          >
-            <Plus size={16} className="mr-1" strokeWidth={1.5} /> Editar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleOpenForm(selectedClient)}
+            >
+              <Plus size={16} className="mr-1" strokeWidth={1.5} /> Editar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const types = selectedClient.types?.length
+                  ? [...selectedClient.types]
+                  : [selectedClient.type || "interesado"];
+                if (!types.includes("comprador")) {
+                  updateClient({
+                    ...selectedClient,
+                    types: [...types, "comprador"],
+                  });
+                  showToast("Cliente marcado como comprador", "success");
+                } else {
+                  showToast("El cliente ya es comprador", "info");
+                }
+              }}
+            >
+              <ShoppingBag size={16} className="mr-1" strokeWidth={1.5} /> Marcar como Comprador
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-800 dark:hover:bg-rose-900/20"
+              onClick={() => {
+                if (window.confirm("¿Estás seguro de eliminar este cliente?")) {
+                  deleteClient(selectedClient.id);
+                  navigate("/clientes");
+                }
+              }}
+            >
+              <Trash2 size={16} className="mr-1" strokeWidth={1.5} /> Eliminar
+            </Button>
+          </div>
         </div>
 
         {/* Bento Grid */}
@@ -2535,6 +2610,53 @@ export default function Clients() {
     );
   }
 
+  function renderDuplicateModal() {
+    if (!duplicateClient) return null;
+    return (
+      <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+          onClick={() => setDuplicateClient(null)}
+        />
+        <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md relative z-10 shadow-2xl p-6">
+          <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 mb-2">
+            Cliente duplicado
+          </h3>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
+            Este cliente ya existe ({duplicateClient.name}). ¿Querés editarlo o ir a su ficha?
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setDuplicateClient(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDuplicateClient(null);
+                setIsFormModalOpen(false);
+                navigate(`/clientes/${duplicateClient.id}`);
+              }}
+            >
+              Ir a ficha
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setDuplicateClient(null);
+                handleOpenForm(duplicateClient);
+              }}
+            >
+              Editar
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -2856,6 +2978,19 @@ export default function Clients() {
                         {s.label}
                       </button>
                     ))}
+                    <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
+                    <button
+                      className="w-full text-left px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuClientId(null);
+                        if (window.confirm("¿Estás seguro de eliminar este cliente?")) {
+                          deleteClient(client.id);
+                        }
+                      }}
+                    >
+                      Eliminar
+                    </button>
                   </div>
                 )}
               </div>
@@ -2886,6 +3021,8 @@ export default function Clients() {
       </div>
 
       {isFormModalOpen && renderFormModal()}
+
+      {duplicateClient && renderDuplicateModal()}
     </div>
   );
 }

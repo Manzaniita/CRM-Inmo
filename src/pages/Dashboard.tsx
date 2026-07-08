@@ -191,7 +191,9 @@ export default function Dashboard() {
 
   // Alertas
   const overdueTasks = tasks.filter(
-    (t) => isOverdue(t.dueDate) && t.status !== "completada",
+    (t) =>
+      isOverdue(t.dueDate) &&
+      !["completada", "cancelada"].includes(t.status),
   );
   const todayTasks = tasks.filter(
     (t) => isToday(t.dueDate) && t.status !== "completada",
@@ -377,7 +379,7 @@ export default function Dashboard() {
                 color="red"
                 text={`${overdueTasks.length} tarea${overdueTasks.length > 1 ? "s" : ""} vencida${overdueTasks.length > 1 ? "s" : ""}`}
                 actionText="Ver"
-                onAction={() => navigate("/tareas")}
+                onAction={() => navigate("/tareas?status=vencida")}
               />
             )}
             {todayTasks.length > 0 && (

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useBuyers } from "../hooks/useBuyers";
+import { useClients } from "../hooks/useClients";
 import { useActivityLogs } from "../hooks/useActivityLogs";
 import { useRelationsDrawer } from "../context/RelationsDrawerContext";
 import Badge from "../components/Badge";
@@ -48,6 +49,7 @@ function BuyerOperationMenu({
   onEdit,
   onViewRelations,
   onDelete,
+  onRemoveFromBuyers,
 }: {
   buyer: Buyer;
   onUpdate: (b: Buyer) => void;
@@ -56,6 +58,7 @@ function BuyerOperationMenu({
   onEdit: () => void;
   onViewRelations: () => void;
   onDelete: () => void;
+  onRemoveFromBuyers: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -192,6 +195,16 @@ function BuyerOperationMenu({
             >
               Eliminar
             </button>
+            <button
+              className="w-full text-left px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-slate-700/50 text-orange-700 dark:text-orange-400 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(false);
+                onRemoveFromBuyers();
+              }}
+            >
+              Quitar de compradores
+            </button>
           </div>,
           document.body,
         )}
@@ -201,6 +214,7 @@ function BuyerOperationMenu({
 
 export default function BuyersPage() {
   const { buyers, isLoading, addBuyer, updateBuyer, deleteBuyer } = useBuyers();
+  const { clients, updateClient } = useClients();
   const { addActivityLog } = useActivityLogs();
   const showToast = useUIStore((state) => state.showToast);
   const profile = useAuthStore((state) => state.profile);
@@ -302,6 +316,29 @@ export default function BuyersPage() {
     if (confirm("¿Eliminar este comprador?")) {
       deleteBuyer(id);
     }
+  };
+
+  const handleRemoveFromBuyers = (buyer: Buyer) => {
+    // Marcar el comprador como descartado
+    updateBuyer({ ...buyer, estado: "descartado" });
+    // Quitar el tipo 'comprador' del cliente asociado, sin eliminarlo
+    const linkedClient = clients.find((c) => c.buyerId === buyer.id);
+    if (linkedClient) {
+      const updatedTypes = (linkedClient.types || [linkedClient.type]).filter(
+        (t) => t !== "comprador",
+      );
+      updateClient({
+        ...linkedClient,
+        types: updatedTypes.length > 0 ? updatedTypes : ["interesado"],
+      });
+    }
+    addActivityLog({
+      type: "buyer",
+      action: "status_changed",
+      title: `Comprador ${buyer.nombre} quitado de la lista`,
+      entityId: buyer.id,
+    });
+    showToast("Comprador quitado de la lista", "info");
   };
 
   return (
@@ -444,6 +481,7 @@ export default function BuyersPage() {
                     onEdit={() => openForm(buyer)}
                     onViewRelations={() => openRelations("buyer", buyer.id)}
                     onDelete={() => handleDelete(buyer.id)}
+                    onRemoveFromBuyers={() => handleRemoveFromBuyers(buyer)}
                   />
                 </div>
               </Card>

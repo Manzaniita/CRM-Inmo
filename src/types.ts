@@ -162,9 +162,11 @@ export interface Sale {
   comprador?: string;
   inmoAgente?: string;
   puntas?: number;
+  // Campos financieros (estrictamente number, nunca string)
   porcentajeBruto?: number;
   porcentajeNeto?: number;
   porcentajeReferido?: number;
+  montoReferido?: number;
   valorOfertado?: number;
   contraoferta1?: number;
   contraoferta2?: number;

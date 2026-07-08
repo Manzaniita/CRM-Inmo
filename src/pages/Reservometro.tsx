@@ -995,21 +995,24 @@ function SaleFormModal({
       vendedorInmobiliaria: "",
       inmoAgente: "",
       puntas: undefined,
-      porcentajeBruto: undefined,
-      porcentajeNeto: undefined,
-      porcentajeReferido: undefined,
+      // Valores base
       valorOfertado: undefined,
       contraoferta1: undefined,
       contraoferta2: undefined,
       valorCierre: undefined,
+      // Comisiones en cascada (inicializados en 0)
+      porcentajeBruto: 0,
+      grossCommissionUsd: 0,
+      porcentajeReferido: 0,
+      montoReferido: 0,
+      gastosOficina: 0,
+      porcentajeNeto: 0,
+      comisionNetaFinal: 0,
       escribania: "",
       montoEscritura: undefined,
       infoExtra: "",
       presupuesto: undefined,
       isCollected: false,
-      grossCommissionUsd: undefined,
-      gastosOficina: undefined,
-      comisionNetaFinal: undefined,
       fechaCreacion: new Date().toISOString().split("T")[0],
       externalPropertyAddress: "",
       externalPropertyLink: "",
@@ -1018,17 +1021,130 @@ function SaleFormModal({
     };
   });
 
-  // Cálculo automático de comisión neta final
+  // Helpers para sincronizar % y montos sin ciclos infinitos
+  const computeBrutaFromPct = (valorCierre: number, pct: number) =>
+    valorCierre * (pct / 100);
+  const computePctFromBruta = (valorCierre: number, bruta: number) =>
+    valorCierre > 0 ? (bruta / valorCierre) * 100 : 0;
+  const computeMontoFromPct = (bruta: number, pct: number) =>
+    bruta * (pct / 100);
+  const computePctFromMonto = (bruta: number, monto: number) =>
+    bruta > 0 ? (monto / bruta) * 100 : 0;
+  const computeNetaFinal = (bruta: number, colega: number, gastos: number) =>
+    bruta - colega - gastos;
+
+  // Recalcular automáticamente cuando cambia el valor de cierre (manteniendo el % bruto)
   useEffect(() => {
-    const comisionBruta = Number(formData.comisionEstimada) || 0;
-    const gastos = Number(formData.gastosOficina) || 0;
-    const referidoPct = Number(formData.porcentajeReferido) || 0;
-    const referidoAmount = comisionBruta * (referidoPct / 100);
-    const neta = comisionBruta - gastos - referidoAmount;
-    if (formData.comisionNetaFinal !== neta) {
-      setFormData((prev) => ({ ...prev, comisionNetaFinal: neta }));
-    }
-  }, [formData.comisionEstimada, formData.gastosOficina, formData.porcentajeReferido]);
+    const valorCierre = Number(formData.valorCierre) || 0;
+    const porcentajeBruto = Number(formData.porcentajeBruto) || 0;
+    const grossCommissionUsd = computeBrutaFromPct(valorCierre, porcentajeBruto);
+    const porcentajeReferido = Number(formData.porcentajeReferido) || 0;
+    const montoReferido = computeMontoFromPct(grossCommissionUsd, porcentajeReferido);
+    const gastosOficina = Number(formData.gastosOficina) || 0;
+    const comisionNetaFinal = computeNetaFinal(grossCommissionUsd, montoReferido, gastosOficina);
+
+    setFormData((prev) => ({
+      ...prev,
+      grossCommissionUsd,
+      montoReferido,
+      comisionNetaFinal,
+    }));
+  }, [formData.valorCierre]);
+
+  const handlePorcentajeBrutoChange = (val: number) => {
+    const valorCierre = Number(formData.valorCierre) || 0;
+    const grossCommissionUsd = computeBrutaFromPct(valorCierre, val);
+    const porcentajeReferido = Number(formData.porcentajeReferido) || 0;
+    const montoReferido = computeMontoFromPct(grossCommissionUsd, porcentajeReferido);
+    const gastosOficina = Number(formData.gastosOficina) || 0;
+    const comisionNetaFinal = computeNetaFinal(grossCommissionUsd, montoReferido, gastosOficina);
+    setFormData((prev) => ({
+      ...prev,
+      porcentajeBruto: val,
+      grossCommissionUsd,
+      montoReferido,
+      comisionNetaFinal,
+    }));
+  };
+
+  const handleGrossCommissionUsdChange = (val: number) => {
+    const valorCierre = Number(formData.valorCierre) || 0;
+    const porcentajeBruto = computePctFromBruta(valorCierre, val);
+    const porcentajeReferido = Number(formData.porcentajeReferido) || 0;
+    const montoReferido = computeMontoFromPct(val, porcentajeReferido);
+    const gastosOficina = Number(formData.gastosOficina) || 0;
+    const comisionNetaFinal = computeNetaFinal(val, montoReferido, gastosOficina);
+    setFormData((prev) => ({
+      ...prev,
+      grossCommissionUsd: val,
+      porcentajeBruto,
+      montoReferido,
+      comisionNetaFinal,
+    }));
+  };
+
+  const handlePorcentajeReferidoChange = (val: number) => {
+    const grossCommissionUsd = Number(formData.grossCommissionUsd) || 0;
+    const montoReferido = computeMontoFromPct(grossCommissionUsd, val);
+    const gastosOficina = Number(formData.gastosOficina) || 0;
+    const comisionNetaFinal = computeNetaFinal(grossCommissionUsd, montoReferido, gastosOficina);
+    setFormData((prev) => ({
+      ...prev,
+      porcentajeReferido: val,
+      montoReferido,
+      comisionNetaFinal,
+    }));
+  };
+
+  const handleMontoReferidoChange = (val: number) => {
+    const grossCommissionUsd = Number(formData.grossCommissionUsd) || 0;
+    const porcentajeReferido = computePctFromMonto(grossCommissionUsd, val);
+    const gastosOficina = Number(formData.gastosOficina) || 0;
+    const comisionNetaFinal = computeNetaFinal(grossCommissionUsd, val, gastosOficina);
+    setFormData((prev) => ({
+      ...prev,
+      montoReferido: val,
+      porcentajeReferido,
+      comisionNetaFinal,
+    }));
+  };
+
+  const handleGastosOficinaChange = (val: number) => {
+    const grossCommissionUsd = Number(formData.grossCommissionUsd) || 0;
+    const montoReferido = Number(formData.montoReferido) || 0;
+    const comisionNetaFinal = computeNetaFinal(grossCommissionUsd, montoReferido, val);
+    setFormData((prev) => ({
+      ...prev,
+      gastosOficina: val,
+      comisionNetaFinal,
+    }));
+  };
+
+  const handleComisionNetaFinalChange = (val: number) => {
+    const grossCommissionUsd = Number(formData.grossCommissionUsd) || 0;
+    const montoReferido = Number(formData.montoReferido) || 0;
+    const gastosOficina = Number(formData.gastosOficina) || 0;
+    const porcentajeNeto = grossCommissionUsd > 0
+      ? ((val + gastosOficina + montoReferido) / grossCommissionUsd) * 100
+      : 0;
+    setFormData((prev) => ({
+      ...prev,
+      comisionNetaFinal: val,
+      porcentajeNeto,
+    }));
+  };
+
+  const handlePorcentajeNetoChange = (val: number) => {
+    const grossCommissionUsd = Number(formData.grossCommissionUsd) || 0;
+    const montoReferido = Number(formData.montoReferido) || 0;
+    const gastosOficina = Number(formData.gastosOficina) || 0;
+    const comisionNetaFinal = grossCommissionUsd * (val / 100) - montoReferido - gastosOficina;
+    setFormData((prev) => ({
+      ...prev,
+      porcentajeNeto: val,
+      comisionNetaFinal,
+    }));
+  };
 
   const handleCreateBuyer = () => {
     if (!newBuyerName.trim()) {
@@ -1705,56 +1821,28 @@ function SaleFormModal({
               </div>
             </div>
 
-            {/* Precios */}
+            {/* Valores base */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 {
                   key: "precioPublicado",
                   label: "Precio Publicado",
                   required: true,
-                  numeric: true,
                 },
                 {
                   key: "valorOfertado",
                   label: "Valor Ofertado",
                   required: false,
-                  numeric: true,
                 },
                 {
                   key: "contraoferta1",
-                  label: "Contraoferta 1",
+                  label: "Contraoferta",
                   required: false,
-                  numeric: true,
-                },
-                {
-                  key: "contraoferta2",
-                  label: "Contraoferta 2",
-                  required: false,
-                  numeric: true,
                 },
                 {
                   key: "valorCierre",
                   label: "Valor Cierre",
                   required: false,
-                  numeric: true,
-                },
-                {
-                  key: "comisionEstimada",
-                  label: "Comisión Estimada",
-                  required: false,
-                  numeric: true,
-                },
-                {
-                  key: "puntas",
-                  label: "Puntas",
-                  required: false,
-                  numeric: true,
-                },
-                {
-                  key: "presupuesto",
-                  label: "Presupuesto",
-                  required: false,
-                  numeric: true,
                 },
               ].map((field) => (
                 <div key={field.key}>
@@ -1770,7 +1858,7 @@ function SaleFormModal({
                     {field.required ? " *" : ""}
                   </label>
                   <input
-                    type={field.numeric ? "number" : "text"}
+                    type="number"
                     className={inputCls(field.key)}
                     value={
                       ((formData as Record<string, unknown>)[field.key] as
@@ -1781,11 +1869,7 @@ function SaleFormModal({
                       const val = e.target.value;
                       setFormData({
                         ...formData,
-                        [field.key]: field.numeric
-                          ? val
-                            ? Number(val)
-                            : undefined
-                          : val || undefined,
+                        [field.key]: val ? Number(val) : undefined,
                       });
                       if (field.required)
                         setErrors((prev) => ({ ...prev, [field.key]: false }));
@@ -1795,88 +1879,140 @@ function SaleFormModal({
               ))}
             </div>
 
-            {/* Porcentajes y comisiones */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { key: "porcentajeBruto", label: "% Bruto" },
-                { key: "porcentajeNeto", label: "% Neto" },
-                { key: "porcentajeReferido", label: "% Referido" },
-                { key: "grossCommissionUsd", label: "Comisión bruta USD" },
-                { key: "gastosOficina", label: "Gastos oficina" },
-              ].map((field) => (
-                <div key={field.key}>
-                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
-                    {field.label}
-                  </label>
-                  <input
-                    type="number"
-                    className={inputCls("")}
-                    value={
-                      ((formData as Record<string, unknown>)[
-                        field.key
-                      ] as number) ?? ""
-                    }
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        [field.key]: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      })
-                    }
-                  />
-                </div>
-              ))}
+            {/* Comisión Bruta */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
-                  Comisión neta final
+                  % Bruto sobre Valor Cierre
                 </label>
-                <div className="h-[42px] flex items-center px-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-400 text-sm font-bold">
-                  {formatCurrency(formData.comisionNetaFinal || 0, formData.moneda || "USD")}
-                </div>
+                <input
+                  type="number"
+                  className={inputCls("")}
+                  value={formData.porcentajeBruto ?? ""}
+                  onChange={(e) =>
+                    handlePorcentajeBrutoChange(Number(e.target.value) || 0)
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                  Monto Bruto USD
+                </label>
+                <input
+                  type="number"
+                  className={inputCls("")}
+                  value={formData.grossCommissionUsd ?? ""}
+                  onChange={(e) =>
+                    handleGrossCommissionUsdChange(Number(e.target.value) || 0)
+                  }
+                />
               </div>
             </div>
 
-            {/* Desglose de comisiones */}
+            {/* Deducciones */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                  % Colega / Referido
+                </label>
+                <input
+                  type="number"
+                  className={inputCls("")}
+                  value={formData.porcentajeReferido ?? ""}
+                  onChange={(e) =>
+                    handlePorcentajeReferidoChange(Number(e.target.value) || 0)
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                  Monto Colega
+                </label>
+                <input
+                  type="number"
+                  className={inputCls("")}
+                  value={formData.montoReferido ?? ""}
+                  onChange={(e) =>
+                    handleMontoReferidoChange(Number(e.target.value) || 0)
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                  Gastos Oficina
+                </label>
+                <input
+                  type="number"
+                  className={inputCls("")}
+                  value={formData.gastosOficina ?? ""}
+                  onChange={(e) =>
+                    handleGastosOficinaChange(Number(e.target.value) || 0)
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                  % Neta Agente
+                </label>
+                <input
+                  type="number"
+                  className={inputCls("")}
+                  value={formData.porcentajeNeto ?? ""}
+                  onChange={(e) =>
+                    handlePorcentajeNetoChange(Number(e.target.value) || 0)
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                  Monto Neta Agente
+                </label>
+                <input
+                  type="number"
+                  className={inputCls("")}
+                  value={formData.comisionNetaFinal ?? ""}
+                  onChange={(e) =>
+                    handleComisionNetaFinalChange(Number(e.target.value) || 0)
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Visualización en vivo */}
             {(() => {
-              const comisionBruta = Number(formData.comisionEstimada) || 0;
-              const gastos = Number(formData.gastosOficina) || 0;
-              const refPct = Number(formData.porcentajeReferido) || 0;
-              const montoColega = comisionBruta * (refPct / 100);
-              const neta = comisionBruta - gastos - montoColega;
               const currency = formData.moneda || "USD";
               return (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">
-                      Bruta total
+                      Bruta Total
                     </p>
                     <p className="text-sm font-black text-slate-900 dark:text-slate-100">
-                      {formatCurrency(comisionBruta, currency)}
+                      {formatCurrency(formData.grossCommissionUsd || 0, currency)}
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">
-                      Para el colega ({refPct}%)
+                      Para Colega
                     </p>
                     <p className="text-sm font-black text-blue-600">
-                      {formatCurrency(montoColega, currency)}
+                      {formatCurrency(formData.montoReferido || 0, currency)}
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">
-                      Gastos oficina
+                      Gastos
                     </p>
                     <p className="text-sm font-black text-rose-600">
-                      {formatCurrency(gastos, currency)}
+                      {formatCurrency(formData.gastosOficina || 0, currency)}
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-500/20">
                     <p className="text-[10px] text-green-600 uppercase tracking-widest font-bold">
-                      Neta agente
+                      Neta Agente
                     </p>
                     <p className="text-sm font-black text-green-700 dark:text-green-400">
-                      {formatCurrency(neta, currency)}
+                      {formatCurrency(formData.comisionNetaFinal || 0, currency)}
                     </p>
                   </div>
                 </div>

@@ -21,7 +21,7 @@ export function validateClient(client: Partial<Client>): ValidationResult {
   if (email && !isValidEmail(email)) {
     return { valid: false, message: 'El formato del email no es válido.' };
   }
-  if (client.birthdate && !/^\d{4}-\d{2}-\d{2}$/.test(client.birthdate)) {
+  if (client.birthdate && client.birthdate.trim() !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(client.birthdate)) {
     return { valid: false, message: 'La fecha de nacimiento no es válida.' };
   }
   return { valid: true };
@@ -125,8 +125,8 @@ export function validateTask(task: Partial<Task>): ValidationResult {
   if (!task.title || !task.title.trim()) {
     return { valid: false, message: 'El título de la tarea es obligatorio.' };
   }
-  if (task.dueDate && !/\d{4}-\d{2}-\d{2}/.test(task.dueDate)) {
-    return { valid: false, message: 'La fecha límite no es válida.' };
+  if (!task.dueDate || !/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)) {
+    return { valid: false, message: 'La fecha límite es obligatoria y debe tener formato YYYY-MM-DD.' };
   }
   if (task.relatedEntities && task.relatedEntities.some(r => !r.type || !r.id)) {
     return { valid: false, message: 'Las entidades relacionadas deben tener tipo e ID.' };

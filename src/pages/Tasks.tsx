@@ -111,6 +111,16 @@ export default function Tasks() {
     }
   }, [searchParams, tasks]);
 
+  React.useEffect(() => {
+    const status = searchParams.get("status");
+    if (status) {
+      setFilterStatus(status);
+      if (status === "completada") {
+        setShowCompleted(true);
+      }
+    }
+  }, [searchParams]);
+
   const filteredTasks = tasks.filter((t) => {
     const matchesSearch = t.title
       .toLowerCase()
@@ -210,6 +220,11 @@ export default function Tasks() {
       (r) => r.id,
     );
     const data = { ...formData, relatedEntities };
+
+    // Limpiar fecha de recurrencia vacía para evitar error 400 en Supabase
+    if (!data.recurrenceEndDate?.trim()) {
+      delete data.recurrenceEndDate;
+    }
 
     if (editingTask) {
       const updatedTask = { ...editingTask, ...data } as Task;

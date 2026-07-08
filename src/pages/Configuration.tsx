@@ -88,21 +88,15 @@ export default function Configuration() {
     }
   };
 
+  // Capturar tokens de OAuth inmediatamente al cargar (antes de cualquier otra carga)
   useEffect(() => {
-    const tab = searchParams.get("tab") as ConfigTabId;
-    if (tab && ["perfil", "listas", "usuarios", "integraciones"].includes(tab)) {
-      setActiveTab(tab);
-    }
-    verifyRole();
-
-    // Capturar tokens de OAuth inmediatamente al cargar (después del redirect)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const captureOAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.provider_refresh_token) {
-        saveGoogleIntegration(session).then(() => fetchGoogleIntegration());
-      } else {
-        fetchGoogleIntegration();
+        await saveGoogleIntegration(session);
       }
-    });
+    };
+    captureOAuth();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -111,12 +105,26 @@ export default function Configuration() {
           session?.provider_refresh_token
         ) {
           await saveGoogleIntegration(session);
-          await fetchGoogleIntegration();
         }
       },
     );
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab") as ConfigTabId;
+    if (tab && ["perfil", "listas", "usuarios", "integraciones"].includes(tab)) {
+      setActiveTab(tab);
+    }
+    verifyRole();
+  }, []);
+
+  // Cargar integración de Google cuando el perfil esté disponible
+  useEffect(() => {
+    if (profile?.user_id) {
+      fetchGoogleIntegration();
+    }
+  }, [profile?.user_id]);
 
   useEffect(() => {
     if (activeTab === "usuarios" && serverRole === "superadmin") {
@@ -128,17 +136,26 @@ export default function Configuration() {
   const fetchGoogleIntegration = async () => {
     const userId = profile?.user_id;
     if (!userId) return;
-    const { data, error } = await supabase
-      .from("user_integrations")
-      .select("email")
-      .eq("user_id", userId)
-      .eq("provider", "google_calendar")
-      .maybeSingle();
-    if (!error && data) {
-      setGoogleIntegration({ email: data.email });
-    } else {
+    try {
+      const { data, error } = await supabase
+        .from("user_integrations")
+        .select("email")
+        .eq("user_id", userId)
+        .eq("provider", "google_calendar")
+        .maybeSingle();
+      if (error) {
+        console.error("Error cargando integración Google:", error);
+        setGoogleIntegration(null);
+        return;
+      }
+      if (data) {
+        setGoogleIntegration({ email: data.email });
+      } else {
+        setGoogleIntegration(null);
+      }
+    } catch (e: any) {
+      console.error("Excepción cargando integración Google:", e.message);
       setGoogleIntegration(null);
-      if (error) console.error("Error cargando integración Google:", error);
     }
   };
 
@@ -147,16 +164,26 @@ export default function Configuration() {
     if (!user || !session.provider_refresh_token) return;
     const email = user.email || user.user_metadata?.email || "";
     const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
-    const { error } = await supabase.from("user_integrations").upsert({
+
+    // No sobrescribir el access_token existente si Supabase no devolvió uno nuevo.
+    const updatePayload: any = {
       user_id: user.id,
       provider: "google_calendar",
       email,
       refresh_token: session.provider_refresh_token,
-      access_token: session.provider_token,
       expires_at: expiresAt,
       updated_at: new Date().toISOString(),
-    });
+    };
+    if (session.provider_token) {
+      updatePayload.access_token = session.provider_token;
+    }
+
+    const { error } = await supabase
+      .from("user_integrations")
+      .upsert(updatePayload, { onConflict: "user_id,provider" });
+
     if (error) {
+      console.error("Error guardando integración con Google:", error);
       showToast("Error guardando integración con Google", "error");
     } else {
       setGoogleIntegration({ email });

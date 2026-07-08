@@ -188,27 +188,33 @@ export default function Agenda() {
       return matchesSearch && matchesType && matchesDay;
     })
     .sort((a, b) => {
-      switch (sortBy) {
-        case "date-desc":
-          return `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`);
-        case "status":
-          return (
-            a.status.localeCompare(b.status) ||
-            `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)
-          );
-        case "type":
-          return (
-            a.type.localeCompare(b.type) ||
-            `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)
-          );
-        case "date-asc":
-        default:
-          return `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
-      }
+      const eventDateTime = (e: CalendarEvent) =>
+        new Date(`${e.date}T${e.time || "00:00"}`).getTime();
+      const isPending = (e: CalendarEvent) => e.status === "pendiente";
+      const isOverdue = (e: CalendarEvent) =>
+        isPending(e) && eventDateTime(e) < now.getTime();
+      const isDone = (e: CalendarEvent) =>
+        e.status === "realizado" || e.status === "cancelado";
+
+      const score = (e: CalendarEvent) => {
+        if (isOverdue(e)) return 0;
+        if (isPending(e)) return 1;
+        if (isDone(e)) return 3;
+        return 2;
+      };
+
+      const sa = score(a);
+      const sb = score(b);
+      if (sa !== sb) return sa - sb;
+      return eventDateTime(a) - eventDateTime(b);
     });
 
   const handleSyncAll = async () => {
-    const unsynced = events.filter((e) => !e.googleCalendarEventId);
+    const unsynced = events.filter(
+      (e) =>
+        !e.googleCalendarEventId &&
+        (e.status === "pendiente" || e.status === "realizado"),
+    );
     if (unsynced.length === 0) {
       showToast("No hay eventos pendientes de sincronizar", "info");
       return;
@@ -298,13 +304,26 @@ export default function Agenda() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.date || !formData.time) {
-      showToast("Campos obligatorios faltantes", "error");
+    if (!formData.title?.trim()) {
+      showToast("El título es obligatorio", "error");
+      return;
+    }
+    if (!formData.date || !/^\d{4}-\d{2}-\d{2}$/.test(formData.date)) {
+      showToast("La fecha no es válida", "error");
+      return;
+    }
+    if (!formData.time) {
+      showToast("La hora es obligatoria", "error");
       return;
     }
 
+    const cleanFormData = { ...formData };
+    if (!cleanFormData.recurrenceEndDate?.trim()) {
+      delete cleanFormData.recurrenceEndDate;
+    }
+
     if (editingEvent) {
-      const updatedEvent = { ...editingEvent, ...formData } as CalendarEvent;
+      const updatedEvent = { ...editingEvent, ...cleanFormData } as CalendarEvent;
       // Reschedule logic: if original was pending and overdue, and new date/time is future -> reprogramado
       const originalDateTime = new Date(
         `${editingEvent.date}T${editingEvent.time}`,
@@ -321,7 +340,7 @@ export default function Agenda() {
       updateEvent(updatedEvent);
     } else {
       const newEvent: CalendarEvent = {
-        ...(formData as CalendarEvent),
+        ...(cleanFormData as CalendarEvent),
         id: generateId("e"),
         createdAt: new Date().toISOString(),
       };

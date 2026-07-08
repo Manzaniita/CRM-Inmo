@@ -81,11 +81,19 @@ export default function Reports() {
     [sales],
   );
 
+  const grossCommissions = useMemo(
+    () =>
+      sales
+        .filter((s) => s.estado === "vendida")
+        .reduce((acc, s) => acc + Number(s.grossCommissionUsd || 0), 0),
+    [sales],
+  );
+
   const collectedCommissions = useMemo(
     () =>
       sales
         .filter((s) => s.estado === "vendida" && s.isCollected)
-        .reduce((acc, s) => acc + Number(s.grossCommissionUsd || 0), 0),
+        .reduce((acc, s) => acc + Number(s.comisionNetaFinal || 0), 0),
     [sales],
   );
 
@@ -255,7 +263,13 @@ export default function Reports() {
           trendType="up"
         />
         <ReportStat
-          label="Comisiones Brutas Cobradas (USD)"
+          label="Comisiones Brutas (USD)"
+          value={formatCurrency(grossCommissions, "USD")}
+          trend="+8%"
+          trendType="up"
+        />
+        <ReportStat
+          label="Comisiones Cobradas (USD)"
           value={formatCurrency(collectedCommissions, "USD")}
           trend="+12%"
           trendType="up"
@@ -266,7 +280,7 @@ export default function Reports() {
         {/* Main Charts */}
         <div className="lg:col-span-2 space-y-6">
           <Card title="Nuevos Clientes por Mes" className="h-[400px]">
-            <div className="h-[300px] mt-4">
+            <div className="h-[300px] min-h-[300px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={clientsByMonth}>
                   <CartesianGrid
@@ -308,7 +322,7 @@ export default function Reports() {
             title="Evolución de Comisiones Est. (USD)"
             className="h-[400px]"
           >
-            <div className="h-[300px] mt-4">
+            <div className="h-[300px] min-h-[300px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={commissionsByMonth}>
                   <CartesianGrid
@@ -351,7 +365,7 @@ export default function Reports() {
             title="Operaciones Activas vs. Vendidas"
             className="h-[400px]"
           >
-            <div className="h-[300px] mt-4">
+            <div className="h-[300px] min-h-[300px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={activeVsSoldByMonth}>
                   <CartesianGrid
@@ -402,7 +416,7 @@ export default function Reports() {
         {/* Breakdown Charts */}
         <div className="space-y-6">
           <Card title="Origen de Clientes">
-            <div className="h-[250px] relative">
+            <div className="h-[250px] min-h-[250px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
