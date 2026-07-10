@@ -219,7 +219,12 @@ export default function Tasks() {
     const relatedEntities = (formData.relatedEntities || []).filter(
       (r) => r.id,
     );
-    const data = { ...formData, relatedEntities };
+
+    // Fallback de fecha para evitar error de Postgres por cadena vacía
+    const today = new Date().toISOString().split("T")[0];
+    const dueDate = formData.dueDate?.trim() || today;
+
+    const data = { ...formData, dueDate, relatedEntities };
 
     // Limpiar fecha de recurrencia vacía para evitar error 400 en Supabase
     if (!data.recurrenceEndDate?.trim()) {

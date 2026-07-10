@@ -5,6 +5,72 @@ import { useAuthStore } from "../stores/authStore";
 import { useUIStore } from "../stores/uiStore";
 import { generateId } from "../lib/id";
 
+function camelToSnake(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z0-9])/g, (_, letter) => letter.toUpperCase());
+}
+
+function toNumberOrZero(value: unknown): number {
+  if (value === undefined || value === null || value === "") return 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+const NUMERIC_SALE_FIELDS: (keyof Sale)[] = [
+  "precioPublicado",
+  "precioOfrecido",
+  "precioAcordado",
+  "comisionEstimada",
+  "puntas",
+  "porcentajeBruto",
+  "porcentajeNeto",
+  "porcentajeReferido",
+  "montoReferido",
+  "valorOfertado",
+  "contraoferta1",
+  "contraoferta2",
+  "valorCierre",
+  "montoEscritura",
+  "grossCommissionUsd",
+  "gastosOficina",
+  "comisionNetaFinal",
+  "presupuesto",
+  "montoNetoAgente",
+  "montoColega",
+];
+
+function toSaleDb(sale: Partial<Sale>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(sale)) {
+    if (key === "user_id") {
+      result[key] = value;
+      continue;
+    }
+
+    const snakeKey = camelToSnake(key);
+
+    if (NUMERIC_SALE_FIELDS.includes(key as keyof Sale)) {
+      result[snakeKey] = toNumberOrZero(value);
+    } else {
+      result[snakeKey] = value;
+    }
+  }
+
+  return result;
+}
+
+function fromSaleDb(row: Record<string, unknown>): Sale {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    result[snakeToCamel(key)] = value;
+  }
+  return result as unknown as Sale;
+}
+
 const fetchSales = async () => {
   const user = useAuthStore.getState().user;
   if (!user) throw new Error("No session");
@@ -12,9 +78,9 @@ const fetchSales = async () => {
     .from("sales")
     .select("*")
     .eq("user_id", user.id)
-    .order("fechaCreacion", { ascending: false });
+    .order("fecha_creacion", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as Sale[];
+  return (data ?? []).map((row) => fromSaleDb(row as Record<string, unknown>));
 };
 
 function getFutureDate(days: number): string {
@@ -47,7 +113,6 @@ export function useSales() {
 
     if (existing && existing.length > 0) return;
 
-    // Obtener nombres de propiedad y comprador desde Supabase
     const { data: propertyData } = await supabase
       .from("properties")
       .select("title")
@@ -92,10 +157,10 @@ export function useSales() {
     mutationFn: async (sale: Sale) => {
       const { data, error } = await supabase
         .from("sales")
-        .insert({ ...sale, user_id: user!.id })
+        .insert({ ...toSaleDb(sale), user_id: user!.id })
         .select();
       if (error) throw error;
-      const inserted = data![0] as Sale;
+      const inserted = fromSaleDb(data![0] as Record<string, unknown>);
       if (inserted.estado === "vendida") {
         await supabase
           .from("properties")
@@ -120,7 +185,7 @@ export function useSales() {
     mutationFn: async (sale: Sale) => {
       const { error } = await supabase
         .from("sales")
-        .update(sale)
+        .update(toSaleDb(sale))
         .eq("id", sale.id)
         .eq("user_id", user!.id);
       if (error) throw error;

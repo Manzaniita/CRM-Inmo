@@ -916,11 +916,12 @@ export default function Clients() {
         showToast(validation.message || "Error de validación", "error");
         return;
       }
+      const dueDate = taskFormData.dueDate || new Date().toISOString().split("T")[0];
       const newTask: Task = {
         id: generateId("t"),
         title: taskFormData.title,
         description: taskFormData.description,
-        dueDate: taskFormData.dueDate,
+        dueDate,
         priority: taskFormData.priority,
         status: taskFormData.status,
         clientId: id,
@@ -1297,7 +1298,9 @@ export default function Clients() {
   }
 
   if (selectedClient) {
-    const clientSales = sales.filter((s) => s.clientCompradorId === id);
+    const clientSales = sales.filter(
+      (s) => s.clientCompradorId === id || s.propietarioId === id,
+    );
 
     return (
       <div className="page-enter">

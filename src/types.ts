@@ -177,6 +177,8 @@ export interface Sale {
   grossCommissionUsd?: number;
   gastosOficina?: number;
   comisionNetaFinal?: number;
+  montoNetoAgente?: number;
+  montoColega?: number;
   referredByColleagueId?: string;
   infoExtra?: string;
   presupuesto?: number;
